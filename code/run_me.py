@@ -16,7 +16,7 @@ if __name__ == '__main__':
     ###################################################
     if False:
         # Uses the data provided by Ken to get a pulse shape
-        file_name = '../../data/pulse_spice.csv'
+        file_name = '../data/pulse_spice.csv'
         pulse_mean = parse_pulse(file_name, scale=1)
 
         # 
