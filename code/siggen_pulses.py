@@ -6,6 +6,33 @@ import random
 import pandas as pd
 import warnings
 
+def parse_tof_histogram(input_file, x_name='', y_names=[]):
+    '''
+    Inputs:
+        input_file: String. CSV file where each column corresponds to a separate
+                    histogram given the x-column. e.g.
+                    TOF[ns] , MQ1   , MQ2   , ...
+                    0.000   , 0     , 0     , ...
+                    ...
+                    1.000   , 10    , 12    , ...
+        x_name:     String. Name of the column header for the x-axis of the histogram.
+        y_names:    Collection of Strings. Names of the column headers for each 
+                    separate histogram.
+    Outputs:
+        data_dict:  A dictionary of collections where the keys are the particle types
+                    (column headers) and values are ToFs in seconds, e.g.
+                    [1e-9, 1e-9, 1e-9, 2e-9, 2e-9, 2e-9]
+    '''
+    data = pd.read_csv(input_file)
+    times = list(data[x_name])
+    data_dict = {y:[] for y in y_names}
+
+    for y in y_names:
+        for i in range(len(times)):
+            data_dict[y] = data_dict[y] + [times[i]*1e-9]*int(data[y][i]*1000)
+
+    return data_dict
+
 def parse_pulse(input_file, time_name='time', signal_name='signal'):
     '''
     Inputs:
