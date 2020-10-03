@@ -1,3 +1,4 @@
 # MATLAB files
 *.asv
 slprj/
+*.slxc
