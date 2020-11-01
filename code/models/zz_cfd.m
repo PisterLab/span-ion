@@ -4,14 +4,14 @@ clc
 
 % ---------------------------- START CHANGES ---------------------------- %
 zc_list_idx = 4;    % nth zero crossing to use for annotation
-N_pulse = .5;       % number of pulses to produce
-A_pulse_vec = [75e-6, 100e-6];   % input current pulse max
+N_pulse = 2;       % number of pulses to produce
+A_pulse_vec = [100e-6];   % input current pulse max
 % ----------------------------- STOP CHANGES ---------------------------- %
 
 %%% Preamp
 preamp_vars_map = containers.Map();
 % ---------------------------- START CHANGES ---------------------------- %
-preamp_type = 'C';
+preamp_type = 'RC';
 
 preamp_vars_map('R')    = 'Rf = 800;';
 preamp_vars_map('RC')   = 'Rf = 800; Cf = 1e-12;';
@@ -35,16 +35,19 @@ inject_height   = 10e-3;
 inject_width    = 100e-12;
 inject_tstart   = .5e-9;
 
-shaper_type = 'delayNonideal_atten';
+shaper_type = 'delayNonideal_oneShot_atten';
 v_LED = .02;
 
 cfd_vars_map('nowlin')              = 'f_attenuation = 0.5;';
 cfd_vars_map('threshold')           = 'v_threshold = 0.04;';
 cfd_vars_map('diff')                = 'v_threshold = 0.1;';
-cfd_vars_map('delay_atten')         = 'f_attenuation = 0.5; t_delay = 500e-12;';
+cfd_vars_map('delay_atten')         = 'f_attenuation = 0.5; t_delay = 1e-9;';
+cfd_vars_map('delay_peakDet_oneShot_atten') = 'f_attenuation = 0.5; t_delay = 1e-9;';
 cfd_vars_map('delayNonideal_atten') = 'f_attenuation = 0.5; H_delay_num = [1, -4e10, 7.2e20, -6.72e30, 2.668e40]; H_delay_den = [1, 4e10, 7.2e20, 6.72e30, 2.668e40];';
-% 500ps BEssel ord2: 
-% 500ps Bessel ord4: num = [1, -4e10, 7.2e20, -6.72e30, 22.688e40], den = [1, +4e10, 7.2e20, +6.72e30, 22.688e40
+cfd_vars_map('delayNonideal_oneShot_atten') = 'f_attenuation = 0.5; H_delay_num = [1, -2e10, 1.8e20, -8.4e29, 1.68e39]; H_delay_den = [1, 2e10, 1.8e20, 8.4e29, 1.68e39];';
+cfd_vars_map('delayNonideal_peakDet_oneShot_atten') = 'f_attenuation = 0.5; H_delay_num = [1, -2e10, 1.8e20, -8.4e29, 1.68e39]; H_delay_den = [1, 2e10, 1.8e20, 8.4e29, 1.68e39];';
+% 1ns Bessel ord4: num = [1, -2e10, 1.8e20, -8.4e29, 1.68e39], den = [1, 2e10, 1.8e20, 8.4e29, 1.68e39]
+% 500ps Bessel ord4: num = [1, -4e10, 7.2e20, -6.72e30, 22.688e40], den = [1, +4e10, 7.2e20, +6.72e30, 22.688e40]
 
 % ----------------------------- STOP CHANGES ---------------------------- %
 cfd_mdl_map = containers.Map();
@@ -52,18 +55,24 @@ cfd_mdl_map('nowlin')               = 'shape_nowlin';
 cfd_mdl_map('threshold')            = 'shape_threshold';
 cfd_mdl_map('diff')                 = 'shape_diff';
 cfd_mdl_map('delay_atten')          = 'shape_delay_atten';
+cfd_mdl_map('delay_peakDet_oneShot_atten') = 'shape_delay_peakDet_oneShot_atten';
 cfd_mdl_map('delayNonideal_atten')  = 'shape_delayNonideal_atten';
+cfd_mdl_map('delayNonideal_oneShot_atten')  = 'shape_delayNonideal_oneShot_atten';
+cfd_mdl_map('delayNonideal_peakDet_oneShot_atten')  = 'shape_delayNonideal_peakDet_oneShot_atten';
 
 cfd_reshape_map = containers.Map();
 cfd_reshape_map('nowlin')               = '';
 cfd_reshape_map('threshold')            = 'v_compInP=ones(size(t_out))*v_compInP;';
 cfd_reshape_map('diff')                 = 'v_compInP=ones(size(t_out))*v_compInP;';
 cfd_reshape_map('delay_atten')          = '';
+cfd_reshape_map('delay_peakDet_oneShot_atten') = '';
 cfd_reshape_map('delayNonideal_atten')  = '';
+cfd_reshape_map('delayNonideal_oneShot_atten')  = '';
+cfd_reshape_map('delayNonideal_peakDet_oneShot_atten')  = '';
 
 %% Input current: square wave (for now)
 % ---------------------------- START CHANGES ---------------------------- %
-t_event = 10e-9;     % pulse period
+t_event = 15e-9;     % pulse period
 t_pulse = 1e-9;      % pulse length
 snr     = inf;% 20;       % SNR wrt -80dBW signal (dB)
 % ----------------------------- STOP CHANGES ---------------------------- %
@@ -106,7 +115,7 @@ for i = 1:numel(A_pulse_vec)
     mdl = cfd_mdl_map(shaper_type);
     eval(cfd_vars_map(shaper_type));
 
-    if ~strcmp(shaper_type, 'delayNonideal_atten')
+    if ~contains(shaper_type, 'delayNonideal')
         simOut  = sim(mdl, ...
                       'StartTime', sprintf('%g', min(t)), ...
                       'StopTime', sprintf('%g', max(t)), ...
@@ -132,13 +141,22 @@ for i = 1:numel(A_pulse_vec)
     t_out       = simOut.get('tout');
     d_out       = y_out.get(1).Values.Data;
     v_compIn    = y_out.get(2).Values.Data;
-    if strcmp(shaper_type, 'delayNonideal_atten')
+    
+    if contains(shaper_type, 'delayNonideal')
         v_compInN = interp1(t, v_inDelay, t_out);
         v_compInP = y_out.get(3).Values.Data;
+        idx_start = 4;
     else
         v_compInN = y_out.get(3).Values.Data;
         v_compInP = y_out.get(4).Values.Data;
+        idx_start = 5;
     end
+    
+    if contains(shaper_type, 'oneShot')
+        v_ZCD_oneShot = y_out.get(idx_start).Values.Data;
+        v_LED_oneShot = y_out.get(idx_start + 1).Values.Data;
+    end
+    
 
     eval(cfd_reshape_map(shaper_type));
     
@@ -207,7 +225,7 @@ for cidx = 1:num_plt_cols
     end
     
     % -- annotate peak --
-    if strcmp(shaper_type, 'delayNonideal_atten')
+    if contains(shaper_type, 'delayNonideal')
         [pk_in, pk_in_loc] = max(v_in);
         plot(t_out(pk_in_loc), pk_in, 'rp');
         text(t(pk_in_loc), pk_in, sprintf('peak=%0-#1.3f mV', pk_in*1000));
@@ -235,7 +253,7 @@ for cidx = 1:num_plt_cols
     xlim_max(3) = max(xlim_max(3), max(t_out));
 
     % -- annotate peak --
-    if strcmp(shaper_type, 'delayNonideal_atten')
+    if contains(shaper_type, 'delayNonideal')
         [pkN, pkN_loc] = max(v_compInN);
         [pkP, pkP_loc] = max(v_compInP);
         plot(t_out(pkN_loc), pkN, 'rp');
@@ -253,14 +271,14 @@ for cidx = 1:num_plt_cols
             'VerticalAlignment', 'bottom');
     end
     
-    if strcmp(shaper_type, 'delay_atten')
+    if contains(shaper_type, 'delay') && ~contains(shaper_type, 'delayNonideal')
         title(sprintf('Delay = %#2.2f ps', t_delay*1e12));
     end
 
     % Comparator output
     plt_dout = subplot(num_plt_rows, num_plt_cols, 3*num_plt_cols + cidx);
     plot(t_out, d_out);
-    ylabel({'Comparator', 'Output'});
+    ylabel({'Final', 'Output'});
     xlabel('Time (s)');
     
     ylim_min(4) = min(ylim_min(4), min(d_out));

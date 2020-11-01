@@ -6,12 +6,47 @@ import random
 import pandas as pd
 import warnings
 from siggen_pulses import *
+from oneshot import *
 
 '''
 This file is intended as a scratchpad for code development with examples of function use cases.
 '''
 
 if __name__ == '__main__':
+    ###############################################
+    ### Get pulse width stats from Cadence data ###
+    ###############################################
+    if False:
+        file_name = '../data/data_oneshot.csv'
+        data_dict = parse_pulse(file_name)
+        
+        pulse_widths_spec = dict(data_dict=data_dict,
+                                sig_threshold=3.3/2,
+                                posedge=True)
+
+        pulse_width_list = get_pulse_widths(**pulse_widths_spec)
+
+
+    #####################################################
+    ### Generating a string of randomly spaced pulses ###
+    #####################################################
+    if True:
+        file_name = '../data/pulse_oneshot.txt'
+        oneshot_pulse_spec = dict(thigh=1e-9,
+                                td=50e-12,
+                                tlow_max=100e-9,
+                                tlow_min=1e-9,
+                                vlow=0,
+                                vhigh=3.3,
+                                tstart=2e-9,
+                                num_pulses=500)
+
+        transient_result = siggen_oneshot(**oneshot_pulse_spec)
+        plt.plot(transient_result.keys(), transient_result.values())
+
+        write_transient_file(transient_result, file_name)
+
+
     ###################################################
     ### Generating a single transient with 2 pulses ###
     ###################################################

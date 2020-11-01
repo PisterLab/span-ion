@@ -187,6 +187,7 @@ def gen_pulses(t_diff, fraction, pulse1, pulse2, threshold=0, t_start=0,
 
     return transient_result
 
+
 def write_transient_file(data, output_file):
     '''
     Inputs:
@@ -200,7 +201,7 @@ def write_transient_file(data, output_file):
     Notes:
         Untested.
     '''
-    times = data.keys()
+    times = list(data.keys())
     times.sort()
     values = [data[t] for t in times]
 
