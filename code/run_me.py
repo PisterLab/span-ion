@@ -21,7 +21,7 @@ if __name__ == '__main__':
         data_dict = parse_pulse(file_name)
         
         pulse_widths_spec = dict(data_dict=data_dict,
-                                sig_threshold=3.3/2,
+                                sig_threshold=1.8/2,
                                 posedge=True)
 
         pulse_width_list = get_pulse_widths(**pulse_widths_spec)
@@ -34,10 +34,10 @@ if __name__ == '__main__':
         file_name = '../data/pulse_oneshot.txt'
         oneshot_pulse_spec = dict(thigh=1e-9,
                                 td=50e-12,
-                                tlow_max=100e-9,
-                                tlow_min=1e-9,
+                                tlow_max=1e-6,
+                                tlow_min=10e-9,
                                 vlow=0,
-                                vhigh=3.3,
+                                vhigh=1.8,
                                 tstart=2e-9,
                                 num_pulses=500)
 

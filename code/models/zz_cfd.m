@@ -3,8 +3,8 @@ close all
 clc
 
 % ---------------------------- START CHANGES ---------------------------- %
-zc_list_idx = 4;    % nth zero crossing to use for annotation
-N_pulse = 2;       % number of pulses to produce
+zc_list_idx = 3;    % nth zero crossing to use for annotation
+N_pulse = 0.5;       % number of pulses to produce
 A_pulse_vec = [100e-6];   % input current pulse max
 % ----------------------------- STOP CHANGES ---------------------------- %
 
@@ -35,7 +35,7 @@ inject_height   = 10e-3;
 inject_width    = 100e-12;
 inject_tstart   = .5e-9;
 
-shaper_type = 'delayNonideal_oneShot_atten';
+shaper_type = 'delay_peakDet_oneShot_atten';
 v_LED = .02;
 
 cfd_vars_map('nowlin')              = 'f_attenuation = 0.5;';
@@ -253,11 +253,11 @@ for cidx = 1:num_plt_cols
     xlim_max(3) = max(xlim_max(3), max(t_out));
 
     % -- annotate peak --
-    if contains(shaper_type, 'delayNonideal')
+    if contains(shaper_type, 'delay')
         [pkN, pkN_loc] = max(v_compInN);
         [pkP, pkP_loc] = max(v_compInP);
-        plot(t_out(pkN_loc), pkN, 'rp');
-        text(t_out(pkN_loc), pkN, sprintf('peak=%0-#1.3f mV', pkN*1000));
+%         plot(t_out(pkN_loc), pkN, 'rp');
+%         text(t_out(pkN_loc), pkN, sprintf('peak=%0-#1.3f mV', pkN*1000));
     end
     % -- annotate intersection point -- 
     zci = @(v) find(v(:).*circshift(v(:), [-1 0]) <= 0);
@@ -267,7 +267,9 @@ for cidx = 1:num_plt_cols
     if snr == inf && numel(zc_idx_list) > 0
         zc_idx = zc_idx_list(zc_list_idx); % max(zc_idx_list);
         plot(t_out(zc_idx), min(v_compInP(zc_idx), v_compInN(zc_idx)), 'bp');
-        text(t_out(zc_idx), v_compInP(zc_idx), sprintf('t=%0-#1.2f ns', t(zc_idx)*1e9), ...
+%         text(t_out(zc_idx), v_compInP(zc_idx), sprintf('t=%0-#1.2f ns', t(zc_idx)*1e9), ...
+%             'VerticalAlignment', 'bottom');
+        text(t_out(zc_idx), v_compInP(zc_idx), sprintf('f=%0.2f', v_compInP(zc_idx)/pkN), ...
             'VerticalAlignment', 'bottom');
     end
     
@@ -298,3 +300,80 @@ end
 
 
 super_title = '';
+%%
+figure('Position', [10 10 600 300]);
+norm_factor = 1;
+v_compInP = v_compInP/norm_factor;
+v_compInN = v_compInN/norm_factor;
+plot(t_out, v_compInP);
+hold on;
+plot(t_out, v_compInN);
+
+ylabel({'Comparator Inputs', '(V)'}, 'Fontsize', 12);
+xlabel('Time (s)', 'Fontsize', 12);
+
+ylim_min(3) = min(ylim_min(3), min([v_compInN; v_compInP]));
+ylim_max(3) = max(ylim_max(3), max([v_compInN; v_compInP])*1.1);
+xlim_min(3) = min(xlim_min(3), min(t_out));
+xlim_max(3) = max(xlim_max(3), max(t_out));
+
+% -- annotate peak --
+if contains(shaper_type, 'delay')
+    [pkN, pkN_loc] = max(v_compInN);
+    [pkP, pkP_loc] = max(v_compInP);
+%         plot(t_out(pkN_loc), pkN, 'rp');
+%         text(t_out(pkN_loc), pkN, sprintf('peak=%0-#1.3f mV', pkN*1000));
+end
+% -- annotate intersection point -- 
+zci = @(v) find(v(:).*circshift(v(:), [-1 0]) <= 0);
+v_compIn = v_compInP - v_compInN;
+zc_idx_list = zci(v_compIn);
+
+if snr == inf && numel(zc_idx_list) > 0
+    zc_idx = zc_idx_list(zc_list_idx); % max(zc_idx_list);
+    plot(t_out(zc_idx), min(v_compInP(zc_idx), v_compInN(zc_idx)), 'bp');
+        text(t_out(zc_idx), v_compInP(zc_idx), sprintf('t=%0-#1.2f ns', t(zc_idx)*1e9), ...
+            'VerticalAlignment', 'bottom');
+%     text(t_out(zc_idx), v_compInP(zc_idx), sprintf('f=%0.2f', v_compInP(zc_idx)/pkN), ...
+%         'VerticalAlignment', 'bottom', ...
+%         'Fontsize', 12);
+end
+
+%%
+figure('Position', [10 10 600 300]);
+norm_factor = max(v_compInN);
+v_compInP = v_compInP/norm_factor;
+v_compInN = v_compInN/norm_factor;
+plot(t_out, v_compInP);
+hold on;
+plot(t_out, v_compInN);
+
+ylabel({'Normalized', 'Comparator Inputs', '(V)'}, 'Fontsize', 12);
+xlabel('Time (s)', 'Fontsize', 12);
+
+ylim_min(3) = min(ylim_min(3), min([v_compInN; v_compInP]));
+ylim_max(3) = max(ylim_max(3), max([v_compInN; v_compInP])*1.1);
+xlim_min(3) = min(xlim_min(3), min(t_out));
+xlim_max(3) = max(xlim_max(3), max(t_out));
+
+% -- annotate peak --
+if contains(shaper_type, 'delay')
+    [pkN, pkN_loc] = max(v_compInN);
+    [pkP, pkP_loc] = max(v_compInP);
+%         plot(t_out(pkN_loc), pkN, 'rp');
+%         text(t_out(pkN_loc), pkN, sprintf('peak=%0-#1.3f mV', pkN*1000));
+end
+% -- annotate intersection point -- 
+zci = @(v) find(v(:).*circshift(v(:), [-1 0]) <= 0);
+v_compIn = v_compInP - v_compInN;
+zc_idx_list = zci(v_compIn);
+
+if snr == inf && numel(zc_idx_list) > 0
+    zc_idx = zc_idx_list(zc_list_idx); % max(zc_idx_list);
+    plot(t_out(zc_idx), min(v_compInP(zc_idx), v_compInN(zc_idx)), 'bp');
+%         text(t_out(zc_idx), v_compInP(zc_idx), sprintf('t=%0-#1.2f ns', t(zc_idx)*1e9), ...
+%             'VerticalAlignment', 'bottom');
+    text(t_out(zc_idx), v_compInP(zc_idx), sprintf('f=%0.2f', v_compInP(zc_idx)/pkN), ...
+        'VerticalAlignment', 'bottom', ...
+        'Fontsize', 12);
+end
