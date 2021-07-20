@@ -5,7 +5,7 @@ clc
 % ---------------------------- START CHANGES ---------------------------- %
 zc_list_idx = 3;    % nth zero crossing to use for annotation
 N_pulse = 0.5;       % number of pulses to produce
-A_pulse_vec = [100e-6];   % input current pulse max
+A_pulse_vec = [300e-6];   % input current pulse max
 % ----------------------------- STOP CHANGES ---------------------------- %
 
 %%% Preamp
@@ -14,7 +14,7 @@ preamp_vars_map = containers.Map();
 preamp_type = 'RC';
 
 preamp_vars_map('R')    = 'Rf = 800;';
-preamp_vars_map('RC')   = 'Rf = 800; Cf = 1e-12;';
+preamp_vars_map('RC')   = 'Rf = 300; Cf = 1e-12;';
 preamp_vars_map('C')    = 'Cf = 1e-12;';
 % ----------------------------- STOP CHANGES ---------------------------- %
 preamp_tf_num_map = containers.Map();
@@ -41,8 +41,8 @@ v_LED = .02;
 cfd_vars_map('nowlin')              = 'f_attenuation = 0.5;';
 cfd_vars_map('threshold')           = 'v_threshold = 0.04;';
 cfd_vars_map('diff')                = 'v_threshold = 0.1;';
-cfd_vars_map('delay_atten')         = 'f_attenuation = 0.5; t_delay = 1e-9;';
-cfd_vars_map('delay_peakDet_oneShot_atten') = 'f_attenuation = 0.5; t_delay = 1e-9;';
+cfd_vars_map('delay_atten')         = 'f_attenuation = 0.5; t_delay = 2e-9;';
+cfd_vars_map('delay_peakDet_oneShot_atten') = 'f_attenuation = 0.5; t_delay = 2e-9;';
 cfd_vars_map('delayNonideal_atten') = 'f_attenuation = 0.5; H_delay_num = [1, -4e10, 7.2e20, -6.72e30, 2.668e40]; H_delay_den = [1, 4e10, 7.2e20, 6.72e30, 2.668e40];';
 cfd_vars_map('delayNonideal_oneShot_atten') = 'f_attenuation = 0.5; H_delay_num = [1, -2e10, 1.8e20, -8.4e29, 1.68e39]; H_delay_den = [1, 2e10, 1.8e20, 8.4e29, 1.68e39];';
 cfd_vars_map('delayNonideal_peakDet_oneShot_atten') = 'f_attenuation = 0.5; H_delay_num = [1, -2e10, 1.8e20, -8.4e29, 1.68e39]; H_delay_den = [1, 2e10, 1.8e20, 8.4e29, 1.68e39];';
@@ -264,14 +264,14 @@ for cidx = 1:num_plt_cols
     v_compIn = v_compInP - v_compInN;
     zc_idx_list = zci(v_compIn);
     
-    if snr == inf && numel(zc_idx_list) > 0
-        zc_idx = zc_idx_list(zc_list_idx); % max(zc_idx_list);
-        plot(t_out(zc_idx), min(v_compInP(zc_idx), v_compInN(zc_idx)), 'bp');
-%         text(t_out(zc_idx), v_compInP(zc_idx), sprintf('t=%0-#1.2f ns', t(zc_idx)*1e9), ...
+%     if snr == inf && numel(zc_idx_list) > 0
+%         zc_idx = zc_idx_list(zc_list_idx); % max(zc_idx_list);
+%         plot(t_out(zc_idx), min(v_compInP(zc_idx), v_compInN(zc_idx)), 'bp');
+% %         text(t_out(zc_idx), v_compInP(zc_idx), sprintf('t=%0-#1.2f ns', t(zc_idx)*1e9), ...
+% %             'VerticalAlignment', 'bottom');
+%         text(t_out(zc_idx), v_compInP(zc_idx), sprintf('f=%0.2f', v_compInP(zc_idx)/pkN), ...
 %             'VerticalAlignment', 'bottom');
-        text(t_out(zc_idx), v_compInP(zc_idx), sprintf('f=%0.2f', v_compInP(zc_idx)/pkN), ...
-            'VerticalAlignment', 'bottom');
-    end
+%     end
     
     if contains(shaper_type, 'delay') && ~contains(shaper_type, 'delayNonideal')
         title(sprintf('Delay = %#2.2f ps', t_delay*1e12));
@@ -293,7 +293,7 @@ end
 for ridx = 1:num_plt_rows
     for cidx = 1:num_plt_cols
         subplot(num_plt_rows, num_plt_cols, (ridx-1)*num_plt_cols + cidx);
-        ylim([ylim_min(ridx), ylim_max(ridx)]);
+%         ylim([ylim_min(ridx), ylim_max(ridx)]);
         xlim([xlim_min(ridx), xlim_max(ridx)]);
     end
 end
