@@ -1,0 +1,12 @@
+Output: NC Drill Files
+Type  : NC Drill
+From  : Project [span-ion-cfd.PrjPcb]
+   Generated File[CFD_Chip_Test.TXT]
+   Generated File[CFD_Chip_Test.LDP]
+   Generated File[CFD_Chip_Test.DRR]
+
+
+Files Generated   : 3
+Documents Printed : 0
+
+Finished Output Generation At 10:53:39 On 2021-08-31

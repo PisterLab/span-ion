@@ -14,8 +14,11 @@ preamp_vars_map = containers.Map();
 preamp_type = 'RC';
 
 preamp_vars_map('R')    = 'Rf = 800;';
-preamp_vars_map('RC')   = 'Rf = 300; Cf = 1e-12;';
+preamp_vars_map('RC')   = 'Rf = 300; Cf = 5e-12;';
 preamp_vars_map('C')    = 'Cf = 1e-12;';
+
+plot_fontsize = 18;
+plot_linewidth = 5;
 % ----------------------------- STOP CHANGES ---------------------------- %
 preamp_tf_num_map = containers.Map();
 preamp_tf_num_map('R')  = '[Rf]';
@@ -309,8 +312,8 @@ plot(t_out, v_compInP);
 hold on;
 plot(t_out, v_compInN);
 
-ylabel({'Comparator Inputs', '(V)'}, 'Fontsize', 12);
-xlabel('Time (s)', 'Fontsize', 12);
+ylabel({'Comparator Inputs', '(V)'}, 'Fontsize', plot_fontsize);
+xlabel('Time (s)', 'Fontsize', plot_fontsize);
 
 ylim_min(3) = min(ylim_min(3), min([v_compInN; v_compInP]));
 ylim_max(3) = max(ylim_max(3), max([v_compInN; v_compInP])*1.1);
@@ -344,12 +347,14 @@ figure('Position', [10 10 600 300]);
 norm_factor = max(v_compInN);
 v_compInP = v_compInP/norm_factor;
 v_compInN = v_compInN/norm_factor;
-plot(t_out, v_compInP);
+plot(t_out, v_compInP, 'LineWidth', plot_linewidth);
 hold on;
-plot(t_out, v_compInN);
+plot(t_out, v_compInN, 'LineWidth', plot_linewidth);
 
-ylabel({'Normalized', 'Comparator Inputs', '(V)'}, 'Fontsize', 12);
-xlabel('Time (s)', 'Fontsize', 12);
+pbaspect([2 1 1])
+
+ylabel({'Normalized', 'Comparator Inputs', '(V)'}, 'Fontsize', plot_fontsize);
+xlabel('Time (s)', 'Fontsize', plot_fontsize);
 
 ylim_min(3) = min(ylim_min(3), min([v_compInN; v_compInP]));
 ylim_max(3) = max(ylim_max(3), max([v_compInN; v_compInP])*1.1);
@@ -370,10 +375,10 @@ zc_idx_list = zci(v_compIn);
 
 if snr == inf && numel(zc_idx_list) > 0
     zc_idx = zc_idx_list(zc_list_idx); % max(zc_idx_list);
-    plot(t_out(zc_idx), min(v_compInP(zc_idx), v_compInN(zc_idx)), 'bp');
+    plot(t_out(zc_idx), min(v_compInP(zc_idx), v_compInN(zc_idx)), 'bp', 'LineWidth', plot_linewidth);
 %         text(t_out(zc_idx), v_compInP(zc_idx), sprintf('t=%0-#1.2f ns', t(zc_idx)*1e9), ...
 %             'VerticalAlignment', 'bottom');
-    text(t_out(zc_idx), v_compInP(zc_idx), sprintf('f=%0.2f', v_compInP(zc_idx)/pkN), ...
+    text(t_out(zc_idx), v_compInP(zc_idx), sprintf('fraction=%0.2f', v_compInP(zc_idx)/pkN), ...
         'VerticalAlignment', 'bottom', ...
-        'Fontsize', 12);
+        'Fontsize', plot_fontsize);
 end
