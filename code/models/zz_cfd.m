@@ -39,6 +39,7 @@ inject_width    = 100e-12;
 inject_tstart   = .5e-9;
 
 shaper_type = 'delay_peakDet_oneShot_atten';
+shaper_type = 'delay_atten';
 v_LED = .02;
 
 cfd_vars_map('nowlin')              = 'f_attenuation = 0.5;';
@@ -347,19 +348,19 @@ figure('Position', [10 10 600 300]);
 norm_factor = max(v_compInN);
 v_compInP = v_compInP/norm_factor;
 v_compInN = v_compInN/norm_factor;
-plot(t_out, v_compInP, 'LineWidth', plot_linewidth);
+plot(t_out*1e9, v_compInP, 'LineWidth', plot_linewidth);
 hold on;
-plot(t_out, v_compInN, 'LineWidth', plot_linewidth);
+plot(t_out*1e9, v_compInN, 'LineWidth', plot_linewidth);
 
 pbaspect([2 1 1])
 
 ylabel({'Normalized', 'Comparator Inputs', '(V)'}, 'Fontsize', plot_fontsize);
-xlabel('Time (s)', 'Fontsize', plot_fontsize);
+xlabel('Time (ns)', 'Fontsize', plot_fontsize);
 
 ylim_min(3) = min(ylim_min(3), min([v_compInN; v_compInP]));
 ylim_max(3) = max(ylim_max(3), max([v_compInN; v_compInP])*1.1);
-xlim_min(3) = min(xlim_min(3), min(t_out));
-xlim_max(3) = max(xlim_max(3), max(t_out));
+xlim_min(3) = min(xlim_min(3)*1e9, min(t_out)*1e9);
+xlim_max(3) = max(xlim_max(3)*1e9, max(t_out)*1e9);
 
 % -- annotate peak --
 if contains(shaper_type, 'delay')
@@ -375,10 +376,10 @@ zc_idx_list = zci(v_compIn);
 
 if snr == inf && numel(zc_idx_list) > 0
     zc_idx = zc_idx_list(zc_list_idx); % max(zc_idx_list);
-    plot(t_out(zc_idx), min(v_compInP(zc_idx), v_compInN(zc_idx)), 'bp', 'LineWidth', plot_linewidth);
+    plot(t_out(zc_idx)*1e9, min(v_compInP(zc_idx), v_compInN(zc_idx)), 'bp', 'LineWidth', plot_linewidth);
 %         text(t_out(zc_idx), v_compInP(zc_idx), sprintf('t=%0-#1.2f ns', t(zc_idx)*1e9), ...
 %             'VerticalAlignment', 'bottom');
-    text(t_out(zc_idx), v_compInP(zc_idx), sprintf('fraction=%0.2f', v_compInP(zc_idx)/pkN), ...
+    text(t_out(zc_idx)*1e9, v_compInP(zc_idx), sprintf('fraction=%0.2f', v_compInP(zc_idx)/pkN), ...
         'VerticalAlignment', 'bottom', ...
         'Fontsize', plot_fontsize);
 end
