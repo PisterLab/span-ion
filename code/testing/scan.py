@@ -50,3 +50,4 @@ def program_scan(com_port, ASC):
 	return
 
 def construct_ASC():
+	pass
