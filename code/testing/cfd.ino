@@ -1,21 +1,22 @@
 /* --------------------------------- */
 /* --- Pin Mappings (Teensy 3.6) --- */
 /* --------------------------------- */
-// TODO Teensy pinout
-const int pin_scan_inb 		= 0;	// ASC input data
-const int pin_scan_outb 	= 0;	// ASC output data
-const int pin_scan_clk 		= 0;	// ASC clock
-const int pin_scan_loadb 	= 0;	// ASC load
+// Teensy pinout
+const int pin_scan_inb 		= A15;	// ASC input data
+const int pin_scan_outb 	= A18;	// ASC output data
+const int pin_scan_clk 		= A17;	// ASC clock
+const int pin_scan_loadb 	= A16;	// ASC load
 
-const int pin_rst_test		= 0;	// Reset for test structure peak detector
+const int pin_rst_test		= A14;	// Reset for test structure peak detector
 
-const int pin_rst_time 		= 0;	// Reset ramp for TAC
-const int pin_rstb_time 	= 0;	// Inverted reset ramp for TAC
-const int pin_tac_main 		= 0;	// TAC output for full signal chain
-const int pin_tac_small		= 0;	// TAC output for small signal chain
+const int pin_rst_time 		= A9;	// Reset ramp for TAC
+const int pin_rstb_time 	= A3;	// Inverted reset ramp for TAC
+const int pin_tac_main 		= A7;	// TAC output for full signal chain
+const int pin_tac_small		= A6;	// TAC output for small signal chain
 
-const int N_SCAN 	= 44; 			// Number of scan bits; DO NOT MODIFY
-const int B_ADC 	= 16;			// Number of bits for analogRead; DO NOT MOD
+// Programming constants
+const int N_SCAN 			= 44; 	// Number of scan bits
+const int B_ADC 			= 16;	// Number of bits for analogRead
 
 /* ----------------------------- */
 /* --- Runs once at power-on --- */

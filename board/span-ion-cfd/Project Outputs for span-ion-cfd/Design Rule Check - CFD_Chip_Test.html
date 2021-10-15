@@ -1,0 +1,429 @@
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html">
+<style type="text/css">
+		h1, h2, h3, h4, h5, h6 {
+			font-family : segoe ui;
+			color : black;
+			background-color : #EDE7D9;
+			padding: 0.3em;
+		}
+
+		h1 {
+			font-size: 1.2em;
+		}		
+
+		h2 {
+			font-size: 1.2em;
+		}
+
+		body {
+			font-family : segoe ui;
+		}
+
+		td, th {
+			padding: 0.5em;
+			text-align : left;
+			width: 10em;
+		}
+		th {
+			background-color : #EEEEEE;
+
+		}
+		th.column1, td.column1 {
+			text-align: left;
+			width : auto;
+		}
+		table {
+			width : 100%;
+			font-size: 0.9em;
+		}
+
+		.DRC_summary_header {
+			padding-bottom : 0.1em;
+			border : 0px solid black;
+			width: 100%;
+			align: left;
+		}
+
+		.DRC_summary_header_col1,
+		.DRC_summary_header_col2, 
+		.DRC_summary_header_col3 {
+			color : black;
+			font-size:100%;
+			padding : 0em;
+			padding-top : 0.2em;
+			padding-bottom 0.2em;
+			border : 0px solid black;
+			vertical-align: top;
+			text-align: left;
+		}
+
+		.DRC_summary_header_col1 {
+			font-weight: bold;
+			width: 8em;
+		}
+
+		.DRC_summary_header_col2 {
+			width: 0.1em;
+		
+		}
+
+		.DRC_summary_header_col3 {
+			width : auto;
+		}
+
+		.header_holder {
+		    Width = 100%;
+		    border = 0px solid green;
+		    padding = 0;
+		}
+
+
+		.front_matter, .front_matter_column1, .front_matter_column2, .front_matter_column3
+		{
+			left : 0;
+			top : 0;
+			padding: 0em;
+			padding-top : 0.1em;
+			border : 0px solid black;
+			width : 100%;
+			vertical-align: top;
+			text-align: left;
+		}
+
+		.front_matter_column1 {
+			width : 8em;
+			font-weight: bold;
+		}
+
+		.front_matter_column2 {
+			width: 0.1em;
+		}
+
+		.front_matter_column3 {
+			width : auto;
+		}
+
+		.total_column1, .total_column {
+			font-weight : bold;
+		}
+		.total_column1 {
+			text-align : left;
+		}
+		.warning, .error {
+			color : red;
+			font-weight : bold;
+		}
+		tr.onmouseout_odd {
+			background-color : #white;
+		}
+		tr.onmouseout_even { 
+			background-color : #FAFAFA;
+		}
+		tr.onmouseover_odd, tr.onmouseover_even { 
+			background-color : #EEEEEE;
+		} 
+		a:link, a:visited, .q a:link,.q a:active,.q {
+			color: #21489e; 
+		}
+		a:link.callback, a:visited.callback { 
+			color: #21489e;
+		}
+		a:link.customize, a:visited.customize {
+			color: #C0C0C0;
+			position: absolute; 
+			right: 10px;
+		}	
+		p.contents_level1 {
+			font-weight : bold;
+			font-size : 110%;
+			margin : 0.5em;
+		}
+		p.contents_level2 {
+			position : relative;
+			left : 20px;
+			margin : 0.5em;
+		}
+	</style><script type="text/javascript">
+		function coordToMils(coord) {
+			var number = coord / 10000;
+			
+			if (number != number.toFixed(3))
+				number = number.toFixed(3);
+
+			return number + 'mil'
+		}
+
+		function coordToMM(coord) {
+			var number = 0.0254 * coord / 10000;
+			
+			if (number != number.toFixed(4))
+				number = number.toFixed(4);
+			
+			return number + 'mm'
+		}
+	
+		function convertCoord(coordNode, units) {
+			for (var i = 0; i < coordNode.childNodes.length; i++) {
+				coordNode.removeChild(coordNode.childNodes[i]);
+			}
+
+			var coord = coordNode.getAttribute('value');
+			if (coord != null) {
+				if (units == 'mm') {
+					textNode = document.createTextNode(coordToMM(coord));
+					coordNode.appendChild(textNode);
+				} else if (units == 'mil') {
+					textNode = document.createTextNode(coordToMils(coord));		
+					coordNode.appendChild(textNode);	
+				}
+			}
+		}
+	
+		function convertUnits(unitNode, units) {
+			for (var i = 0; i < unitNode.childNodes.length; i++) {
+				unitNode.removeChild(unitNode.childNodes[i]);		
+			}
+		
+			textNode = document.createTextNode(units); 
+			unitNode.appendChild(textNode);
+		}
+	
+		function changeUnits(radio_input, units) {
+			if (radio_input.checked) {
+			
+				var elements = document.getElementsByName('coordinate');
+				if (elements) {
+					for (var i = 0; i < elements.length; i++) {
+						convertCoord(elements[i], units);
+					}
+				}
+	
+				var elements = document.getElementsByName('units');
+				if (elements) {
+					for (var i = 0; i < elements.length; i++) {
+						convertUnits(elements[i], units);
+					}
+				}
+			}
+		}
+	</script><title>Design Rule Verification Report</title>
+</head>
+<body onload=""><img ALT="Altium" src="
+			file://C:\Users\Public\Documents\Altium\AD19\Templates\AD_logo.png
+		"><h1>Design Rule Verification Report</h1>
+<table class="header_holder">
+<td class="column1">
+<table class="front_matter">
+<tr class="front_matter">
+<td class="front_matter_column1">Date:</td>
+<td class="front_matter_column2"></td>
+<td class="front_matter_column3">2021-10-15</td>
+</tr>
+<tr class="front_matter">
+<td class="front_matter_column1">Time:</td>
+<td class="front_matter_column2"></td>
+<td class="front_matter_column3">14:30:08</td>
+</tr>
+<tr class="front_matter">
+<td class="front_matter_column1">Elapsed Time:</td>
+<td class="front_matter_column2"></td>
+<td class="front_matter_column3">00:00:02</td>
+</tr>
+<tr class="front_matter">
+<td class="front_matter_column1">Filename:</td>
+<td class="front_matter_column2"></td>
+<td class="front_matter_column3"><a href="file:///C:\Users\lydialee\Dropbox\School\Pister\SSL\span-ion\board\span-ion-cfd\CFD_Chip_Test.PcbDoc" class="file"><acronym title="C:\Users\lydialee\Dropbox\School\Pister\SSL\span-ion\board\span-ion-cfd\CFD_Chip_Test.PcbDoc">C:\Users\lydialee\Dropbox\School\Pister\SSL\span-ion\board\span-ion-cfd\CFD_Chip_Test.PcbDoc</acronym></a></td>
+</tr>
+</table>
+</td>
+<td class="column2">
+<table class="DRC_summary_header">
+<tr>
+<td class="DRC_summary_header_col1">Warnings:</td>
+<td class="DRC_summary_header_col2"></td>
+<td class="DRC_summary_header_col3">0</td></tr>
+<tr>
+<td class="DRC_summary_header_col1">Rule Violations:</td>
+<td class="DRC_summary_header_col2"></td>
+<td class="DRC_summary_header_col3" style="color : red">19</td></tr>
+</table>
+</td>
+</table><a name="IDF3DWBPXV1UFOPAAVHL00QVVXIJ0WGZ4QBLWLJGB5QPTQLCDQGSYG"><h2>Summary</h2></a><table>
+<tr>
+<th class="column1">Warnings</th>
+<th class="column2">Count</th>
+</tr>
+<tr>
+<td style="font-weight : bold; text-align : right" class="column1">Total</td>
+<td style="font-weight : bold" class="column2">0</td>
+</tr>
+</table><br><table>
+<tr>
+<th class="column1">Rule Violations</th>
+<th class="column2">Count</th>
+</tr>
+<tr class="onmouseout_odd" onmouseover="className = 'onmouseover_odd'" onmouseout="className = 'onmouseout_odd'">
+<td class="column1"><a href="#IDR4Q1CO04SRQNJL3TIWRC0GXY5I4Q0G2AYQBRHUJKOJSUZF33EPNB">Clearance Constraint (Gap=60mil) (InNamedPolygon('vbus')),(All)</a></td>
+<td class="column2">0</td>
+</tr>
+<tr class="onmouseout_even" onmouseover="className = 'onmouseover_even'" onmouseout="className = 'onmouseout_even'">
+<td class="column1"><a href="#IDZ53AD1S0RGRWET5TJ0TZEHD52F1G1X2K02P2IKKQF4YZMGB1SPDK">Clearance Constraint (Gap=20mil) (InPolygon),(OnLayer('Keep-Out Layer'))</a></td>
+<td class="column2">0</td>
+</tr>
+<tr class="onmouseout_odd" onmouseover="className = 'onmouseover_odd'" onmouseout="className = 'onmouseout_odd'">
+<td class="column1"><a href="#IDZDTY0FQ34BFNO02WRKYY0I515CEVLQFXT2RHSSOCPJZL54PWFU2H">Clearance Constraint (Gap=15mil) (InNamedPolygon('dgnd')),(All)</a></td>
+<td class="column2">0</td>
+</tr>
+<tr class="onmouseout_even" onmouseover="className = 'onmouseover_even'" onmouseout="className = 'onmouseout_even'">
+<td class="column1"><a href="#IDQDVEGYDE23FVMDEJS3HG5NNOIEDZQHKNSJQBZEPRNRTVG3GCE4ZN">Clearance Constraint (Gap=40mil) (InNamedPolygon('outa_inner2')),(All)</a></td>
+<td class="column2">0</td>
+</tr>
+<tr class="onmouseout_odd" onmouseover="className = 'onmouseover_odd'" onmouseout="className = 'onmouseout_odd'">
+<td class="column1"><a href="#ID2T2ZNVZPO05QJIHSECPF3DZMMENN2FH044X13YLIQZ1WNYTVNS0K">Clearance Constraint (Gap=5mil) (All),(All)</a></td>
+<td class="column2">0</td>
+</tr>
+<tr class="onmouseout_even" onmouseover="className = 'onmouseover_even'" onmouseout="className = 'onmouseout_even'">
+<td class="column1"><a href="#ID22HBL540EKKFHF0ROBKXZR0BQJ34NJB5LU55PPEEXWCZ3O25K0OG">Clearance Constraint (Gap=10mil) (InNamedPolygon('gnd')),(All)</a></td>
+<td class="column2">0</td>
+</tr>
+<tr class="onmouseout_odd" onmouseover="className = 'onmouseover_odd'" onmouseout="className = 'onmouseout_odd'">
+<td class="column1"><a href="#IDHCZHG1QWMOLSFOGZH2T0LQW0KCVVJ5GMAJ0VRV4VTMTGBRCZYJF">Clearance Constraint (Gap=60mil) (InNamedPolygon('gnd_adc')),(InNet('VBUS'))</a></td>
+<td class="column2">0</td>
+</tr>
+<tr class="onmouseout_even" onmouseover="className = 'onmouseover_even'" onmouseout="className = 'onmouseout_even'">
+<td class="column1"><a href="#IDHXUSPKMDE04ZPHXRQTWGP5P2WICVWOUDZIMEXMESZDKCBH3TNJSH">Clearance Constraint (Gap=20mil) (InNamedPolygon('gnd_adc')),(All)</a></td>
+<td class="column2">0</td>
+</tr>
+<tr class="onmouseout_odd" onmouseover="className = 'onmouseover_odd'" onmouseout="className = 'onmouseout_odd'">
+<td class="column1"><a href="#IDMT2QMMJPRICYGV2DYT2IGRSA2H45JUKGJRWJ3LDNW4ZJHFUYLXE">Short-Circuit Constraint (Allowed=No) (All),(All)</a></td>
+<td class="column2">0</td>
+</tr>
+<tr class="onmouseout_even" onmouseover="className = 'onmouseover_even'" onmouseout="className = 'onmouseout_even'">
+<td class="column1"><a href="#IDXLP5SOMRQVOPDLDL2PDKZ2IGQHGDUMXJB0U3JRGKJAVOT1UWKA3J">Un-Routed Net Constraint ( (All) )</a></td>
+<td class="column2">0</td>
+</tr>
+<tr class="onmouseout_odd" onmouseover="className = 'onmouseover_odd'" onmouseout="className = 'onmouseout_odd'">
+<td class="column1"><a href="#ID13FJJAIBNMROJSNO33UUHIA2XBQT5EAUUGIPEMDWH3Z4GOVX0Q3D">Modified Polygon (Allow modified: No), (Allow shelved: No)</a></td>
+<td class="column2">0</td>
+</tr>
+<tr class="onmouseout_even" onmouseover="className = 'onmouseover_even'" onmouseout="className = 'onmouseout_even'">
+<td class="column1"><a href="#IDM4KMYM5VOCLACPT0XBKW2EKG0JKMYWNE2PQ1VZBIWJA42KRISUDK">Width Constraint (Min=5mil) (Max=1000mil) (Preferred=10mil) (All)</a></td>
+<td class="column2">0</td>
+</tr>
+<tr class="onmouseout_odd" onmouseover="className = 'onmouseover_odd'" onmouseout="className = 'onmouseout_odd'">
+<td class="column1"><a href="#ID3ZCMFBWMUVL5EBV1GMQYXT0QYKH1U5CJ3YKYDLJJRE03XU51JR4J">Power Plane Connect Rule(Relief Connect )(Expansion=5mil) (Conductor Width=10mil) (Air Gap=10mil) (Entries=4) (All)</a></td>
+<td class="column2">0</td>
+</tr>
+<tr class="onmouseout_even" onmouseover="className = 'onmouseover_even'" onmouseout="className = 'onmouseout_even'">
+<td class="column1"><a href="#IDNCKOVDVVCL2PGBJN2L0R0IW3WK2XNOTSJVETIRLZ1QNY3RRJKJWC">Minimum Annular Ring (Minimum=5mil) (All)</a></td>
+<td class="column2">0</td>
+</tr>
+<tr class="onmouseout_odd" onmouseover="className = 'onmouseover_odd'" onmouseout="className = 'onmouseout_odd'">
+<td class="column1"><a href="#IDWVLQDCN0WNMVMH0IZZXGZVKOTIJX0GKVHJKIGJLPHV0K0JFWK04">Acute Angle Constraint (Minimum=60.000) (All)</a></td>
+<td class="column2">0</td>
+</tr>
+<tr class="onmouseout_even" onmouseover="className = 'onmouseover_even'" onmouseout="className = 'onmouseout_even'">
+<td class="column1"><a href="#IDVN30PN3BEYJHODEQPZS0VWPEMI4Z1WVNSUTYVUHWUB2GLEHDWBZ">Hole Size Constraint (Min=10mil) (Max=300mil) (All)</a></td>
+<td class="column2">0</td>
+</tr>
+<tr class="onmouseout_odd" onmouseover="className = 'onmouseover_odd'" onmouseout="className = 'onmouseout_odd'">
+<td class="column1"><a href="#IDBICLVVUG32I1MPAAMEJ43FR5KOFDM5D3SIWH3ZFCL0CAELPM3KUC">Hole To Hole Clearance (Gap=10mil) (All),(All)</a></td>
+<td class="column2">0</td>
+</tr>
+<tr class="onmouseout_even" onmouseover="className = 'onmouseover_even'" onmouseout="className = 'onmouseout_even'">
+<td class="column1"><a href="#IDT5E0ASS1JEPKN2IZPCKGIOMNMJU1L5ZOQAY2QMP0DM5MXBSVNKGB">Minimum Solder Mask Sliver (Gap=2mil) (All),(All)</a></td>
+<td class="column2">0</td>
+</tr>
+<tr class="onmouseout_odd" onmouseover="className = 'onmouseover_odd'" onmouseout="className = 'onmouseout_odd'">
+<td class="column1"><a href="#IDI42CFHVL5KEHJIVHF0D5SYWP2NDADPEJ3LHFIM5JVEY11EVBQWG">Silk To Solder Mask (Clearance=3mil) (IsPad),(All)</a></td>
+<td class="column2">8</td>
+</tr>
+<tr class="onmouseout_even" onmouseover="className = 'onmouseover_even'" onmouseout="className = 'onmouseout_even'">
+<td class="column1"><a href="#IDHSGIV0HY2FLRNPPBDIPVLP0VFOIXK0R4WUNG0VFXPZNGGFSBHQDD">Silk to Silk (Clearance=5mil) (All),(All)</a></td>
+<td class="column2">0</td>
+</tr>
+<tr class="onmouseout_odd" onmouseover="className = 'onmouseover_odd'" onmouseout="className = 'onmouseout_odd'">
+<td class="column1"><a href="#IDUNXQ4RVF1AFZPBBDJUAMB21VZHESTUCYOAKBSEOPPGQPUW22IHMP">Net Antennae (Tolerance=0mil) (All)</a></td>
+<td class="column2">11</td>
+</tr>
+<tr class="onmouseout_even" onmouseover="className = 'onmouseover_even'" onmouseout="className = 'onmouseout_even'">
+<td class="column1"><a href="#IDVK2I1AVEF20UENOGUYXMKB5K3BN2QYZI2XAJSXL4OVTNA2IYNFDE">Board Clearance Constraint (Gap=0mil) (All)</a></td>
+<td class="column2">0</td>
+</tr>
+<tr class="onmouseout_odd" onmouseover="className = 'onmouseover_odd'" onmouseout="className = 'onmouseout_odd'">
+<td class="column1"><a href="#IDC5R3O2FFXJYWLIJBOQM3MOZ1SGDOLMFF2HDK2TOXNL2ZXP5CBJYC">Height Constraint (Min=0mil) (Max=1000mil) (Prefered=500mil) (All)</a></td>
+<td class="column2">0</td>
+</tr>
+<tr>
+<td style="font-weight : bold; text-align : right" class="column1">Total</td>
+<td style="font-weight : bold" class="column2">19</td>
+</tr>
+</table><br><a name="IDI42CFHVL5KEHJIVHF0D5SYWP2NDADPEJ3LHFIM5JVEY11EVBQWG"><table>
+<tr>
+<th style="text-align : left" colspan="1" class="rule">Silk To Solder Mask (Clearance=3mil) (IsPad),(All)</th>
+</tr>
+<tr class="onmouseout_odd" onmouseover="className = 'onmouseover_odd'" onmouseout="className = 'onmouseout_odd'">
+<td class="column1"><a href="dxpprocess://PCB:Zoom?document=C:\Users\lydialee\Dropbox\School\Pister\SSL\span-ion\board\span-ion-cfd\CFD_Chip_Test.PcbDoc;viewname=PCBEditor;Action=AREA_DYNAMICZOOM|Location1.X=3891.891mil|Location2.X=3896.141mil|Location1.Y=2396.241mil|Location2.Y=2400.491mil|Absolute=True" class="callback"><acronym title="dxpprocess://PCB:Zoom?document=C:\Users\lydialee\Dropbox\School\Pister\SSL\span-ion\board\span-ion-cfd\CFD_Chip_Test.PcbDoc;viewname=PCBEditor;Action=AREA_DYNAMICZOOM|Location1.X=3891.891mil|Location2.X=3896.141mil|Location1.Y=2396.241mil|Location2.Y=2400.491mil|Absolute=True">Silk To Solder Mask Clearance Constraint: (0.354mil &lt; 3mil) Between Pad D1-1(3311.575mil,1450mil) on Top Layer And Track (3261.378mil,1434.252mil)(3326.929mil,1434.252mil) on Top Overlay [Top Overlay] to [Top Solder] clearance [0.354mil]</acronym></a><br></td>
+</tr>
+<tr class="onmouseout_even" onmouseover="className = 'onmouseover_even'" onmouseout="className = 'onmouseout_even'">
+<td class="column1"><a href="dxpprocess://PCB:Zoom?document=C:\Users\lydialee\Dropbox\School\Pister\SSL\span-ion\board\span-ion-cfd\CFD_Chip_Test.PcbDoc;viewname=PCBEditor;Action=AREA_DYNAMICZOOM|Location1.X=3891.891mil|Location2.X=3896.141mil|Location1.Y=2419.509mil|Location2.Y=2423.759mil|Absolute=True" class="callback"><acronym title="dxpprocess://PCB:Zoom?document=C:\Users\lydialee\Dropbox\School\Pister\SSL\span-ion\board\span-ion-cfd\CFD_Chip_Test.PcbDoc;viewname=PCBEditor;Action=AREA_DYNAMICZOOM|Location1.X=3891.891mil|Location2.X=3896.141mil|Location1.Y=2419.509mil|Location2.Y=2423.759mil|Absolute=True">Silk To Solder Mask Clearance Constraint: (0.354mil &lt; 3mil) Between Pad D1-1(3311.575mil,1450mil) on Top Layer And Track (3261.378mil,1465.748mil)(3308.622mil,1465.748mil) on Top Overlay [Top Overlay] to [Top Solder] clearance [0.354mil]</acronym></a><br></td>
+</tr>
+<tr class="onmouseout_odd" onmouseover="className = 'onmouseover_odd'" onmouseout="className = 'onmouseout_odd'">
+<td class="column1"><a href="dxpprocess://PCB:Zoom?document=C:\Users\lydialee\Dropbox\School\Pister\SSL\span-ion\board\span-ion-cfd\CFD_Chip_Test.PcbDoc;viewname=PCBEditor;Action=AREA_DYNAMICZOOM|Location1.X=3873.859mil|Location2.X=3878.109mil|Location1.Y=2396.241mil|Location2.Y=2400.491mil|Absolute=True" class="callback"><acronym title="dxpprocess://PCB:Zoom?document=C:\Users\lydialee\Dropbox\School\Pister\SSL\span-ion\board\span-ion-cfd\CFD_Chip_Test.PcbDoc;viewname=PCBEditor;Action=AREA_DYNAMICZOOM|Location1.X=3873.859mil|Location2.X=3878.109mil|Location1.Y=2396.241mil|Location2.Y=2400.491mil|Absolute=True">Silk To Solder Mask Clearance Constraint: (0.354mil &lt; 3mil) Between Pad D1-2(3258.425mil,1450mil) on Top Layer And Track (3261.378mil,1434.252mil)(3326.929mil,1434.252mil) on Top Overlay [Top Overlay] to [Top Solder] clearance [0.354mil]</acronym></a><br></td>
+</tr>
+<tr class="onmouseout_even" onmouseover="className = 'onmouseover_even'" onmouseout="className = 'onmouseout_even'">
+<td class="column1"><a href="dxpprocess://PCB:Zoom?document=C:\Users\lydialee\Dropbox\School\Pister\SSL\span-ion\board\span-ion-cfd\CFD_Chip_Test.PcbDoc;viewname=PCBEditor;Action=AREA_DYNAMICZOOM|Location1.X=3873.859mil|Location2.X=3878.109mil|Location1.Y=2419.509mil|Location2.Y=2423.759mil|Absolute=True" class="callback"><acronym title="dxpprocess://PCB:Zoom?document=C:\Users\lydialee\Dropbox\School\Pister\SSL\span-ion\board\span-ion-cfd\CFD_Chip_Test.PcbDoc;viewname=PCBEditor;Action=AREA_DYNAMICZOOM|Location1.X=3873.859mil|Location2.X=3878.109mil|Location1.Y=2419.509mil|Location2.Y=2423.759mil|Absolute=True">Silk To Solder Mask Clearance Constraint: (0.354mil &lt; 3mil) Between Pad D1-2(3258.425mil,1450mil) on Top Layer And Track (3261.378mil,1465.748mil)(3308.622mil,1465.748mil) on Top Overlay [Top Overlay] to [Top Solder] clearance [0.354mil]</acronym></a><br></td>
+</tr>
+<tr class="onmouseout_odd" onmouseover="className = 'onmouseover_odd'" onmouseout="className = 'onmouseout_odd'">
+<td class="column1"><a href="dxpprocess://PCB:Zoom?document=C:\Users\lydialee\Dropbox\School\Pister\SSL\span-ion\board\span-ion-cfd\CFD_Chip_Test.PcbDoc;viewname=PCBEditor;Action=AREA_DYNAMICZOOM|Location1.X=2378.859mil|Location2.X=2383.109mil|Location1.Y=2419.509mil|Location2.Y=2423.759mil|Absolute=True" class="callback"><acronym title="dxpprocess://PCB:Zoom?document=C:\Users\lydialee\Dropbox\School\Pister\SSL\span-ion\board\span-ion-cfd\CFD_Chip_Test.PcbDoc;viewname=PCBEditor;Action=AREA_DYNAMICZOOM|Location1.X=2378.859mil|Location2.X=2383.109mil|Location1.Y=2419.509mil|Location2.Y=2423.759mil|Absolute=True">Silk To Solder Mask Clearance Constraint: (0.354mil &lt; 3mil) Between Pad D2-1(1763.425mil,1450mil) on Top Layer And Track (1748.071mil,1465.748mil)(1813.622mil,1465.748mil) on Top Overlay [Top Overlay] to [Top Solder] clearance [0.354mil]</acronym></a><br></td>
+</tr>
+<tr class="onmouseout_even" onmouseover="className = 'onmouseover_even'" onmouseout="className = 'onmouseout_even'">
+<td class="column1"><a href="dxpprocess://PCB:Zoom?document=C:\Users\lydialee\Dropbox\School\Pister\SSL\span-ion\board\span-ion-cfd\CFD_Chip_Test.PcbDoc;viewname=PCBEditor;Action=AREA_DYNAMICZOOM|Location1.X=2378.859mil|Location2.X=2383.109mil|Location1.Y=2396.241mil|Location2.Y=2400.491mil|Absolute=True" class="callback"><acronym title="dxpprocess://PCB:Zoom?document=C:\Users\lydialee\Dropbox\School\Pister\SSL\span-ion\board\span-ion-cfd\CFD_Chip_Test.PcbDoc;viewname=PCBEditor;Action=AREA_DYNAMICZOOM|Location1.X=2378.859mil|Location2.X=2383.109mil|Location1.Y=2396.241mil|Location2.Y=2400.491mil|Absolute=True">Silk To Solder Mask Clearance Constraint: (0.354mil &lt; 3mil) Between Pad D2-1(1763.425mil,1450mil) on Top Layer And Track (1766.378mil,1434.252mil)(1813.622mil,1434.252mil) on Top Overlay [Top Overlay] to [Top Solder] clearance [0.354mil]</acronym></a><br></td>
+</tr>
+<tr class="onmouseout_odd" onmouseover="className = 'onmouseover_odd'" onmouseout="className = 'onmouseout_odd'">
+<td class="column1"><a href="dxpprocess://PCB:Zoom?document=C:\Users\lydialee\Dropbox\School\Pister\SSL\span-ion\board\span-ion-cfd\CFD_Chip_Test.PcbDoc;viewname=PCBEditor;Action=AREA_DYNAMICZOOM|Location1.X=2396.891mil|Location2.X=2401.141mil|Location1.Y=2419.509mil|Location2.Y=2423.759mil|Absolute=True" class="callback"><acronym title="dxpprocess://PCB:Zoom?document=C:\Users\lydialee\Dropbox\School\Pister\SSL\span-ion\board\span-ion-cfd\CFD_Chip_Test.PcbDoc;viewname=PCBEditor;Action=AREA_DYNAMICZOOM|Location1.X=2396.891mil|Location2.X=2401.141mil|Location1.Y=2419.509mil|Location2.Y=2423.759mil|Absolute=True">Silk To Solder Mask Clearance Constraint: (0.354mil &lt; 3mil) Between Pad D2-2(1816.575mil,1450mil) on Top Layer And Track (1748.071mil,1465.748mil)(1813.622mil,1465.748mil) on Top Overlay [Top Overlay] to [Top Solder] clearance [0.354mil]</acronym></a><br></td>
+</tr>
+<tr class="onmouseout_even" onmouseover="className = 'onmouseover_even'" onmouseout="className = 'onmouseout_even'">
+<td class="column1"><a href="dxpprocess://PCB:Zoom?document=C:\Users\lydialee\Dropbox\School\Pister\SSL\span-ion\board\span-ion-cfd\CFD_Chip_Test.PcbDoc;viewname=PCBEditor;Action=AREA_DYNAMICZOOM|Location1.X=2396.891mil|Location2.X=2401.141mil|Location1.Y=2396.241mil|Location2.Y=2400.491mil|Absolute=True" class="callback"><acronym title="dxpprocess://PCB:Zoom?document=C:\Users\lydialee\Dropbox\School\Pister\SSL\span-ion\board\span-ion-cfd\CFD_Chip_Test.PcbDoc;viewname=PCBEditor;Action=AREA_DYNAMICZOOM|Location1.X=2396.891mil|Location2.X=2401.141mil|Location1.Y=2396.241mil|Location2.Y=2400.491mil|Absolute=True">Silk To Solder Mask Clearance Constraint: (0.354mil &lt; 3mil) Between Pad D2-2(1816.575mil,1450mil) on Top Layer And Track (1766.378mil,1434.252mil)(1813.622mil,1434.252mil) on Top Overlay [Top Overlay] to [Top Solder] clearance [0.354mil]</acronym></a><br></td>
+</tr>
+</table></a><hr color="#EEEEEE"><a href="#top" style="font-size: 0.9em">Back to top</a><br><br><a name="IDUNXQ4RVF1AFZPBBDJUAMB21VZHESTUCYOAKBSEOPPGQPUW22IHMP"><table>
+<tr>
+<th style="text-align : left" colspan="1" class="rule">Net Antennae (Tolerance=0mil) (All)</th>
+</tr>
+<tr class="onmouseout_odd" onmouseover="className = 'onmouseover_odd'" onmouseout="className = 'onmouseout_odd'">
+<td class="column1"><a href="dxpprocess://PCB:Zoom?document=C:\Users\lydialee\Dropbox\School\Pister\SSL\span-ion\board\span-ion-cfd\CFD_Chip_Test.PcbDoc;viewname=PCBEditor;Action=AREA_DYNAMICZOOM|Location1.X=2894.295mil|Location2.X=2977.107mil|Location1.Y=1004.295mil|Location2.Y=1138.035mil|Absolute=True" class="callback"><acronym title="dxpprocess://PCB:Zoom?document=C:\Users\lydialee\Dropbox\School\Pister\SSL\span-ion\board\span-ion-cfd\CFD_Chip_Test.PcbDoc;viewname=PCBEditor;Action=AREA_DYNAMICZOOM|Location1.X=2894.295mil|Location2.X=2977.107mil|Location1.Y=1004.295mil|Location2.Y=1138.035mil|Absolute=True">Net Antennae: Via (2330mil,80mil) from Top Layer to Bottom Layer </acronym></a><br></td>
+</tr>
+<tr class="onmouseout_even" onmouseover="className = 'onmouseover_even'" onmouseout="className = 'onmouseout_even'">
+<td class="column1"><a href="dxpprocess://PCB:Zoom?document=C:\Users\lydialee\Dropbox\School\Pister\SSL\span-ion\board\span-ion-cfd\CFD_Chip_Test.PcbDoc;viewname=PCBEditor;Action=AREA_DYNAMICZOOM|Location1.X=2899.295mil|Location2.X=2982.107mil|Location1.Y=2099.295mil|Location2.Y=2233.035mil|Absolute=True" class="callback"><acronym title="dxpprocess://PCB:Zoom?document=C:\Users\lydialee\Dropbox\School\Pister\SSL\span-ion\board\span-ion-cfd\CFD_Chip_Test.PcbDoc;viewname=PCBEditor;Action=AREA_DYNAMICZOOM|Location1.X=2899.295mil|Location2.X=2982.107mil|Location1.Y=2099.295mil|Location2.Y=2233.035mil|Absolute=True">Net Antennae: Via (2335mil,1175mil) from Top Layer to Bottom Layer </acronym></a><br></td>
+</tr>
+<tr class="onmouseout_odd" onmouseover="className = 'onmouseover_odd'" onmouseout="className = 'onmouseout_odd'">
+<td class="column1"><a href="dxpprocess://PCB:Zoom?document=C:\Users\lydialee\Dropbox\School\Pister\SSL\span-ion\board\span-ion-cfd\CFD_Chip_Test.PcbDoc;viewname=PCBEditor;Action=AREA_DYNAMICZOOM|Location1.X=3074.295mil|Location2.X=3157.107mil|Location1.Y=1989.295mil|Location2.Y=2123.035mil|Absolute=True" class="callback"><acronym title="dxpprocess://PCB:Zoom?document=C:\Users\lydialee\Dropbox\School\Pister\SSL\span-ion\board\span-ion-cfd\CFD_Chip_Test.PcbDoc;viewname=PCBEditor;Action=AREA_DYNAMICZOOM|Location1.X=3074.295mil|Location2.X=3157.107mil|Location1.Y=1989.295mil|Location2.Y=2123.035mil|Absolute=True">Net Antennae: Via (2510mil,1065mil) from Top Layer to Bottom Layer </acronym></a><br></td>
+</tr>
+<tr class="onmouseout_even" onmouseover="className = 'onmouseover_even'" onmouseout="className = 'onmouseout_even'">
+<td class="column1"><a href="dxpprocess://PCB:Zoom?document=C:\Users\lydialee\Dropbox\School\Pister\SSL\span-ion\board\span-ion-cfd\CFD_Chip_Test.PcbDoc;viewname=PCBEditor;Action=AREA_DYNAMICZOOM|Location1.X=3199.295mil|Location2.X=3282.107mil|Location1.Y=1709.295mil|Location2.Y=1843.035mil|Absolute=True" class="callback"><acronym title="dxpprocess://PCB:Zoom?document=C:\Users\lydialee\Dropbox\School\Pister\SSL\span-ion\board\span-ion-cfd\CFD_Chip_Test.PcbDoc;viewname=PCBEditor;Action=AREA_DYNAMICZOOM|Location1.X=3199.295mil|Location2.X=3282.107mil|Location1.Y=1709.295mil|Location2.Y=1843.035mil|Absolute=True">Net Antennae: Via (2635mil,785mil) from Top Layer to Bottom Layer </acronym></a><br></td>
+</tr>
+<tr class="onmouseout_odd" onmouseover="className = 'onmouseover_odd'" onmouseout="className = 'onmouseout_odd'">
+<td class="column1"><a href="dxpprocess://PCB:Zoom?document=C:\Users\lydialee\Dropbox\School\Pister\SSL\span-ion\board\span-ion-cfd\CFD_Chip_Test.PcbDoc;viewname=PCBEditor;Action=AREA_DYNAMICZOOM|Location1.X=3249.295mil|Location2.X=3332.107mil|Location1.Y=2709.295mil|Location2.Y=2843.035mil|Absolute=True" class="callback"><acronym title="dxpprocess://PCB:Zoom?document=C:\Users\lydialee\Dropbox\School\Pister\SSL\span-ion\board\span-ion-cfd\CFD_Chip_Test.PcbDoc;viewname=PCBEditor;Action=AREA_DYNAMICZOOM|Location1.X=3249.295mil|Location2.X=3332.107mil|Location1.Y=2709.295mil|Location2.Y=2843.035mil|Absolute=True">Net Antennae: Via (2685mil,1785mil) from Top Layer to Bottom Layer </acronym></a><br></td>
+</tr>
+<tr class="onmouseout_even" onmouseover="className = 'onmouseover_even'" onmouseout="className = 'onmouseout_even'">
+<td class="column1"><a href="dxpprocess://PCB:Zoom?document=C:\Users\lydialee\Dropbox\School\Pister\SSL\span-ion\board\span-ion-cfd\CFD_Chip_Test.PcbDoc;viewname=PCBEditor;Action=AREA_DYNAMICZOOM|Location1.X=3336.795mil|Location2.X=3425.05mil|Location1.Y=1981.795mil|Location2.Y=2124.727mil|Absolute=True" class="callback"><acronym title="dxpprocess://PCB:Zoom?document=C:\Users\lydialee\Dropbox\School\Pister\SSL\span-ion\board\span-ion-cfd\CFD_Chip_Test.PcbDoc;viewname=PCBEditor;Action=AREA_DYNAMICZOOM|Location1.X=3336.795mil|Location2.X=3425.05mil|Location1.Y=1981.795mil|Location2.Y=2124.727mil|Absolute=True">Net Antennae: Via (2775mil,1060mil) from Top Layer to Bottom Layer </acronym></a><br></td>
+</tr>
+<tr class="onmouseout_odd" onmouseover="className = 'onmouseover_odd'" onmouseout="className = 'onmouseout_odd'">
+<td class="column1"><a href="dxpprocess://PCB:Zoom?document=C:\Users\lydialee\Dropbox\School\Pister\SSL\span-ion\board\span-ion-cfd\CFD_Chip_Test.PcbDoc;viewname=PCBEditor;Action=AREA_DYNAMICZOOM|Location1.X=4024.295mil|Location2.X=4107.107mil|Location1.Y=2129.295mil|Location2.Y=2263.035mil|Absolute=True" class="callback"><acronym title="dxpprocess://PCB:Zoom?document=C:\Users\lydialee\Dropbox\School\Pister\SSL\span-ion\board\span-ion-cfd\CFD_Chip_Test.PcbDoc;viewname=PCBEditor;Action=AREA_DYNAMICZOOM|Location1.X=4024.295mil|Location2.X=4107.107mil|Location1.Y=2129.295mil|Location2.Y=2263.035mil|Absolute=True">Net Antennae: Via (3460mil,1205mil) from Top Layer to Bottom Layer </acronym></a><br></td>
+</tr>
+<tr class="onmouseout_even" onmouseover="className = 'onmouseover_even'" onmouseout="className = 'onmouseout_even'">
+<td class="column1"><a href="dxpprocess://PCB:Zoom?document=C:\Users\lydialee\Dropbox\School\Pister\SSL\span-ion\board\span-ion-cfd\CFD_Chip_Test.PcbDoc;viewname=PCBEditor;Action=AREA_DYNAMICZOOM|Location1.X=4024.295mil|Location2.X=4107.107mil|Location1.Y=2724.295mil|Location2.Y=2858.035mil|Absolute=True" class="callback"><acronym title="dxpprocess://PCB:Zoom?document=C:\Users\lydialee\Dropbox\School\Pister\SSL\span-ion\board\span-ion-cfd\CFD_Chip_Test.PcbDoc;viewname=PCBEditor;Action=AREA_DYNAMICZOOM|Location1.X=4024.295mil|Location2.X=4107.107mil|Location1.Y=2724.295mil|Location2.Y=2858.035mil|Absolute=True">Net Antennae: Via (3460mil,1800mil) from Top Layer to Bottom Layer </acronym></a><br></td>
+</tr>
+<tr class="onmouseout_odd" onmouseover="className = 'onmouseover_odd'" onmouseout="className = 'onmouseout_odd'">
+<td class="column1"><a href="dxpprocess://PCB:Zoom?document=C:\Users\lydialee\Dropbox\School\Pister\SSL\span-ion\board\span-ion-cfd\CFD_Chip_Test.PcbDoc;viewname=PCBEditor;Action=AREA_DYNAMICZOOM|Location1.X=4116.795mil|Location2.X=4205.05mil|Location1.Y=2126.795mil|Location2.Y=2269.727mil|Absolute=True" class="callback"><acronym title="dxpprocess://PCB:Zoom?document=C:\Users\lydialee\Dropbox\School\Pister\SSL\span-ion\board\span-ion-cfd\CFD_Chip_Test.PcbDoc;viewname=PCBEditor;Action=AREA_DYNAMICZOOM|Location1.X=4116.795mil|Location2.X=4205.05mil|Location1.Y=2126.795mil|Location2.Y=2269.727mil|Absolute=True">Net Antennae: Via (3555mil,1205mil) from Top Layer to Bottom Layer </acronym></a><br></td>
+</tr>
+<tr class="onmouseout_even" onmouseover="className = 'onmouseover_even'" onmouseout="className = 'onmouseout_even'">
+<td class="column1"><a href="dxpprocess://PCB:Zoom?document=C:\Users\lydialee\Dropbox\School\Pister\SSL\span-ion\board\span-ion-cfd\CFD_Chip_Test.PcbDoc;viewname=PCBEditor;Action=AREA_DYNAMICZOOM|Location1.X=4116.795mil|Location2.X=4205.05mil|Location1.Y=2546.795mil|Location2.Y=2689.727mil|Absolute=True" class="callback"><acronym title="dxpprocess://PCB:Zoom?document=C:\Users\lydialee\Dropbox\School\Pister\SSL\span-ion\board\span-ion-cfd\CFD_Chip_Test.PcbDoc;viewname=PCBEditor;Action=AREA_DYNAMICZOOM|Location1.X=4116.795mil|Location2.X=4205.05mil|Location1.Y=2546.795mil|Location2.Y=2689.727mil|Absolute=True">Net Antennae: Via (3555mil,1625mil) from Top Layer to Bottom Layer </acronym></a><br></td>
+</tr>
+<tr class="onmouseout_odd" onmouseover="className = 'onmouseover_odd'" onmouseout="className = 'onmouseout_odd'">
+<td class="column1"><a href="dxpprocess://PCB:Zoom?document=C:\Users\lydialee\Dropbox\School\Pister\SSL\span-ion\board\span-ion-cfd\CFD_Chip_Test.PcbDoc;viewname=PCBEditor;Action=AREA_DYNAMICZOOM|Location1.X=4116.795mil|Location2.X=4205.05mil|Location1.Y=2721.795mil|Location2.Y=2864.727mil|Absolute=True" class="callback"><acronym title="dxpprocess://PCB:Zoom?document=C:\Users\lydialee\Dropbox\School\Pister\SSL\span-ion\board\span-ion-cfd\CFD_Chip_Test.PcbDoc;viewname=PCBEditor;Action=AREA_DYNAMICZOOM|Location1.X=4116.795mil|Location2.X=4205.05mil|Location1.Y=2721.795mil|Location2.Y=2864.727mil|Absolute=True">Net Antennae: Via (3555mil,1800mil) from Top Layer to Bottom Layer </acronym></a><br></td>
+</tr>
+</table></a><hr color="#EEEEEE"><a href="#top" style="font-size: 0.9em">Back to top</a><br><br></body>
+</html>
