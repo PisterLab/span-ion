@@ -48,9 +48,19 @@ def program_scan(com_port, ASC) -> None:
 	else:
 		raise ValueError('Read/write comparison incorrect')
 
-def construct_ASC(preamp_res, delay_res, watchdog_res, attenuator_sel,
-		dac_sel, az_main_gain, az_aux_gain, oneshot_res, vref_preamp,
-		vdd_aon vdd_signal, en_main, en_small) -> List[int]:
+def construct_ASC(preamp_res 	=[0]*2,
+				delay_res 		=[0]*2,
+				watchdog_res	=[0],
+				attenuator_sel 	=[0]*3,
+				dac_sel 		=[0]*8,
+				az_main_gain 	=[0]*3,
+				az_aux_gain 	=[0]*3,
+				oneshot_res 	=[0]*2,
+				vref_preamp 	=[0]*8,
+				vdd_aon 		=[0]*5,
+				vdd_signal 		=[0]*5,
+				en_main 		=[0],
+				en_small		=[0]) -> List[int]:
 	'''
 	Inputs:
 	Returns:
