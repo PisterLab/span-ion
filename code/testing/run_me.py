@@ -7,6 +7,7 @@ import struct
 import difflib
 
 from scan import program_scan, construct_scan
+from 
 
 if __name__ == "__main__":
 	teensy_port = 'COM22'
@@ -33,3 +34,12 @@ if __name__ == "__main__":
 
 		asc = construct_scan(**asc_params)
 		program_scan(com_port=teensy_port, ASC=asc)
+
+	#####################
+	### Test LED DACs ###
+	#####################
+	if False:
+		test_dac_params = dict(
+			iterations=100,
+			code_vec=range()
+			)

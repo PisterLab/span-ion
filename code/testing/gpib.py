@@ -4,13 +4,10 @@ import serial
 Z_INF = 'INF'
 Z_FIFTY = '50OHM'
 
-def rsrc_open(rm, rsrc_name):
+def rsrc_open(rm):
 	'''
 	Inputs:
 		rm: PyVISA Resource manager.
-		rsrc_name: String. Name to use in the connection for the hardware, 
-			e.g. "USB0::0x0957::0x2C07::MY57801384::0::INSTR" or 
-			"GPIB0::5::INSTR"
 	Returns:
 		rsrc: Visa Resource object. The device to be opened.
 	'''
@@ -24,7 +21,7 @@ def rsrc_open(rm, rsrc_name):
 		rsrc = rm.open_resource(rm.list_resources[int(idx)])
 
 		# Sanity checking that it's the correct device
-		rsrc.query("*IDN?")
+		print(rsrc.query("*IDN?"))
 		is_correct_raw = input('Is this the correct device? (y/n): ').lower()
 		is_correct = (is_correct_raw == 'y')
 
@@ -34,19 +31,30 @@ def rsrc_open(rm, rsrc_name):
 
 	return rsrc
 
-def arb_config(arb, output_num, zin):
+def psu_close(psu):
 	'''
+	Turns off outputs and closes connection with DC power supply.
 	Inputs:
-		arb: Visa Resource object. The opened device.
-		output_num: Integer. Index of the output source, i.e. 1 or 2 in our case.
-		zin: String gpib.Z_INF or gpib.Z_FIFTY (see above). Not sure what
-			this will do if it attempts to set to something invalid, but
-			it probably won't be pretty.
+		psu: Visa Resource object. The device with an opened connection to be
+			closed.
 	Returns:
 		None.
 	'''
-	arb.write(f"OUTPUT{output_num}:LOAD {zin}")
-	return
+	# TODO turn off outputs
+	psu.close()
+
+
+def multimeter_close(multimeter):
+	'''
+	Closes connection to digital multimeter.
+	Inputs:
+		multimeter: Visa Resource object. The device with an opened connection
+			to be closed.
+	Returns:
+		None.
+	'''
+	multimeter.close()
+
 
 def arb_close(arb):
 	'''

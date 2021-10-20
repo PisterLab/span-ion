@@ -13,6 +13,10 @@ def program_scan(com_port, ASC) -> None:
 	Inputs:
 		com_port: String. Name of the COM port to connect to.
 		ASC: List of integers. Analog scan chain bits.
+	Returns:
+		None.
+	Raises:
+		ValueError if scan in doesn't match scan out.
 	'''
 	# Open COM port to Teensy to bit-bang scan chain
 	ser = serial.Serial(port=com_port,
