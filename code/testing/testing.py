@@ -19,11 +19,11 @@ N_BITS_MAP = {
 	OUT_VDD_SMALL 	: 5,
 	OUT_VDD_AON 	: 5}
 
-def test_dac(iterations, code_vec, dac_name, t_wait=.001, ,
+def test_dac(num_iterations, code_vec, dac_name, t_wait=.001,
 		vm_range=5, vm_res=6):
 	'''
 	Inputs:
-		iterations: Integer. Number of times to measure a single code.
+		num_iterations: Integer. Number of times to measure a single code.
 		code_vec: Collection of integers. Codes to measure.
 		num_bits: Collection of bits.
 		dac_name: Indicates which DAC is being tested, e.g. OUT_DAC_MAIN,
@@ -77,8 +77,8 @@ def test_dac(iterations, code_vec, dac_name, t_wait=.001, ,
 		
 		scan_bits = construct_scan(**construct_scan_params)
 
-		# Take N=iterations measurements TODO
-		for _ in range(iterations):
+		# Take N=num_iterations measurements TODO
+		for _ in range(num_iterations):
 			time.sleep(t_wait)
 			vm.write(f'MEAS:VOLT:DC? {vm_range},{vm_res}')
 			try:
@@ -92,3 +92,33 @@ def test_dac(iterations, code_vec, dac_name, t_wait=.001, ,
 	# Close connection to voltmeter
 	vm.close()
 	return code_data_dict
+
+
+def test_main(num_iterations, scan_dict, teensy_port,):
+	'''
+	Prompts the main signal chain with the same input periodically repeated.
+	Inputs:
+		num_iterations: Integer. Number of measurements to take.
+		scan_dict: Dictionary to program the scan chain, with key:value
+			of (argument):value. For example,
+			{'preamp_res' : [1, 0],
+			 'en_main' : [1]}
+		teensy_port: String. Name of the COM port associated with Teensy.
+	Returns:
+		delay_vec: Collection of delays (in seconds) from the initial
+			input trigger pulse and rising edge of the output pulse.
+	'''
+	# Program scan
+	asc = construct_scan(**scan_dict)
+	program_scan(com_port=teensy_port, ASC=asc)
+
+	# Connect to function generator
+	rm = pyvisa.ResourceManager()
+	arb = rsrc_open(rm)
+
+	# TODO Configure the function generator
+
+	# TODO Turn on the output of the function generator
+
+	# Turn off outputs and disconnect from function generator
+	arb_close(arb)

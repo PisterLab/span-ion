@@ -32,7 +32,6 @@ def program_scan(com_port, ASC) -> None:
 	ser.write(b'ascwrite\n')
 	print(ser.readline())
 
-
 	# Execute oad command to latch values inside chip
 	ser.write(b'ascload\n')
 	print(ser.readline())
