@@ -19,8 +19,7 @@ N_BITS_MAP = {
 	OUT_VDD_SMALL 	: 5,
 	OUT_VDD_AON 	: 5}
 
-def test_dac(num_iterations, code_vec, dac_name, t_wait=.001,
-		vm_range=5, vm_res=6):
+def test_dac(num_iterations, code_vec, dac_name, t_wait=.001):
 	'''
 	Inputs:
 		num_iterations: Integer. Number of times to measure a single code.
@@ -47,9 +46,18 @@ def test_dac(num_iterations, code_vec, dac_name, t_wait=.001,
 	assert max(code_vec) < code_max, f'Code {max(code_vec)} exceeds allowable' \
 		+ f'max {code_max}'
 
-	# Connect to voltmeter TODO
+	# Connect to voltmeter
 	rm = pyvisa.ResourceManager()
 	vm = rsrc_open(rm)
+
+	# Configure voltmeter
+	smu_raw = ''
+	while smu_raw.lower() not in ('a', 'b'):
+		smu_raw = input('Choose channel (a/b): ')
+		smu_raw = smu_raw.lower()
+	smu_sel = gpib.SMU_A if smu_raw=='a' else gpib.SMU_B
+	smu_str = f'smu{smu_sel}'
+	voltmeter_Keithley2634B_config(sm=vm, smu=smu_sel, autorange=True)
 
 	# Take measurements, one step at a time
 	for code in code_vec:
@@ -59,7 +67,8 @@ def test_dac(num_iterations, code_vec, dac_name, t_wait=.001,
 		code_binary = extra_zeros + code_binary
 
 		# Program scan 
-		en_main = 1 if dac_name in (OUT_DAC_MAIN, OUT_VDD_MAIN, OUT_REF_PREAMP) else 0 
+		en_main = 1 if dac_name in (OUT_DAC_MAIN, OUT_VDD_MAIN, OUT_REF_PREAMP) \
+			else 0 
 		en_small = 1 if dac_name in (OUT_DAC_SMALL, OUT_VDD_SMALL) else 0
 		
 		scan_arg_map = {
@@ -71,7 +80,7 @@ def test_dac(num_iterations, code_vec, dac_name, t_wait=.001,
 			OUT_VDD_AON 	: 'vdd_aon'}
 
 		construct_scan_params = {
-			scan_arg_map[dac_name]: code_binary
+			scan_arg_map[dac_name]: code_binary,
 			'en_main' : [en_main],
 			'en_small': [en_small]}
 		
@@ -80,7 +89,7 @@ def test_dac(num_iterations, code_vec, dac_name, t_wait=.001,
 		# Take N=num_iterations measurements TODO
 		for _ in range(num_iterations):
 			time.sleep(t_wait)
-			vm.write(f'MEAS:VOLT:DC? {vm_range},{vm_res}')
+			vm.write(f'print({smu_str}.measure.v())')
 			try:
 				vout_str = vm.read()
 				vout = float(vout_str)

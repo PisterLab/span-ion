@@ -1,13 +1,8 @@
-import serial
+import serial, pyvisa
 import random
-import os
-import sys
-import time
-import struct
-import difflib
+import os, sys, time
+import gpib, scan, testing
 
-from scan import program_scan, construct_scan
-from 
 
 if __name__ == "__main__":
 	teensy_port = 'COM22'
@@ -32,8 +27,8 @@ if __name__ == "__main__":
 			en_main			= [0],
 			en_small		= [0])
 
-		asc = construct_scan(**asc_params)
-		program_scan(com_port=teensy_port, ASC=asc)
+		asc = scan.construct_scan(**asc_params)
+		scan.program_scan(com_port=teensy_port, ASC=asc)
 
 	#####################
 	### Test LED DACs ###
@@ -43,3 +38,17 @@ if __name__ == "__main__":
 			iterations=100,
 			code_vec=range()
 			)
+
+	###############
+	### Scratch ###
+	###############
+	if False:
+		rm = pyvisa.ResourceManager()
+		keithley = gpib.rsrc_open(rm)
+		gpib.voltmeter_Keithley2634B_config(sm=keithley,
+			smu=testing.SMU_A, autorange=True, vrange=1.8)
+		keithley.write(f'print(smu{testing.SMU_A}.measure.v())')
+		vout_str = keithley.read()
+		print(f'vout_str: {vout_str}')
+		print(float(vout_str))
+		keithley.close()
