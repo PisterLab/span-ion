@@ -1,3 +1,4 @@
 Record=TopLevelDocument|FileName=Chip.SchDoc|SheetNumber=2
-Record=NoMainPathDocument|SourceDocument=Chip.SchDoc|FileName=Interface.SchDoc|SheetNumber=1
-Record=NoMainPathDocument|SourceDocument=Chip.SchDoc|FileName=TAC.SchDoc|SheetNumber=3
+Record=NoMainPathDocument|SourceDocument=Chip.SchDoc|FileName=Chip_Inputs.SchDoc|SheetNumber=3
+Record=NoMainPathDocument|SourceDocument=Chip.SchDoc|FileName=Power.SchDoc|SheetNumber=4
+Record=NoMainPathDocument|SourceDocument=Chip.SchDoc|FileName=Teensy_Interface.SchDoc|SheetNumber=1
