@@ -1,25 +1,52 @@
+#include <SPI.h> // include the SPI library
 /* --------------------------------- */
 /* --- Pin Mappings (Teensy 3.6) --- */
 /* --------------------------------- */
-// Teensy pinout
-const int pin_scan_inb 		= A15;	// ASC input data
-const int pin_scan_outb 	= A18;	// ASC output data
-const int pin_scan_clk 		= A17;	// ASC clock
-const int pin_scan_loadb 	= A16;	// ASC load
+// Analog scan chain
+const int pin_scan_inb 			= A15;	// ASC input data
+const int pin_scan_outb 		= A18;	// ASC output data
+const int pin_scan_clk 			= A17;	// ASC clock
+const int pin_scan_loadb 		= A16;	// ASC load
 
-const int pin_rst_test		= A14;	// Reset for test structure peak detector
+// Analog output signal voltages
+const int pin_dac_small 		= A0; 	// Resistive DAC for small chain
+const int pin_dac_main 			= A0;	// Resistive DAC for main chain
+const int pin_bandgap			= A0;	// Test structure bandgap voltage source
+const int pin_pk_out 			= A0; 	// Peak detector output voltage
 
-const int pin_rstb_time 	= A3;	// Inverted reset ramp for TAC
-const int 
+// On-chip supply voltages
+const int pin_vddaon 			= A0;	// Always-on LDO output
+const int pin_vddmain			= A0;	// Main signal chain LDO output
+const int pin_vddsmall 			= A0; 	// Small signal chain LDO output
 
-// Programming constants
-const int N_SCAN 			= 44; 	// Number of scan bits
-const int B_ADC 			= 16;	// Number of bits for analogRead
+const int pin_pk_rst			= A14;	// Reset for test structure peak detector
+const int pin_tdc_rstb 			= A3;	// Inverted reset ramp for TDC
+
+// TDC SPI and other connections
+// TODO Don't worry about how these are all currently A0
+// What matters is the names on the left side
+const int pin_spi_main_csb 		= A0;	// CSb for the main signal chain TDC
+const int pin_spi_main_din		= A0; 	// Data-in pin for the main signal chain TDC
+const int pin_spi_main_dout 	= A0;	// Data-out pin for the main signal chain TDC
+const int pin_spi_main_clk		= A0;	// SPI clock for the main signal chain TDC
+const int pin_spi_main_intrpt	= A0;	// Interrupt pin for the TDC for the main signal chain
+
+const int pin_spi_small_csb 	= A0;	// CSb for the small signal chain TDC
+const int pin_spi_small_din		= A0; 	// Data-in pin for the small signal chain TDC
+const int pin_spi_small_dout 	= A0;	// Data-out pin for the small signal chain TDC
+const int pin_spi_small_clk		= A0;	// SPI clock for the small signal chain TDC
+const int pin_spi_small_intrpt	= A0;	// Interrupt pin for the TDC for the small signal chain
+
+// Constants
+const int N_SCAN 				= 44; 	// Number of scan bits
+const int N_TDC_CONFIG 			= ; 	// TODO: Number of TDC config bits 
+const int B_ADC 				= 16;	// Number of bits for Teensy analogRead
+const int CHAIN_MAIN			= 0;	// Used to indicate the main signal chain
+const int CHAIN_SMALL			= 1;	// Used to indicate the small signal chain
 
 /* ----------------------------- */
 /* --- Runs once at power-on --- */
 /* ----------------------------- */
-
 // Variables for command interpreter
 String inputString = "";
 boolean stringComplete = false;
@@ -47,15 +74,14 @@ void setup() {
 
 	digitalWrite(pin_rst_test, 		LOW);
 
-	// - Time-to-Analog Converters
-	pinMode(pin_rst_time,			OUTPUT);
-	pinMode(pin_rstb_time,			OUTPUT);
-	pinMode(pin_tac_main, 			INPUT);
-	pinMode(pin_tac_small, 			INPUT);
+	// - TODO for Lydia: set up/initialize the rest of the pins
 
-	digitalWrite(pin_rst_time, 		LOW);
-	digitalWrite(pin_rstb_time, 	HIGH);
 	analogReadResolution(16);	// 16B -> 13ENOB
+
+	// Initialize SPI
+	SPI.begin();
+
+	// TODO for Lydia: enable 16MHz clock for TDC reference
 }
 
 /* ----------------------- */
@@ -72,14 +98,14 @@ void loop() {
 		else if (inputString == 'ascload\n'){
 			asc_load();
 		}
-		else if (inputString == 'tacmainread\n') {
-			tac_main_read();
+		else if (inputString == 'tdcmainread\n') {
+			tdc_read(CHAIN_MAIN);
 		}
-		else if (inputString == 'tacsmallread\n') {
-			tac_small_read();
+		else if (inputString == 'tdcsmallread\n') {
+			tdc_read(CHAIN_SMALL);
 		}
-		else if (inputString == 'tacreset\n') {
-			tac_reset();
+		else if (inputString == 'tdcconfig\n') {
+			tdc_write();
 		}
 		else if (inputString == 'peakreset\n') {
 			peak_reset();
@@ -194,32 +220,77 @@ void asc_read() {
 	// Terminator
 	Serial.println();
 }
-/* -------------------------------------------- */
-/* --- Time-to-Analog Converter Interaction --- */
-/* -------------------------------------------- */
-void tac_main_read() {
+
+/* ----------------------------------- */
+/* --- TDC Control & Communication --- */
+/* ----------------------------------- */
+void tdc_write(int chain) {
 /*
-	Reads from the time-to-analog converter for the full signal chain
-	using the Teensy's DAC. Prints a digital code to Serial.
+	Uses the Teensy' SPI library to program the TDC using
+	the TDC's SPI interface.
+	SPI library documentation:
+		https://www.pjrc.com/teensy/td_libs_SPI.html
+	TI TDC device documentation:
+		https://www.ti.com/lit/ds/symlink/tdc7200.pdf?ts=1636125541217 
+
+	Inputs:
+		chain: CHAIN_MAIN or CHAIN_SMALL. The former indicates that
+			we'd like to program the TDC associated with the 
+			main signal chain; the latter indicates we'd like to 
+			program the TDC associated with the small signal
+			chain.
 */
-	analogReadResolution(B_adc);
-	Serial.println(analogRead(pin_tac_main));
+	Serial.println("Executing TDC config");
+	int count = 0;
+	char configbits[N_TDC_CONFIG];
+
+	// TODO tell the SPI software which pins to interact with
+	// based on if we're dealing with the small signal chain or the main
+	// signal chain
+	
+	// loop until all bits are received over serial from the computer
+	while (count != N_TDC_CONFIG) {
+		
+		// read one bit at a time over serial
+		if (Serial.available()) {
+			configbits[count] = Serial.read();
+			count ++;
+		}
+	}
+
+	// TODO once all bits are received, forward them to the TDC
+	// over SPI
+
+	Serial.println("TDC config complete");
 }
 
-void tac_reset() {
-/* 
-	Resets the time-to-analog converters by raising rst and dropping rstb.
+void tdc_read(int chain) {
+/*
+	Uses the Teensy's SPI library to read from the TDC
+	using the TDC's SPI interface.
+
+	Inputs:
+		chain: CHAIN_MAIN or CHAIN_SMALL to indicate which
+			TDC to communicate with. CHAIN_MAIN (the variable name)
+			indicates that we'd like to read from the TDC
+			that's connected to the main signal chain. CHAIN_SMALL
+			indicates that we'd like to read from the TDC that's 
+			connected to the small signal chain.
 */
-	digitalWrite(pin_rst_time, 	HIGH);
-	digitalWrite(pin_rstb_time, LOW);
+	// TODO tell the SPI software which pins to interact with
+	// based on if we're dealing with the small signal chain or the main
+	// signal chain
 
-	delayMicroseconds(50);
+	// TODO retrieve the bits from the TDC
 
-	digitalWrite(pin_rst_time, 	LOW);
-	digitalWrite(pin_rstb_time, HIGH);
+	// TODO check if the TDC has indicated overflow
 
-	delayMicroseconds(50);
+	// TODO forward the bits to the computer over serial
+
+	// Terminator
+	Serial.println()
 }
+
 
 /* ------------------------------------------ */
 /* --- On-Chip Test Structure Interaction --- */
