@@ -9,10 +9,8 @@ const int pin_scan_loadb 	= A16;	// ASC load
 
 const int pin_rst_test		= A14;	// Reset for test structure peak detector
 
-const int pin_rst_time 		= A9;	// Reset ramp for TAC
 const int pin_rstb_time 	= A3;	// Inverted reset ramp for TAC
-const int pin_tac_main 		= A7;	// TAC output for full signal chain
-const int pin_tac_small		= A6;	// TAC output for small signal chain
+const int 
 
 // Programming constants
 const int N_SCAN 			= 44; 	// Number of scan bits
