@@ -39,7 +39,7 @@ const int pin_spi_small_intrpt	= A0;	// Interrupt pin for the TDC for the small 
 
 // Constants
 const int N_SCAN 				= 44; 	// Number of scan bits
-const int N_TDC_CONFIG 			= ; 	// TODO: Number of TDC config bits 
+const int N_TDC_CONFIG 			= 2; 	// TODO: Number of TDC config bits
 const int B_ADC 				= 16;	// Number of bits for Teensy analogRead
 const int CHAIN_MAIN			= 0;	// Used to indicate the main signal chain
 const int CHAIN_SMALL			= 1;	// Used to indicate the small signal chain
@@ -76,18 +76,58 @@ void setup() {
 
 	// - TODO for Lydia: set up/initialize the rest of the pins
 
+    pinMode(pin_dac_small, 			OUTPUT);
+    pinMode(pin_dac_main, 			OUTPUT);
+    pinMode(pin_bandgap, 			OUTPUT);
+    pinMode(pin_pk_out, 			INPUT);
+
+    digitalWrite(pin_dac_main, 		);
+	digitalWrite(pin_dac_small, 	);
+	digitalWrite(pin_bandgap, 	    );
+
+    // - On-chip supply voltages setup
+    pinMode(pin_vddaon, 			INPUT);
+    pinMode(pin_vddmain, 			INPUT);
+    pinMode(pin_vddsmall, 			INPUT);
+
+    pinMode(pin_pk_rst, 			OUTPUT);
+    pinMode(pin_tdc_rstb, 			INPUT);
+    digitalWrite(pin_pk_rst, 	    LOW);
+
+    pinMode(pin_spi_main_csb, 		OUTPUT);
+    pinMode(pin_spi_main_din, 		OUTPUT);
+    pinMode(pin_spi_main_dout, 		INPUT);
+    pinMode(pin_spi_main_clk, 		OUTPUT);
+    pinMode(pin_spi_main_intrpt, 	INPUT);
+    digitalWrite(pin_spi_main_csb,  HIGH);
+    digitalWrite(pin_spi_main_din, 	);
+    digitalWrite(pin_spi_main_clk, 	);
+
+    pinMode(pin_spi_small_csb, 		OUTPUT);
+    pinMode(pin_spi_small_din, 		OUTPUT);
+    pinMode(pin_spi_small_dout, 	INPUT);
+    pinMode(pin_spi_small_clk, 		OUTPUT);
+    pinMode(pin_spi_small_intrpt, 	INPUT);
+    digitalWrite(pin_spi_small_csb, HIGH);
+    digitalWrite(pin_spi_small_din, );
+    digitalWrite(pin_spi_small_clk, );
+
 	analogReadResolution(16);	// 16B -> 13ENOB
 
 	// Initialize SPI
 	SPI.begin();
 
 	// TODO for Lydia: enable 16MHz clock for TDC reference
+    analogWriteFrequency(pin_spi_main_clk, 16000000);
+    analogWriteFrequency(pin_spi_small_clk, 16000000);
 }
 
 /* ----------------------- */
 /* --- Runs repeatedly --- */
 /* ----------------------- */
 void loop() {
+    analogWrite(pin_spi_small_clk, 128);
+    analogWrite(pin_spi_main_clk, 128);
 	if (stringComplete){
 		if (inputString == 'ascwrite\n'){
 			asc_write();
@@ -242,12 +282,19 @@ void tdc_write(int chain) {
 */
 	Serial.println("Executing TDC config");
 	int count = 0;
-	char configbits[N_TDC_CONFIG];
+	char configbits[N_TDC_CONFIG];// 2 byte for a single transaction
 
 	// TODO tell the SPI software which pins to interact with
 	// based on if we're dealing with the small signal chain or the main
 	// signal chain
-	
+	if(chain){
+	    digitalWrite(pin_spi_small_csb, LOW);
+	    digitalWrite(pin_spi_main_csb, HIGH);
+	}
+	else{
+	    digitalWrite(pin_spi_small_csb, HIGH);
+	    digitalWrite(pin_spi_main_csb, LOW);
+	}
 	// loop until all bits are received over serial from the computer
 	while (count != N_TDC_CONFIG) {
 		
@@ -260,6 +307,18 @@ void tdc_write(int chain) {
 
 	// TODO once all bits are received, forward them to the TDC
 	// over SPI
+	count = 0;
+	SPISettings settings_main(16000000, MSBFIRST, SPI_MODE1);// not sure with mode
+    SPISettings settings_small(16000000, MSBFIRST, SPI_MODE1);
+    while (count != N_TDC_CONFIG) {
+
+		// transfer one byte at a time over SPI
+		SPI.transfer(configbits[count]);
+		count ++;
+	}
+	digitalWrite(pin_spi_main_csb, HIGH);
+	digitalWrite(pin_spi_small_csb, HIGH);
+    SPI.endTransaction();
 
 	Serial.println("TDC config complete");
 }
@@ -280,15 +339,51 @@ void tdc_read(int chain) {
 	// TODO tell the SPI software which pins to interact with
 	// based on if we're dealing with the small signal chain or the main
 	// signal chain
-
+    if(chain){
+	    digitalWrite(pin_spi_small_csb, LOW);
+	    digitalWrite(pin_spi_main_csb, HIGH);
+	}
+	else{
+	    digitalWrite(pin_spi_small_csb, HIGH);
+	    digitalWrite(pin_spi_main_csb, LOW);
+	}
 	// TODO retrieve the bits from the TDC
+	int count = 0;
+    char val[N_TDC_CONFIG];
+    while (count != N_TDC_CONFIG) {
 
-	// TODO check if the TDC has indicated overflow
-
+		// transfer one byte at a time over SPI
+		val[count] = SPI.transfer(0);
+		count ++;
+		// TODO check if the TDC has indicated overflow
+		if(chain){
+	        if(pin_spi_small_intrpt){
+	            Serial.println("TDC interuption");
+                return;
+	        }
+	    }
+	    else{
+	        if(pin_spi_small_intrpt){
+	            Serial.println("TDC interuption");
+	            return;
+	        }
+	    }
+	}
+    digitalWrite(pin_spi_main_csb, HIGH);
+	digitalWrite(pin_spi_small_csb, HIGH);
+    SPI.endTransaction();
 	// TODO forward the bits to the computer over serial
+	count = 0;
+    while (count != ) {
 
+		// read one bit at a time over serial
+		if (Serial.available()) {
+			Serial.write(val(count));
+			count ++;
+		}
+	}
 	// Terminator
-	Serial.println()
+	Serial.println("TDC read complete")
 }
 
 
