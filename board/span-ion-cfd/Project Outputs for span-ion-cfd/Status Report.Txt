@@ -1,12 +1,28 @@
-Output: NC Drill Files
-Type  : NC Drill
+Output: Gerber X2 Files
+Type  : GerberX2
 From  : Project [span-ion-cfd.PrjPcb]
-   Generated File[CFD_Chip_Test.TXT]
-   Generated File[CFD_Chip_Test.LDP]
-   Generated File[CFD_Chip_Test.DRR]
+   Generated File[CFD_Chip_Test_Copper_Signal_Top.gbr]
+   Generated File[CFD_Chip_Test_Copper_Signal_Bot.gbr]
+   Generated File[CFD_Chip_Test_Pads_Bot.gbr]
+   Generated File[CFD_Chip_Test_Pads_Top.gbr]
+   Generated File[CFD_Chip_Test_Soldermask_Bot.gbr]
+   Generated File[CFD_Chip_Test_Legend_Top.gbr]
+   Generated File[CFD_Chip_Test_Soldermask_Top.gbr]
+   Generated File[CFD_Chip_Test_Mechanical_13.gbr]
+   Generated File[CFD_Chip_Test_Mechanical_4.gbr]
+   Generated File[CFD_Chip_Test_Mechanical_9.gbr]
+   Generated File[CFD_Chip_Test_Mechanical_6.gbr]
+   Generated File[CFD_Chip_Test_Mechanical_2.gbr]
+   Generated File[CFD_Chip_Test_Mechanical_1.gbr]
+   Generated File[CFD_Chip_Test_Mechanical_7.gbr]
+   Generated File[CFD_Chip_Test_Mechanical_15.gbr]
+   Generated File[CFD_Chip_Test_Profile.gbr]
+   Generated File[CFD_Chip_Test.RUL]
+   Generated File[CFD_Chip_Test.EXTREP]
+   Generated File[CFD_Chip_Test.REP]
 
 
-Files Generated   : 3
+Files Generated   : 19
 Documents Printed : 0
 
-Finished Output Generation At 15:25:25 On 2021-11-16
+Finished Output Generation At 13:56:23 On 2022-01-13

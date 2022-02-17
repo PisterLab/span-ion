@@ -1,4 +1,4 @@
-DRC Rules Export File for PCB: C:\Users\lydialee\Dropbox\School\Pister\SSL\span-ion\board\span-ion-cfd\CFD_Chip_Test.PcbDoc
+DRC Rules Export File for PCB: C:\Users\lydialee\Box Sync\Research\SSL\span-ion\board\span-ion-cfd\CFD_Chip_Test.PcbDoc
 RuleKind=MinimumAnnularRing|RuleName=MinimumAnnularRing|Scope=Board|Minimum=5.00
 RuleKind=ShortCircuit|RuleName=ShortCircuit|Scope=Board|Allowed=0
 RuleKind=SolderMaskExpansion|RuleName=SolderMaskExpansion|Scope=Board|Minimum=2.20
