@@ -1,4 +1,5 @@
 #include <SPI.h> // include the SPI library
+#include <InternalTemperature.h> // include the InternalTemperature library
 /* --------------------------------- */
 /* --- Pin Mappings (Teensy 3.6) --- */
 /* --------------------------------- */
@@ -45,10 +46,11 @@ const int pin_tdc_small_trig 	= A0;	// Raises when TDC for small chainis ready
 // Constants
 const int N_SCAN 				= 44; 	// Number of scan bits
 const int N_TDC_CONFIG 			= 2; 	// Number of TDC config bytes (not bits!)
-const int N_TDC_DOUT 			= 1;	// Number of TDC data out bytes (not bits!)
+const int N_TDC_DOUT 			= 4;	// Number of TDC data out bytes (not bits!)
 const int B_ADC 				= 16;	// Number of bits for Teensy analogRead
 const int CHAIN_MAIN			= 0;	// Used to indicate the main signal chain
 const int CHAIN_SMALL			= 1;	// Used to indicate the small signal chain
+const int bg_test_time          = 200;   // Number of bandgap test times
 
 // Access address for the TDC
 char ADDR_TDC;
@@ -162,6 +164,9 @@ void loop() {
 		}
 		else if (inputString == 'peakreset\n') {
 			peak_reset();
+		}
+		else if (inputString == 'bandgaptest\n') {
+		    bandgap_test();
 		}
 
 		// Reset to listen for a new '\n' terminated string over serial
@@ -300,7 +305,7 @@ void tdc_write(int chain) {
 	int count = 0;
 	
 	// loop until all bytes are received over serial from the computer
-	while (count != N_TDC_CONFIG*sizeof(char)) {
+	while (count != N_TDC_CONFIG) {
 		// read one byte at a time over serial
 		if (Serial.available()) {
 			configbytes[count] = Serial.read();
@@ -391,7 +396,7 @@ void tdc_read(int chain) {
 	} else {
 		pin_spi_csb 	= pin_spi_small_csb;
 		pin_tdc_intrptb	= pin_tdc_small_intrptb;
-		SPI.setmISO (pin_spi_small_dout);		// TODO check
+		SPI.setMISO (pin_spi_small_dout);		// TODO check
 		SPI.setSCK (pin_spi_small_clk);
 	}
 
@@ -450,6 +455,30 @@ void peak_reset() {
 	digitalWrite(pin_rst_time, LOW);
 }
 
+/* ------------------------------------------ */
+/* --- Temperature vs bandgap voltage test --- */
+/* ------------------------------------------ */
+void bandgap_test() {
+/*
+	read temperature and bandgap voltage
+*/
+    int bg_test_num = 0;
+    int bg_voltage,temp_value;
+    while(bg_test_num != bg_test_time) {
+        //bandgap voltage read
+        bg_voltage = analogRead(pin_vddmain);
+        //transmit through serial
+        //Serial.print("bandgap voltage :");
+        Serial.println(bg_voltage);
+        //Temperature read
+        temp_value = InternalTemperature.readTemperatureC();
+        //Serial.print("Temperature :");
+        Serial.println(temp_value);
+        bg_test_num += 1;
+        //delay
+        delay(1000);
+    }
+}
 
 /* ------------- */
 /* --- Other --- */
@@ -470,3 +499,4 @@ void serialEvent() {
 		}
 	}
 }
+

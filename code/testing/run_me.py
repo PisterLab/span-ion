@@ -1,7 +1,7 @@
 import serial, pyvisa
 import random
 import os, sys, time
-import gpib, scan, testing
+import gpib, scan, testing,bandgap
 
 
 if __name__ == "__main__":
@@ -52,3 +52,6 @@ if __name__ == "__main__":
 		print(f'vout_str: {vout_str}')
 		print(float(vout_str))
 		keithley.close()
+
+	if False:
+		get_data()
