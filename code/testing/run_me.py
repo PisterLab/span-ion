@@ -1,16 +1,15 @@
 import serial, pyvisa
 import random
-import os, sys, time
-import gpib, scan, testing,bandgap
+import os, sys, time, pdb, traceback
+import scan # testing# , bandgap
 
-
-if __name__ == "__main__":
-	teensy_port = 'COM22'
+def run_main():
+	teensy_port = 'COM3'
 
 	####################
 	### Program Scan ###
 	####################
-	if False:
+	if True:
 		asc_params = dict(
 			# MSB -> LSB
 			preamp_res 		= [0, 0],
@@ -25,9 +24,11 @@ if __name__ == "__main__":
 			vdd_aon			= [0, 0, 0, 0, 0],
 			vdd_signal		= [0, 0, 0, 0, 0],
 			en_main			= [0],
-			en_small		= [0])
+			en_small		= [1])
 
-		asc = scan.construct_scan(**asc_params)
+		print("Constructing scan chain...")
+		asc = scan.construct_ASC(**asc_params)
+		print(f"Programming scan...{asc}")
 		scan.program_scan(com_port=teensy_port, ASC=asc)
 
 	#####################
@@ -55,3 +56,12 @@ if __name__ == "__main__":
 
 	if False:
 		get_data()
+
+if __name__ == "__main__":
+	print('blep')
+	try:
+		run_main()
+	except:
+		extype, value, tb = sys.exc_info()
+		traceback.print_exc()
+		pdb.post_mortem(tb)

@@ -23,20 +23,26 @@ def program_scan(com_port, ASC) -> None:
 		baudrate=19200,
 		parity=serial.PARITY_NONE,
 		stopbits=serial.STOPBITS_ONE,
-		bytesize=serial.EIGHTBITS)
+		bytesize=serial.EIGHTBITS,
+		timeout=5)
 
 	# Convert array to string for UART
 	ASC_string = ''.join(map(str,ASC))
 
 	# Send string to Teensy to program into the chip
+	print("Writing...")
 	ser.write(b'ascwrite\n')
 	print(ser.readline())
+	ser.write(ASC_string.encode())
+	print(ser.readline())
 
-	# Execute oad command to latch values inside chip
+	# Execute load command to latch values inside chip
+	print("Loading...")
 	ser.write(b'ascload\n')
 	print(ser.readline())
 
 	# Read back scan chain contents
+	print("Reading...")
 	ser.write(b'ascread\n')
 	x = ser.readline()
 	scan_out = x[::-1]
@@ -79,7 +85,7 @@ def construct_ASC(preamp_res 	=[0]*2,
 	delay_res_rev		= delay_res[::-1]
 	attenuator_sel_rev 	= attenuator_sel[::-1]
 	dac_sel_rev 		= dac_sel[::-1]
-	az_main_gain_rev	= az_main_gain[:-1]
+	az_main_gain_rev	= az_main_gain[::-1]
 	az_aux_gain_rev 	= az_aux_gain[::-1]
 	oneshot_res_rev		= oneshot_res[::-1]
 	vref_preamp_rev		= vref_preamp[::-1]

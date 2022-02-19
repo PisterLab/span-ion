@@ -1,5 +1,5 @@
 #include <SPI.h> // include the SPI library
-#include <InternalTemperature.h> // include the InternalTemperature library
+// #include <InternalTemperature.h> // include the InternalTemperature library
 /* --------------------------------- */
 /* --- Pin Mappings (Teensy 3.6) --- */
 /* --------------------------------- */
@@ -12,8 +12,8 @@ const int pin_scan_loadb 		= A16;	// ASC load
 // Analog I/O signal voltages
 const int pin_dac_small 		= A0; 	// Resistive DAC for small chain
 const int pin_dac_main 			= A0;	// Resistive DAC for main chain
-const int pin_bandgap			= A0;	// Test structure bandgap voltage source
-const int pin_pk_out 			= A0; 	// Peak detector output voltage
+const int pin_bandgap			  = A0;	// Test structure bandgap voltage source
+const int pin_pk_out 			  = A0; 	// Peak detector output voltage
 
 // On-chip supply voltages
 const int pin_vddaon 			= A0;	// Always-on LDO output
@@ -81,9 +81,9 @@ void setup() {
 	digitalWrite(pin_scan_loadb, 	HIGH);
 
 	// - Test Structures
-	pinMode(pin_rst_test, 			OUTPUT);
+	pinMode(pin_pk_rst, 			OUTPUT);
 
-	digitalWrite(pin_rst_test, 		LOW);
+	digitalWrite(pin_pk_rst, 		LOW);
 
 	// - Chip Analog I/O
     pinMode(pin_dac_small, 			INPUT);
@@ -144,28 +144,31 @@ void setup() {
 /* ----------------------- */
 void loop() {
 	if (stringComplete){
-		if (inputString == 'ascwrite\n'){
+		if (inputString == "ascwrite\n"){
 			asc_write();
 		}
-		else if (inputString == 'ascread\n'){
+		else if (inputString == "ascread\n"){
 			asc_read();
 		}
-		else if (inputString == 'ascload\n'){
+		else if (inputString == "ascload\n"){
 			asc_load();
 		}
-		else if (inputString == 'tdcmainread\n') {
+		else if (inputString == "tdcmainread\n") {
 			tdc_read(CHAIN_MAIN);
 		}
-		else if (inputString == 'tdcsmallread\n') {
+		else if (inputString == "tdcsmallread\n") {
 			tdc_read(CHAIN_SMALL);
 		}
-		else if (inputString == 'tdcconfig\n') {
-			tdc_write();
+		else if (inputString == "tdcmainconfig\n") {
+			tdc_write(CHAIN_MAIN);
 		}
-		else if (inputString == 'peakreset\n') {
+   else if (inputString == "tdcsmallconfig\n") {
+      tdc_write(CHAIN_SMALL);
+    }
+		else if (inputString == "peakreset\n") {
 			peak_reset();
 		}
-		else if (inputString == 'bandgaptest\n') {
+		else if (inputString == "bandgaptest\n") {
 		    bandgap_test();
 		}
 
@@ -260,7 +263,7 @@ void asc_read() {
 	st = "";
 
 	// Rest of the bits
-	for (int i=1; i<N_bits; i=i+1) {
+	for (int i=1; i<N_SCAN; i=i+1) {
 		atick();
 		valb = digitalRead(pin_scan_outb);
 		if (valb) {
@@ -299,6 +302,7 @@ void tdc_write(int chain) {
 			chain.
 */
 	Serial.println("Executing TDC config");
+  SPISettings settings_tdc_spi(16000000, MSBFIRST, SPI_MODE1);
 
 	// get bytes (sent as bytes!) over serial
 	char configbytes[N_TDC_CONFIG];
@@ -388,7 +392,7 @@ void tdc_read(int chain) {
 	int pin_spi_csb;
 	int pin_tdc_intrptb;
 
-    if (chain = CHAIN_MAIN){
+    if (chain == CHAIN_MAIN){
     	pin_spi_csb 	= pin_spi_main_csb;
     	pin_tdc_intrptb = pin_tdc_main_intrptb;
     	SPI.setMISO (pin_spi_main_dout);		// TODO check
@@ -408,14 +412,14 @@ void tdc_read(int chain) {
 	}
 
 	// warn if TDC measurement isn't ready within allocated time
-	if not meas_done {
+	if (!meas_done) {
 		Serial.println("TDC interrupt wait timed out.");
 		return;
 	}
 
 	// send read command (no auto-increment, read)
 	digitalWrite(pin_spi_csb, LOW);
-	SPI.transfer(0x80 |= ADDR_TDC);
+	SPI.transfer(0x80 | ADDR_TDC);
 
 	// retrieve the bits from the TDC
 	int count = 0;
@@ -439,7 +443,7 @@ void tdc_read(int chain) {
 	}
 
 	// terminator
-	Serial.println("TDC read complete")
+	Serial.println("TDC read complete");
 }
 
 
@@ -450,9 +454,9 @@ void peak_reset() {
 /* 
 	Resets the test structure peak detector
 */
-	digitalWrite(pin_rst_test, HIGH);
+	digitalWrite(pin_pk_rst, HIGH);
 	delayMicroseconds(50);
-	digitalWrite(pin_rst_time, LOW);
+	digitalWrite(pin_pk_rst, LOW);
 }
 
 /* ------------------------------------------ */
@@ -462,6 +466,7 @@ void bandgap_test() {
 /*
 	read temperature and bandgap voltage
 */
+/*
     int bg_test_num = 0;
     int bg_voltage,temp_value;
     while(bg_test_num != bg_test_time) {
@@ -478,6 +483,7 @@ void bandgap_test() {
         //delay
         delay(1000);
     }
+*/
 }
 
 /* ------------- */
@@ -499,4 +505,3 @@ void serialEvent() {
 		}
 	}
 }
-
