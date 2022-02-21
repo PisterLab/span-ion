@@ -23,7 +23,7 @@ def run_main():
 			vref_preamp 	= [0, 0, 0, 0, 0, 0, 0, 0],
 			vdd_aon			= [0, 0, 0, 0, 0],
 			vdd_signal		= [0, 0, 0, 0, 0],
-			en_main			= [0],
+			en_main			= [1],
 			en_small		= [1])
 
 		print("Constructing scan chain...")

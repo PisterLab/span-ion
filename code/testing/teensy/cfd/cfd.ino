@@ -1,5 +1,5 @@
 #include <SPI.h> // include the SPI library
-// #include <InternalTemperature.h> // include the InternalTemperature library
+#include <InternalTemperature.h> // include the InternalTemperature library
 /* --------------------------------- */
 /* --- Pin Mappings (Teensy 3.6) --- */
 /* --------------------------------- */
@@ -10,47 +10,47 @@ const int pin_scan_clk 			= A17;	// ASC clock
 const int pin_scan_loadb 		= A16;	// ASC load
 
 // Analog I/O signal voltages
-const int pin_dac_small 		= A0; 	// Resistive DAC for small chain
-const int pin_dac_main 			= A0;	// Resistive DAC for main chain
-const int pin_bandgap			  = A0;	// Test structure bandgap voltage source
-const int pin_pk_out 			  = A0; 	// Peak detector output voltage
+const int pin_dac_small 		= A20; 	// Resistive DAC for small chain
+const int pin_dac_main 			= A7;	  // Resistive DAC for main chain
+const int pin_bandgap			  = A9;	  // Test structure bandgap voltage source
+const int pin_pk_out 			  = A8; 	// Peak detector output voltage
 
 // On-chip supply voltages
-const int pin_vddaon 			= A0;	// Always-on LDO output
-const int pin_vddmain			= A0;	// Main signal chain LDO output
-const int pin_vddsmall 			= A0; 	// Small signal chain LDO output
+const int pin_vddaon 			= A6;	  // Always-on LDO output
+const int pin_vddmain			= A5;	  // Main signal chain LDO output
+const int pin_vddsmall 		= A19; 	// Small signal chain LDO output
 
 // Resets, enables, and the like
 const int pin_pk_rst			= A14;	// Reset for test structure peak detector
-const int pin_tdc_rstb 			= A3;	// Reset for TDC input latch
+const int pin_tdc_rstb 		= A3;	  // Reset for TDC input latch
 
 // TDC SPI and other connections
 // TODO Don't worry about how these are all currently A0
 // What matters is the names on the left side
-const int pin_spi_main_csb 		= A0;	// CSb for the main signal chain TDC
-const int pin_spi_main_din		= A0; 	// Data-in pin for the main signal chain TDC
-const int pin_spi_main_dout 	= A0;	// Data-out pin for the main signal chain TDC
-const int pin_spi_main_clk		= A0;	// SPI clock for the main signal chain TDC
-const int pin_tdc_main_intrptb	= A0;	// Interrupt pin for the TDC for the main signal chain
-const int pin_tdc_main_en 		= A0;	// Active high enable for main chain TDC
-const int pin_tdc_main_trig		= A0; 	// Raises when TDC for main chain is ready
+const int pin_spi_main_csb 		  = 10;	// CSb for the main signal chain TDC
+const int pin_spi_main_din		  = 11; // Data-in pin for the main signal chain TDC
+const int pin_spi_main_dout 	  = 12;	// Data-out pin for the main signal chain TDC
+const int pin_spi_main_clk		  = 13;	// SPI clock for the main signal chain TDC
+const int pin_tdc_main_intrptb	= 9;	// Interrupt pin for the TDC for the main signal chain
+const int pin_tdc_main_en 		  = 8;	// Active high enable for main chain TDC
+const int pin_tdc_main_trig		  = 7; 	// Raises when TDC for main chain is ready
 
-const int pin_spi_small_csb 	= A0;	// CSb for the small signal chain TDC
-const int pin_spi_small_din		= A0; 	// Data-in pin for the small signal chain TDC
-const int pin_spi_small_dout 	= A0;	// Data-out pin for the small signal chain TDC
-const int pin_spi_small_clk		= A0;	// SPI clock for the small signal chain TDC
-const int pin_tdc_small_intrptb	= A0;	// Interrupt pin for the TDC for the small signal chain
-const int pin_tdc_small_en 		= A0;	// Active high enable for small chain TDC
-const int pin_tdc_small_trig 	= A0;	// Raises when TDC for small chainis ready
+const int pin_spi_small_csb 	  = A12;	// CSb for the small signal chain TDC
+const int pin_spi_small_din		  = 0; 	  // Data-in pin for the small signal chain TDC
+const int pin_spi_small_dout 	  = 1;	  // Data-out pin for the small signal chain TDC
+const int pin_spi_small_clk		  = A13;	// SPI clock for the small signal chain TDC
+const int pin_tdc_small_intrptb	= 27;	  // Interrupt pin for the TDC for the small signal chain
+const int pin_tdc_small_en 		  = 28;	  // Active high enable for small chain TDC
+const int pin_tdc_small_trig 	  = 29;	  // Raises when TDC for small chainis ready
 
 // Constants
-const int N_SCAN 				= 44; 	// Number of scan bits
-const int N_TDC_CONFIG 			= 2; 	// Number of TDC config bytes (not bits!)
-const int N_TDC_DOUT 			= 4;	// Number of TDC data out bytes (not bits!)
-const int B_ADC 				= 16;	// Number of bits for Teensy analogRead
-const int CHAIN_MAIN			= 0;	// Used to indicate the main signal chain
-const int CHAIN_SMALL			= 1;	// Used to indicate the small signal chain
-const int bg_test_time          = 200;   // Number of bandgap test times
+const int N_SCAN 				    = 44;   // Number of scan bits
+const int N_TDC_CONFIG 			= 2; 	  // Number of TDC config bytes (not bits!)
+const int N_TDC_DOUT 			  = 4;	  // Number of TDC data out bytes (not bits!)
+const int B_ADC 				    = 16;	  // Number of bits for Teensy analogRead
+const int CHAIN_MAIN			  = 0;	  // Used to indicate the main signal chain
+const int CHAIN_SMALL       = 1;	  // Used to indicate the small signal chain
+const int bg_test_time      = 200;  // Number of bandgap test times
 
 // Access address for the TDC
 char ADDR_TDC;
@@ -86,45 +86,45 @@ void setup() {
 	digitalWrite(pin_pk_rst, 		LOW);
 
 	// - Chip Analog I/O
-    pinMode(pin_dac_small, 			INPUT);
-    pinMode(pin_dac_main, 			INPUT);
+    pinMode(pin_dac_small, 		INPUT);
+    pinMode(pin_dac_main, 		INPUT);
     pinMode(pin_bandgap, 			INPUT);
     pinMode(pin_pk_out, 			INPUT);
 
     // - On-Chip Supply Voltages
     pinMode(pin_vddaon, 			INPUT);
     pinMode(pin_vddmain, 			INPUT);
-    pinMode(pin_vddsmall, 			INPUT);
+    pinMode(pin_vddsmall, 		INPUT);
 
     // Resets, Enables, and the Like
-    pinMode(pin_pk_rst, 			OUTPUT);
-    pinMode(pin_tdc_rstb, 			OUTPUT);
-    pinMode(pin_tdc_main_en,		OUTPUT);
-    pinMode(pin_tdc_main_trig, 		INPUT);
-    pinMode(pin_tdc_small_en, 		OUTPUT);
-    pinMode(pin_tdc_small_trig, 	INPUT);
+    pinMode(pin_pk_rst, 			  OUTPUT);
+    pinMode(pin_tdc_rstb, 		  OUTPUT);
+    pinMode(pin_tdc_main_en,	  OUTPUT);
+    pinMode(pin_tdc_main_trig,  INPUT);
+    pinMode(pin_tdc_small_en,   OUTPUT);
+    pinMode(pin_tdc_small_trig, INPUT);
 
-    digitalWrite(pin_pk_rst, 	    LOW);
-    digitalWrite(pin_tdc_rstb, 		HIGH);
-    digitalWrite(pin_tdc_main_en, 	LOW);
-    digitalWrite(pin_tdc_small_en, 	LOW);
+    digitalWrite(pin_pk_rst, 	      LOW);
+    digitalWrite(pin_tdc_rstb, 		  HIGH);
+    digitalWrite(pin_tdc_main_en,   LOW);
+    digitalWrite(pin_tdc_small_en,  LOW);
 
     // - SPI
     pinMode(pin_spi_main_csb, 		OUTPUT);
     pinMode(pin_spi_main_din, 		OUTPUT);
     pinMode(pin_spi_main_dout, 		INPUT);
     pinMode(pin_spi_main_clk, 		OUTPUT);
-    pinMode(pin_tdc_main_intrptb, 	INPUT);
+    pinMode(pin_tdc_main_intrptb, INPUT);
 
     digitalWrite(pin_spi_main_csb,  HIGH);
     digitalWrite(pin_spi_main_din, 	LOW);
     digitalWrite(pin_spi_main_clk, 	LOW);
 
-    pinMode(pin_spi_small_csb, 		OUTPUT);
-    pinMode(pin_spi_small_din, 		OUTPUT);
-    pinMode(pin_spi_small_dout, 	INPUT);
-    pinMode(pin_spi_small_clk, 		OUTPUT);
-    pinMode(pin_tdc_small_intrptb, 	INPUT);
+    pinMode(pin_spi_small_csb, 		  OUTPUT);
+    pinMode(pin_spi_small_din, 		  OUTPUT);
+    pinMode(pin_spi_small_dout, 	  INPUT);
+    pinMode(pin_spi_small_clk, 		  OUTPUT);
+    pinMode(pin_tdc_small_intrptb,  INPUT);
 
     digitalWrite(pin_spi_small_csb, HIGH);
     digitalWrite(pin_spi_small_din, LOW);
@@ -186,11 +186,11 @@ void atick() {
 	10kHz clock, 50% duty cycle.
 */
 	digitalWrite(pin_scan_clk, LOW);
-	delayMicroseconds(50);
+	delayMicroseconds(100);
 
 	// Read
 	digitalWrite(pin_scan_clk, HIGH);
-	delayMicroseconds(50);
+	delayMicroseconds(100);
 }
 
 void asc_write() {
