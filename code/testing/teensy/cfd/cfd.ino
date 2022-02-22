@@ -47,10 +47,10 @@ const int pin_tdc_small_trig 	  = 29;	  // Raises when TDC for small chainis rea
 const int N_SCAN 				    = 44;   // Number of scan bits
 const int N_TDC_CONFIG 			= 2; 	  // Number of TDC config bytes (not bits!)
 const int N_TDC_DOUT 			  = 4;	  // Number of TDC data out bytes (not bits!)
-const int B_ADC 				    = 16;	  // Number of bits for Teensy analogRead
+const int B_ADC 				    = 16;	  // Number of bits (precision) for Teensy analogRead
 const int CHAIN_MAIN			  = 0;	  // Used to indicate the main signal chain
 const int CHAIN_SMALL       = 1;	  // Used to indicate the small signal chain
-const int bg_test_time      = 200;  // Number of bandgap test times
+//const int bg_test_time      = 200;  // Number of bandgap test times
 
 // Access address for the TDC
 char ADDR_TDC;
@@ -86,51 +86,52 @@ void setup() {
 	digitalWrite(pin_pk_rst, 		LOW);
 
 	// - Chip Analog I/O
-    pinMode(pin_dac_small, 		INPUT);
-    pinMode(pin_dac_main, 		INPUT);
-    pinMode(pin_bandgap, 			INPUT);
-    pinMode(pin_pk_out, 			INPUT);
+  pinMode(pin_dac_small, 		INPUT);
+  pinMode(pin_dac_main, 		INPUT);
+  pinMode(pin_bandgap, 			INPUT);
+  pinMode(pin_pk_out, 			INPUT);
 
-    // - On-Chip Supply Voltages
-    pinMode(pin_vddaon, 			INPUT);
-    pinMode(pin_vddmain, 			INPUT);
-    pinMode(pin_vddsmall, 		INPUT);
+  // - On-Chip Supply Voltages
+  pinMode(pin_vddaon, 			INPUT);
+  pinMode(pin_vddmain, 			INPUT);
+  pinMode(pin_vddsmall, 		INPUT);
 
-    // Resets, Enables, and the Like
-    pinMode(pin_pk_rst, 			  OUTPUT);
-    pinMode(pin_tdc_rstb, 		  OUTPUT);
-    pinMode(pin_tdc_main_en,	  OUTPUT);
-    pinMode(pin_tdc_main_trig,  INPUT);
-    pinMode(pin_tdc_small_en,   OUTPUT);
-    pinMode(pin_tdc_small_trig, INPUT);
+  // Resets, Enables, and the Like
+  pinMode(pin_pk_rst, 			  OUTPUT);
+  pinMode(pin_tdc_rstb, 		  OUTPUT);
+  pinMode(pin_tdc_main_en,	  OUTPUT);
+  pinMode(pin_tdc_main_trig,  INPUT);
+  pinMode(pin_tdc_small_en,   OUTPUT);
+  pinMode(pin_tdc_small_trig, INPUT);
 
-    digitalWrite(pin_pk_rst, 	      LOW);
-    digitalWrite(pin_tdc_rstb, 		  HIGH);
-    digitalWrite(pin_tdc_main_en,   LOW);
-    digitalWrite(pin_tdc_small_en,  LOW);
+  digitalWrite(pin_pk_rst, 	      LOW);
+  digitalWrite(pin_tdc_rstb, 		  HIGH);
+  digitalWrite(pin_tdc_main_en,   LOW);
+  digitalWrite(pin_tdc_small_en,  LOW);
 
-    // - SPI
-    pinMode(pin_spi_main_csb, 		OUTPUT);
-    pinMode(pin_spi_main_din, 		OUTPUT);
-    pinMode(pin_spi_main_dout, 		INPUT);
-    pinMode(pin_spi_main_clk, 		OUTPUT);
-    pinMode(pin_tdc_main_intrptb, INPUT);
+  // - SPI
+  pinMode(pin_spi_main_csb, 		OUTPUT);
+  pinMode(pin_spi_main_din, 		OUTPUT);
+  pinMode(pin_spi_main_dout, 		INPUT);
+  pinMode(pin_spi_main_clk, 		OUTPUT);
+  pinMode(pin_tdc_main_intrptb, INPUT);
 
-    digitalWrite(pin_spi_main_csb,  HIGH);
-    digitalWrite(pin_spi_main_din, 	LOW);
-    digitalWrite(pin_spi_main_clk, 	LOW);
+  digitalWrite(pin_spi_main_csb,  HIGH);
+  digitalWrite(pin_spi_main_din, 	LOW);
+  digitalWrite(pin_spi_main_clk, 	LOW);
 
-    pinMode(pin_spi_small_csb, 		  OUTPUT);
-    pinMode(pin_spi_small_din, 		  OUTPUT);
-    pinMode(pin_spi_small_dout, 	  INPUT);
-    pinMode(pin_spi_small_clk, 		  OUTPUT);
-    pinMode(pin_tdc_small_intrptb,  INPUT);
+  pinMode(pin_spi_small_csb, 		  OUTPUT);
+  pinMode(pin_spi_small_din, 		  OUTPUT);
+  pinMode(pin_spi_small_dout, 	  INPUT);
+  pinMode(pin_spi_small_clk, 		  OUTPUT);
+  pinMode(pin_tdc_small_intrptb,  INPUT);
 
-    digitalWrite(pin_spi_small_csb, HIGH);
-    digitalWrite(pin_spi_small_din, LOW);
-    digitalWrite(pin_spi_small_clk, LOW);
+  digitalWrite(pin_spi_small_csb, HIGH);
+  digitalWrite(pin_spi_small_din, LOW);
+  digitalWrite(pin_spi_small_clk, LOW);
 
-	analogReadResolution(16);	// 16B -> 13ENOB
+  // Setting the ADC precision
+	analogReadResolution(B_ADC);	// 16B -> 13ENOB
 
 	// Initialize SPI speed, mode, and endianness
 	SPI.begin();
@@ -452,7 +453,7 @@ void tdc_read(int chain) {
 /* ------------------------------------------ */
 void peak_reset() {
 /* 
-	Resets the test structure peak detector
+ *  Resets the test structure peak detector
 */
 	digitalWrite(pin_pk_rst, HIGH);
 	delayMicroseconds(50);
@@ -464,26 +465,40 @@ void peak_reset() {
 /* ------------------------------------------ */
 void bandgap_test() {
 /*
-	read temperature and bandgap voltage
+ * Inputs:
+ *  None.
+ * Returns:
+ *  None.
+ * Notes:
+ *  Prints the internal temperature (in Celsius) of the Teensy over 
+ *  serial and measures (and prints over serial) the measured 
+ *  bandgap voltage _in LSB_. Note that the Teensy 3.6 internal 
+ *  temperature reading will use the ADC's max precision. Repeats 
+ *  num_meas times, with print values alternating between temperature 
+ *  and voltage, with temperature coming first. 1 second delay between
+ *  each temperature/voltage pair reading.
 */
-/*
-    int bg_test_num = 0;
-    int bg_voltage,temp_value;
-    while(bg_test_num != bg_test_time) {
-        //bandgap voltage read
-        bg_voltage = analogRead(pin_vddmain);
-        //transmit through serial
-        //Serial.print("bandgap voltage :");
-        Serial.println(bg_voltage);
-        //Temperature read
-        temp_value = InternalTemperature.readTemperatureC();
-        //Serial.print("Temperature :");
-        Serial.println(temp_value);
-        bg_test_num += 1;
-        //delay
-        delay(1000);
-    }
-*/
+
+  // Read number of times to take measurement over serial
+  int num_meas = 0;
+  if (Serial.available()) {
+    num_meas = Serial.read();
+  }
+  char message_start[50];
+  sprintf(message_start, "Beginning %u bandgap measurements...", num_meas);
+  Serial.println(message_start);
+  
+  for (int i=0; i<num_meas; i++) {
+    // Temperature reading
+    Serial.println(InternalTemperature.readTemperatureC());
+
+    // Bandgap voltage reading (in LSB!!)
+    analogReadResolution(B_ADC);  // 16B -> 13ENOB
+    Serial.println(analogRead(pin_bandgap));
+
+    // 1s pause between each reading
+    delay(1000);
+  }
 }
 
 /* ------------- */
