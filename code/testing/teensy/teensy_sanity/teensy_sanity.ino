@@ -1,3 +1,7 @@
+#include <InternalTemperature.h> // include the InternalTemperature library
+/* --------------------------------- */
+/* --- Pin Mappings (Teensy 3.6) --- */
+/* --------------------------------- */
 // Analog scan chain
 const int pin_scan_inb      = A15;  // ASC input data
 const int pin_scan_outb     = A18;  // ASC output data
@@ -17,8 +21,15 @@ void setup() {
 
 void loop() {
   // --- Level Shifter Function Check ---
-  int pin_arr[] = {pin_scan_inb, pin_scan_clk, pin_scan_loadb};
-  check_levelshift(pin_arr, sizeof(pin_arr)/sizeof(int));
+  if (false) {
+    int pin_arr[] = {pin_scan_inb, pin_scan_clk, pin_scan_loadb};
+    check_levelshift(pin_arr, sizeof(pin_arr)/sizeof(int));
+  }
+
+  // --- Teensy Internal Temp Sensor ---
+  if (true) {
+    check_internalTemp();
+  }
 }
 
 void check_levelshift(int pin_arr[], int num_pins) {
@@ -40,4 +51,10 @@ void check_levelshift(int pin_arr[], int num_pins) {
     else {digitalWrite(pin_idx, HIGH);}
   }
   delayMicroseconds(50);
+}
+
+void check_internalTemp() {
+  for (int i=0; i<100; i++) {
+    Serial.println(InternalTemperature.readTemperatureC());
+  }
 }

@@ -1,33 +1,63 @@
-import serial
+import serial, time
 import numpy as np
 import matplotlib.pyplot as plt
 
-def get_data(com_port):
+def get_data(teensy_port, temp_port, teensy_precision=16, vfsr=3.3, iterations=100,
+        delay=1):
     '''
-    Inputs: DOCUMENT THIS, DUDE
+    Inputs:
+        teensy_port: String. Teensy COM port.
+        temp_port: String. Temperature sensor COM port.
+        teensy_precision: Integer. Number of bits for the Teensy's output.
+        vfsr: Float. Full scale range voltage of the Teensy ADC used to 
+            measure the bandgap voltage.
+        iterations: Integer. Number of measurements to take. Note that
+            the temperature will be sweeping over this time.
+        delay: Float. Number of seconds to delay.
+    Returns:
+        teensy_vec: List of floats. Internal temperature readings from
+            the Teensy. Contains "iterations" elements.
+        temp_vec: List of floats. Temperature readings from the 
+            ground truth temperature sensor. Contains "iterations"
+            elements.
+        vbg_vec: List of floats. Bandgap voltages (in V). Contains
+            "iterations" elements.
+    Notes:
+        Return values are index-matched.
     '''
-    ser = serial.Serial(port=com_port,
-                        baudrate=9600,
+    # Open serial connections
+    teensy_ser = serial.Serial(port=teensy_port,
+                        baudrate=19200,
                         parity=serial.PARITY_NONE,
                         stopbits=serial.STOPBITS_ONE,
-                        bytesize=serial.EIGHTBITS)
+                        bytesize=serial.EIGHTBITS,
+                        timeout=1)
+    temp_ser = serial.Serial(port=temp_port,
+                        baudrate=19200,
+                        parity=serial.PARITY_NONE,
+                        stopbits=serial.STOPBITS_ONE,
+                        bytesize=serial.EIGHTBITS,
+                        timeout=1)
 
-    ser.write(b'bandgaptest\n')
-    num = 1
-    list_volt = list([])
-    list_temp =
-    while num != 20:
-        volt_line = ser.readline()
-        temp_line = ser.readline()
-        str_volt_line = volt_line.decode('utf-8')
-        num_volt_line = int(str_volt_line)
-        list_volt = list_volt + [num_volt_line]
-        str_temp_line = temp_line.decode('utf-8')
-        num_volt_line = int(str_temp_line)
-        list_temp = list_temp + [num_volt_line]
+    teensy_vec = []
+    temp_vec = []
+    vbg_vec = []
 
-    #plot
-    plt.plot(list_temp, list_volt,label='bandgap vs temperature',color='red',linewidth=2)
-    plt.xlabel('Temperature (Teensy)')
-    plt.ylabel('Voltage (V)')
-    plt.show()
+    for i in range(iterations):
+        # Trigger Teensy and gnd truth reading
+        teensy_ser.write(b'bandgaptest\n')
+        temp_ser.write(b'temp\n')
+
+        # Read data from Teensy
+        teensy_vec.append(teensy_ser.readline())
+
+        vbg = float(teensy_ser.readline())/(2**teensy_precision) * vfsr
+        vbg_vec.append(vbg)
+
+        # Read data from gnd truth
+        temp_ser.append(temp_ser.readline())
+
+    teensy_ser.close()
+    temp_ser.close()
+
+    return teensy_vec, temp_vec, vbg_vec

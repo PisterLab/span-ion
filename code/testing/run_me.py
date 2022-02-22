@@ -54,9 +54,6 @@ def run_main():
 		print(float(vout_str))
 		keithley.close()
 
-	if False:
-		get_data()
-
 if __name__ == "__main__":
 	print('blep')
 	try:

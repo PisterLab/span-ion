@@ -1,5 +1,5 @@
-#include <SPI.h> // include the SPI library
-#include <InternalTemperature.h> // include the InternalTemperature library
+#include <SPI.h>
+#include <InternalTemperature.h>
 /* --------------------------------- */
 /* --- Pin Mappings (Teensy 3.6) --- */
 /* --------------------------------- */
@@ -473,32 +473,14 @@ void bandgap_test() {
  *  Prints the internal temperature (in Celsius) of the Teensy over 
  *  serial and measures (and prints over serial) the measured 
  *  bandgap voltage _in LSB_. Note that the Teensy 3.6 internal 
- *  temperature reading will use the ADC's max precision. Repeats 
- *  num_meas times, with print values alternating between temperature 
- *  and voltage, with temperature coming first. 1 second delay between
- *  each temperature/voltage pair reading.
+ *  temperature reading will use the ADC's max precision. 
 */
-
-  // Read number of times to take measurement over serial
-  int num_meas = 0;
-  if (Serial.available()) {
-    num_meas = Serial.read();
-  }
-  char message_start[50];
-  sprintf(message_start, "Beginning %u bandgap measurements...", num_meas);
-  Serial.println(message_start);
-  
-  for (int i=0; i<num_meas; i++) {
     // Temperature reading
     Serial.println(InternalTemperature.readTemperatureC());
 
     // Bandgap voltage reading (in LSB!!)
     analogReadResolution(B_ADC);  // 16B -> 13ENOB
     Serial.println(analogRead(pin_bandgap));
-
-    // 1s pause between each reading
-    delay(1000);
-  }
 }
 
 /* ------------- */
