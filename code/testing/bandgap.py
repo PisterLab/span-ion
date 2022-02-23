@@ -1,4 +1,4 @@
-import serial, time
+import serial, time, temp_chamber
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -13,7 +13,7 @@ def get_data(teensy_port, temp_port, teensy_precision=16, vfsr=3.3, iterations=1
             measure the bandgap voltage.
         iterations: Integer. Number of measurements to take. Note that
             the temperature will be sweeping over this time.
-        delay: Float. Number of seconds to delay.
+        delay: Float. Number of seconds to pause between readings.
     Returns:
         teensy_vec: List of floats. Internal temperature readings from
             the Teensy. Contains "iterations" elements.
@@ -32,12 +32,14 @@ def get_data(teensy_port, temp_port, teensy_precision=16, vfsr=3.3, iterations=1
                         stopbits=serial.STOPBITS_ONE,
                         bytesize=serial.EIGHTBITS,
                         timeout=1)
-    temp_ser = serial.Serial(port=temp_port,
-                        baudrate=19200,
-                        parity=serial.PARITY_NONE,
-                        stopbits=serial.STOPBITS_ONE,
-                        bytesize=serial.EIGHTBITS,
-                        timeout=1)
+    temp_ser = minimalmodbus.Instrument(temp_port, 1)
+    temp_ser.serial.baudrate = 9600
+    # temp_ser = serial.Serial(port=temp_port,
+    #                     baudrate=19200,
+    #                     parity=serial.PARITY_NONE,
+    #                     stopbits=serial.STOPBITS_ONE,
+    #                     bytesize=serial.EIGHTBITS,
+    #                     timeout=1)
 
     teensy_vec = []
     temp_vec = []
@@ -46,7 +48,7 @@ def get_data(teensy_port, temp_port, teensy_precision=16, vfsr=3.3, iterations=1
     for i in range(iterations):
         # Trigger Teensy and gnd truth reading
         teensy_ser.write(b'bandgaptest\n')
-        temp_ser.write(b'temp\n')
+        # temp_ser.write(b'temp\n')
 
         # Read data from Teensy
         teensy_vec.append(teensy_ser.readline())
@@ -55,9 +57,13 @@ def get_data(teensy_port, temp_port, teensy_precision=16, vfsr=3.3, iterations=1
         vbg_vec.append(vbg)
 
         # Read data from gnd truth
-        temp_ser.append(temp_ser.readline())
+        # temp_vec.append(temp_ser.readline())
+        temp_vec.append(temp_chamber.read_temp(temp_ser, 1))
+
+        time.sleep()
 
     teensy_ser.close()
-    temp_ser.close()
+    # temp_ser.close()
+    temp_ser.serial.close()
 
     return teensy_vec, temp_vec, vbg_vec

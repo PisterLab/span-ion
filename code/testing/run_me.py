@@ -40,6 +40,18 @@ def run_main():
 			code_vec=range()
 			)
 
+	###############################
+	### Bandgap in Temp Chamber ###
+	###############################
+	if False:
+		bandgap_meas_params = dict(
+			teensy_port 		= 'COM3', 
+			temp_port 			= 'COM4',
+			teensy_precision 	= 16,
+			vfsr 				= 3.3,
+			iterations 			= 100,
+			delay 				= 1)
+
 	###############
 	### Scratch ###
 	###############

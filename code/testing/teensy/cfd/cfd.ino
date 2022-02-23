@@ -25,8 +25,6 @@ const int pin_pk_rst			= A14;	// Reset for test structure peak detector
 const int pin_tdc_rstb 		= A3;	  // Reset for TDC input latch
 
 // TDC SPI and other connections
-// TODO Don't worry about how these are all currently A0
-// What matters is the names on the left side
 const int pin_spi_main_csb 		  = 10;	// CSb for the main signal chain TDC
 const int pin_spi_main_din		  = 11; // Data-in pin for the main signal chain TDC
 const int pin_spi_main_dout 	  = 12;	// Data-out pin for the main signal chain TDC
@@ -50,7 +48,6 @@ const int N_TDC_DOUT 			  = 4;	  // Number of TDC data out bytes (not bits!)
 const int B_ADC 				    = 16;	  // Number of bits (precision) for Teensy analogRead
 const int CHAIN_MAIN			  = 0;	  // Used to indicate the main signal chain
 const int CHAIN_SMALL       = 1;	  // Used to indicate the small signal chain
-//const int bg_test_time      = 200;  // Number of bandgap test times
 
 // Access address for the TDC
 char ADDR_TDC;
@@ -138,7 +135,7 @@ void setup() {
 	SPISettings settings_tdc_spi(16000000, MSBFIRST, SPI_MODE1);
 
 	// TODO for Lydia: enable 16MHz clock for TDC reference
-}
+} // end setup()
 
 /* ----------------------- */
 /* --- Runs repeatedly --- */
@@ -177,7 +174,7 @@ void loop() {
 		inputString = "";
 		stringComplete = false;
 	}
-}
+} // end loop()
 
 /* ------------------------- */
 /* --- Analog Scan Chain --- */
@@ -192,7 +189,7 @@ void atick() {
 	// Read
 	digitalWrite(pin_scan_clk, HIGH);
 	delayMicroseconds(100);
-}
+} // end atick()
 
 void asc_write() {
 /*
@@ -240,7 +237,7 @@ void asc_load() {
 	Serial.println("Executing ASC load");
 	digitalWrite(pin_scan_loadb, LOW);
 	digitalWrite(pin_scan_loadb, HIGH);
-}
+} // end asc_write()
 
 void asc_read() {
 /*
@@ -281,7 +278,7 @@ void asc_read() {
 
 	// Terminator
 	Serial.println();
-}
+} // end asc_read()
 
 /* ----------------------------------- */
 /* --- TDC Control & Communication --- */
@@ -373,7 +370,7 @@ void tdc_write(int chain) {
 
 	// if timeout, warn the computer
 	Serial.println("TDC trigger not armed");
-}
+} // end tdc_write()
 
 
 void tdc_read(int chain) {
@@ -445,7 +442,7 @@ void tdc_read(int chain) {
 
 	// terminator
 	Serial.println("TDC read complete");
-}
+} // end tdc_read()
 
 
 /* ------------------------------------------ */
@@ -481,16 +478,21 @@ void bandgap_test() {
     // Bandgap voltage reading (in LSB!!)
     analogReadResolution(B_ADC);  // 16B -> 13ENOB
     Serial.println(analogRead(pin_bandgap));
-}
+} // end bandgap_test()
 
 /* ------------- */
 /* --- Other --- */
 /* ------------- */
 void serialEvent() {
 /* 
-	SerialEvent occurs whenever new data comes in the hardware serial RX. This
-	routine is run between each time loop() runs, so using delay inside loop
-	can delay response. Multiple bytes of data may be available.
+ *  Inputs:
+ *    None
+ *  Returns:
+ *    None
+ *  Notes:
+ *    SerialEvent occurs whenever new data comes in the hardware serial RX. This
+ *    routine is run between each time loop() runs, so using delay inside loop
+ *    can delay response. Multiple bytes of data may be available.
 */
 	if (Serial.available()) {
 		char inChar = (char)Serial.read();
@@ -501,4 +503,4 @@ void serialEvent() {
 			stringComplete = true;
 		}
 	}
-}
+} // end serialEvent()
