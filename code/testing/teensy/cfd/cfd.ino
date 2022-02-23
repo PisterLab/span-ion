@@ -469,14 +469,13 @@ void bandgap_test() {
  * Notes:
  *  Prints the internal temperature (in Celsius) of the Teensy over 
  *  serial and measures (and prints over serial) the measured 
- *  bandgap voltage _in LSB_. Note that the Teensy 3.6 internal 
- *  temperature reading will use the ADC's max precision. 
+ *  bandgap voltage _in LSB_.
 */
     // Temperature reading
+    InternalTemperature.begin(TEMPERATURE_NO_ADC_SETTING_CHANGES);
     Serial.println(InternalTemperature.readTemperatureC());
 
     // Bandgap voltage reading (in LSB!!)
-    analogReadResolution(B_ADC);  // 16B -> 13ENOB
     Serial.println(analogRead(pin_bandgap));
 } // end bandgap_test()
 

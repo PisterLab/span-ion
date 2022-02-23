@@ -1,15 +1,20 @@
-import serial, pyvisa
+import serial, pyvisa, minimalmodbus
 import random
+from datetime import date, datetime
 import os, sys, time, pdb, traceback
-import scan # testing# , bandgap
+import csv
+
+import scan, bandgap
 
 def run_main():
-	teensy_port = 'COM3'
+	timestamp = datetime.now()
+	timestamp_str = timestamp.strftime("%Y%m%d_%H%M%S")
 
 	####################
 	### Program Scan ###
 	####################
-	if True:
+	if False:
+		teensy_port = 'COM3'
 		asc_params = dict(
 			# MSB -> LSB
 			preamp_res 		= [0, 0],
@@ -43,14 +48,25 @@ def run_main():
 	###############################
 	### Bandgap in Temp Chamber ###
 	###############################
-	if False:
+	if True:
 		bandgap_meas_params = dict(
 			teensy_port 		= 'COM3', 
-			temp_port 			= 'COM4',
+			temp_port 			= '',
+			chamber_port 		= 'COM4',
 			teensy_precision 	= 16,
 			vfsr 				= 3.3,
-			iterations 			= 100,
+			iterations 			= 10800,
 			delay 				= 1)
+		file_out = f'../../data/testing/{timestamp_str}_bandgap_{bandgap_meas_params["iterations"]}x.csv'
+		teensy_vec, temp_vec, chamber_vec, vbg_vec = bandgap.get_data(**bandgap_meas_params)
+
+		with open(file_out, 'w', newline='') as csvfile:
+			fwriter = csv.writer(csvfile, delimiter=",", 
+				quotechar="|", quoting=csv.QUOTE_MINIMAL)
+			fwriter.writerow(['Teensy Internal Temp'] + teensy_vec)
+			fwriter.writerow(['TMP102'] + temp_vec)
+			fwriter.writerow(['Chamber'] + chamber_vec)
+			fwriter.writerow(['Bandgap (V)'] + vbg_vec)
 
 	###############
 	### Scratch ###
@@ -67,7 +83,6 @@ def run_main():
 		keithley.close()
 
 if __name__ == "__main__":
-	print('blep')
 	try:
 		run_main()
 	except:
