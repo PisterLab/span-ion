@@ -1,32 +1,19 @@
-import pyvisa
-from time import sleep
-from scan import *
+import pyvisa, time, serial
 from dac import *
 from gpib import *
+import spani_globals, scan
 
-OUT_DAC_MAIN 	= 0
-OUT_DAC_SMALL 	= 1
-OUT_VDD_MAIN 	= 2
-OUT_VDD_SMALL	= 3
-OUT_VDD_AON 	= 4
-OUT_REF_PREAMP = 5
-
-N_BITS_MAP = {
-	OUT_DAC_MAIN 	: 8,
-	OUT_DAC_SMALL 	: 8,
-	OUT_REF_PREAMP	: 8,
-	OUT_VDD_MAIN 	: 5,
-	OUT_VDD_SMALL 	: 5,
-	OUT_VDD_AON 	: 5}
-
-def test_dac(num_iterations, code_vec, dac_name, t_wait=.001):
+def test_dac(com_port, num_iterations, code_vec, dac_name, vfsr=3.3, precision=16, t_wait=.001):
 	'''
 	Inputs:
+		com_port: String. Name of the COM port to connect to.
 		num_iterations: Integer. Number of times to measure a single code.
 		code_vec: Collection of integers. Codes to measure.
 		num_bits: Collection of bits.
 		dac_name: Indicates which DAC is being tested, e.g. OUT_DAC_MAIN,
-			OUT_DAC_SMALL, OUT_VDD_MAIN, etc.
+			OUT_DAC_SMALL, OUT_VDD_MAIN, OUT_VDD_AON
+		vfsr: Float. Voltage full scale range of the Teensy analogRead.
+		precision: Integer. Number of bits used by Teensy in analogRead.
 		t_wait: Float. Time in seconds to pause between each measurement
 			from the voltmeter.
 	Returns:
@@ -38,26 +25,37 @@ def test_dac(num_iterations, code_vec, dac_name, t_wait=.001):
 		AssertionError: If a code in the collection of codes exceeds the
 			number of bits permitted.
 	Notes:
-		TODO GPIB for digital multimeter is broken. Need some other voltmeter.
+		TODO GPIB for digital multimeter is broken, hence the commented-out
+		bits. Instead, it uses Teensy's analogRead.
 	'''
 	code_data_dict = {code:[] for code in code_vec}
+
+	num_bits = spani_globals.N_BITS_MAP[dac_name]
 
 	code_max = 1 << num_bits
 	assert max(code_vec) < code_max, f'Code {max(code_vec)} exceeds allowable' \
 		+ f'max {code_max}'
 
 	# Connect to voltmeter
-	rm = pyvisa.ResourceManager()
-	vm = rsrc_open(rm)
+	# rm = pyvisa.ResourceManager()
+	# vm = rsrc_open(rm)
 
 	# Configure voltmeter
-	smu_raw = ''
-	while smu_raw.lower() not in ('a', 'b'):
-		smu_raw = input('Choose channel (a/b): ')
-		smu_raw = smu_raw.lower()
-	smu_sel = gpib.SMU_A if smu_raw=='a' else gpib.SMU_B
-	smu_str = f'smu{smu_sel}'
-	voltmeter_Keithley2634B_config(sm=vm, smu=smu_sel, autorange=True)
+	# smu_raw = ''
+	# while smu_raw.lower() not in ('a', 'b'):
+	# 	smu_raw = input('Choose channel (a/b): ')
+	# 	smu_raw = smu_raw.lower()
+	# smu_sel = gpib.SMU_A if smu_raw=='a' else gpib.SMU_B
+	# smu_str = f'smu{smu_sel}'
+	# voltmeter_Keithley2634B_config(sm=vm, smu=smu_sel, autorange=True)
+
+	# Open Teensy serial connection
+	teensy_ser = serial.Serial(port=com_port,
+                        baudrate=19200,
+                        parity=serial.PARITY_NONE,
+                        stopbits=serial.STOPBITS_ONE,
+                        bytesize=serial.EIGHTBITS,
+                        timeout=1)
 
 	# Take measurements, one step at a time
 	for code in code_vec:
@@ -67,39 +65,53 @@ def test_dac(num_iterations, code_vec, dac_name, t_wait=.001):
 		code_binary = extra_zeros + code_binary
 
 		# Program scan 
-		en_main = 1 if dac_name in (OUT_DAC_MAIN, OUT_VDD_MAIN, OUT_REF_PREAMP) \
+		en_main = 1 if dac_name in (spani_globals.OUT_DAC_MAIN, 
+			spani_globals.OUT_VDD_MAIN, 
+			spani_globals.OUT_REF_PREAMP) \
 			else 0 
-		en_small = 1 if dac_name in (OUT_DAC_SMALL, OUT_VDD_SMALL) else 0
+		en_small = 1 if dac_name in (spani_globals.OUT_DAC_SMALL, 
+			spani_globals.OUT_VDD_SMALL) else 0
 		
 		scan_arg_map = {
-			OUT_DAC_MAIN 	: 'dac_sel',
-			OUT_DAC_SMALL 	: 'dac_sel',
-			OUT_REF_PREAMP	: 'vref_preamp',
-			OUT_VDD_MAIN 	: 'vdd_signal',
-			OUT_VDD_SMALL 	: 'vdd_signal',
-			OUT_VDD_AON 	: 'vdd_aon'}
+			spani_globals.OUT_DAC_MAIN 		: 'dac_sel',
+			spani_globals.OUT_DAC_SMALL 	: 'dac_sel',
+			spani_globals.OUT_REF_PREAMP	: 'vref_preamp',
+			spani_globals.OUT_VDD_MAIN 		: 'vdd_signal',
+			spani_globals.OUT_VDD_SMALL 	: 'vdd_signal',
+			spani_globals.OUT_VDD_AON 		: 'vdd_aon'}
+
+		teensy_arg_map = {
+			spani_globals.OUT_DAC_MAIN		: b'dacreadmain\n',
+			spani_globals.OUT_DAC_SMALL		: b'dacreadsmall\n',
+			spani_globals.OUT_REF_PREAMP	: b'dacreadpreamp\n',
+			spani_globals.OUT_VDD_MAIN		: b'dacreadvddmain\n',
+			spani_globals.OUT_VDD_SMALL		: b'dacreadvddsmall\n',
+			spani_globals.OUT_VDD_AON		: b'dacreadvddaon\n'}
 
 		construct_scan_params = {
 			scan_arg_map[dac_name]: code_binary,
 			'en_main' : [en_main],
 			'en_small': [en_small]}
 		
-		scan_bits = construct_scan(**construct_scan_params)
+		scan_bits = scan.construct_ASC(**construct_scan_params)
 
 		# Take N=num_iterations measurements TODO
 		for _ in range(num_iterations):
-			time.sleep(t_wait)
-			vm.write(f'print({smu_str}.measure.v())')
+			# vm.write(f'print({smu_str}.measure.v())')
 			try:
-				vout_str = vm.read()
-				vout = float(vout_str)
+				cout = int(teensy_ser.readline())
+				vout = vfsr * cout / (2**precision)
+				# vout_str = vm.read()
+				# vout = float(vout_str)
 			except Exception as e:
 				print(e)
 				vout = float('nan')
 			code_data_dict[code].append(vout)
+			time.sleep(t_wait)
 
-	# Close connection to voltmeter
-	vm.close()
+	# Close connection
+	# vm.close()
+	teensy_ser.close()
 	return code_data_dict
 
 

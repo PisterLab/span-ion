@@ -169,6 +169,15 @@ void loop() {
 		else if (inputString == "bandgaptest\n") {
 		    bandgap_test();
 		}
+   else if (inputString == "dacreadvddaon\n") {
+      dac_read(pin_vddaon);
+    }
+   else if (inputString == "dacreadvddmain\n") {
+      dac_read(pin_vddmain);
+    }
+   else if (inputString == "dacreadvddsmall\n") {
+      dac_read(pin_vddsmall);
+    }
 
 		// Reset to listen for a new '\n' terminated string over serial
 		inputString = "";
@@ -478,6 +487,21 @@ void bandgap_test() {
     // Bandgap voltage reading (in LSB!!)
     Serial.println(analogRead(pin_bandgap));
 } // end bandgap_test()
+
+/* ----------------- */
+/* --- DAC Tests --- */
+/* ----------------- */
+void dac_read(int pin) {
+/* 
+ * Inputs:
+ *  pin: Integer. Designation of the pin to analogRead.
+ * Returns:
+ *  None.
+ * Notes:
+ * Prints result in LSB over Serial.
+*/
+  Serial.println(analogRead(pin));
+}
 
 /* ------------- */
 /* --- Other --- */

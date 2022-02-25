@@ -47,12 +47,12 @@ def program_scan(com_port, ASC) -> None:
 	x = ser.readline()
 	scan_out = x[::-1]
 
-	print(ASC_string)
+	print(ASC_string[::-1])
 	print(scan_out.decode())
 
 	# Compare what was written to what was read back
 	ser.close()
-	if int(ASC_string) == int(scan_out.decode()):
+	if int(ASC_string[::-1]) == int(scan_out.decode()):
 		print('Read matches write')
 	else:
 		raise ValueError('Read/write comparison incorrect')
