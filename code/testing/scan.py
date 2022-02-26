@@ -8,24 +8,18 @@ import difflib
 
 from typing import List, Mapping
 
-def program_scan(com_port, ASC) -> None:
+def program_scan(ser, ASC) -> None:
 	'''
 	Inputs:
-		com_port: String. Name of the COM port to connect to.
+		ser: serial.Serial. Open COM port to the Teensy.
 		ASC: List of integers. Analog scan chain bits.
 	Returns:
 		None.
 	Raises:
 		ValueError if scan in doesn't match scan out.
+	Notes:
+		Closes serial connection if scan in doesn't match scan out.
 	'''
-	# Open COM port to Teensy to bit-bang scan chain
-	ser = serial.Serial(port=com_port,
-		baudrate=19200,
-		parity=serial.PARITY_NONE,
-		stopbits=serial.STOPBITS_ONE,
-		bytesize=serial.EIGHTBITS,
-		timeout=5)
-
 	# Convert array to string for UART
 	ASC_string = ''.join(map(str,ASC))
 
@@ -47,15 +41,15 @@ def program_scan(com_port, ASC) -> None:
 	x = ser.readline()
 	scan_out = x[::-1]
 
-	print(ASC_string[::-1])
-	print(scan_out.decode())
+	print(ASC_string)
+	print(scan_out.decode()[::-1])
 
-	# Compare what was written to what was read back
-	ser.close()
-	if int(ASC_string[::-1]) == int(scan_out.decode()):
+	if int(ASC_string) == int(scan_out.decode()[::-1]):
 		print('Read matches write')
 	else:
-		raise ValueError('Read/write comparison incorrect')
+		raise ValueError(f'Read/write comparison incorrect {ASC_string}|{int(scan_out.decode())}')
+		teensy_ser.close()
+
 
 def construct_ASC(preamp_res 	=[0]*2,
 				delay_res 		=[0]*2,
@@ -138,4 +132,6 @@ def construct_ASC(preamp_res 	=[0]*2,
 	asc[32] = en_main[0]
 	asc[33] = en_small[0]
 
+	# TODO I think I need to invert one more time?
+	asc = [int(-(b-1)) for b in asc]
 	return asc

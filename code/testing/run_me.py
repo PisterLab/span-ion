@@ -28,23 +28,23 @@ def run_main():
 			vref_preamp 	= [0, 0, 0, 0, 0, 0, 0, 0],
 			vdd_aon			= [1, 1, 1, 1, 1],
 			vdd_signal		= [1, 1, 1, 1, 1],
-			en_main			= [0],
-			en_small		= [0])
+			en_main			= [1],
+			en_small		= [1])
 
 		print("Constructing scan chain...")
 		asc = scan.construct_ASC(**asc_params)
-		# asc = [0, 1] * 22
+		# asc = [1, 1] * 22
 		print(f"Programming scan...{asc}")
-		scan.program_scan(com_port=teensy_port, ASC=asc)
+		scan.test_program_scan(com_port=teensy_port, ASC=asc)
 
 	#####################
 	### Test DACs ###
 	#####################
 	if True:
-		which_dac = spani_globals.OUT_DAC_MAIN
+		which_dac = spani_globals.OUT_REF_PREAMP
 		test_dac_params = dict(
 			com_port='COM5',
-			num_iterations=1,
+			num_iterations=1000,
 			code_vec=range(int(2**spani_globals.N_BITS_MAP[which_dac])),
 			dac_name=which_dac,
 			vfsr=3.3,

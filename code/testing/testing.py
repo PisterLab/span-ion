@@ -1,4 +1,4 @@
-import pyvisa, time, serial
+import pyvisa, time, serial, sys, os
 from dac import *
 from gpib import *
 import spani_globals, scan
@@ -13,7 +13,9 @@ def test_dac(com_port, num_iterations, code_vec, dac_name, vfsr=3.3, precision=1
 		dac_name: Indicates which DAC is being tested, e.g. OUT_DAC_MAIN,
 			OUT_DAC_SMALL, OUT_VDD_MAIN, OUT_VDD_AON
 		vfsr: Float. Voltage full scale range of the Teensy analogRead.
-		precision: Integer. Number of bits used by Teensy in analogRead.
+		precision: Integer. Number of bits used by Teensy in analogRead. Note
+			that this is set in the Teensy code, so this should be adjusted 
+			in the Python to match.
 		t_wait: Float. Time in seconds to pause between each measurement
 			from the voltmeter.
 	Returns:
@@ -25,8 +27,10 @@ def test_dac(com_port, num_iterations, code_vec, dac_name, vfsr=3.3, precision=1
 		AssertionError: If a code in the collection of codes exceeds the
 			number of bits permitted.
 	Notes:
-		TODO GPIB for digital multimeter is broken, hence the commented-out
-		bits. Instead, it uses Teensy's analogRead.
+		TODO GPIB for digital multimeter is wonky, hence the commented-out
+			bits. Instead, it uses Teensy's analogRead.
+		analogRead precision is set in the Teensy code, so the value of
+			"precision" should be adjusted as necessary.
 	'''
 	code_data_dict = {code:[] for code in code_vec}
 
@@ -49,13 +53,14 @@ def test_dac(com_port, num_iterations, code_vec, dac_name, vfsr=3.3, precision=1
 	# smu_str = f'smu{smu_sel}'
 	# voltmeter_Keithley2634B_config(sm=vm, smu=smu_sel, autorange=True)
 
+
 	# Open Teensy serial connection
 	teensy_ser = serial.Serial(port=com_port,
-                        baudrate=19200,
-                        parity=serial.PARITY_NONE,
-                        stopbits=serial.STOPBITS_ONE,
-                        bytesize=serial.EIGHTBITS,
-                        timeout=1)
+                    baudrate=19200,
+                    parity=serial.PARITY_NONE,
+                    stopbits=serial.STOPBITS_ONE,
+                    bytesize=serial.EIGHTBITS,
+                    timeout=1)
 
 	# Take measurements, one step at a time
 	for code in code_vec:
@@ -93,10 +98,23 @@ def test_dac(com_port, num_iterations, code_vec, dac_name, vfsr=3.3, precision=1
 			'en_main' : [en_main],
 			'en_small': [en_small]}
 		
-		scan_bits = scan.construct_ASC(**construct_scan_params)
+		# Program scan and temporarily suppress print statements
+		try:
+			spani_globals.block_print()
+			scan_bits = scan.construct_ASC(**construct_scan_params)
+			scan.program_scan(ser=teensy_ser, ASC=scan_bits)
+			spani_globals.enable_print()
+		except Exception as e:
+			spani_globals.enable_print()
+			raise e
+
+		# Random blank prints that show up--not sure why
+		for _ in range(2):
+			teensy_ser.readline()
 
 		# Take N=num_iterations measurements TODO
-		for _ in range(num_iterations):
+		for i in range(num_iterations):
+			teensy_ser.write(teensy_arg_map[dac_name])
 			# vm.write(f'print({smu_str}.measure.v())')
 			try:
 				cout = int(teensy_ser.readline())
@@ -107,12 +125,37 @@ def test_dac(com_port, num_iterations, code_vec, dac_name, vfsr=3.3, precision=1
 				print(e)
 				vout = float('nan')
 			code_data_dict[code].append(vout)
+			print(f'Code/No. {code}/{i} -> {vout}')
 			time.sleep(t_wait)
 
 	# Close connection
 	# vm.close()
 	teensy_ser.close()
 	return code_data_dict
+
+def test_program_scan(com_port, ASC) -> None:
+	'''
+	Inputs:
+		com_port: String. Name of the COM port to connect to.
+		ASC: List of integers. Analog scan chain bits.
+	Returns:
+		None.
+	Raises:
+		ValueError if scan in doesn't match scan out.
+	'''
+	# Open COM port to Teensy to bit-bang scan chain
+	ser = serial.Serial(port=com_port,
+		baudrate=19200,
+		parity=serial.PARITY_NONE,
+		stopbits=serial.STOPBITS_ONE,
+		bytesize=serial.EIGHTBITS,
+		timeout=5)
+	
+	# Program Teensy, close if incorrect
+	program_scan(ser=ser, ASC=ASC)
+	
+	# Otherwise just close normally
+	ser.close()
 
 
 def test_main(num_iterations, scan_dict, teensy_port,):
