@@ -1,4 +1,5 @@
-import pyvisa, time, serial, sys, os
+import pyvisa, serial, minimalmodbus
+import time, sys, os
 from dac import *
 from gpib import *
 import spani_globals, scan, temp_chamber
@@ -189,69 +190,70 @@ def temp_meas(tmp_port="", chamber_port="",
 	use_TMP102 = bool(tmp_port)
 	use_chamber = bool(chamber_port)
 
-	assert use_TMP102 or use_chamber, 
-		"Must use TMP102 or chamber"
+	assert use_TMP102 or use_chamber, "Must use TMP102 or chamber"
 
+	teensy_vec = []
 	tmp_vec = []
 	chamber_vec = []
 
 	# Open serial connections
-    if use_TMP102:
-        tmp_ser = serial.Serial(port=tmp_port,
-                            baudrate=19200,
-                            parity=serial.PARITY_NONE,
-                            stopbits=serial.STOPBITS_ONE,
-                            bytesize=serial.EIGHTBITS,
-                            timeout=1)
-    if use_chamber:
-        chamber_ser = minimalmodbus.Instrument(chamber_port, 1)
-        chamber_ser.serial.baudrate = 9600
+	if use_TMP102:
+		tmp_ser = serial.Serial(port=tmp_port,
+			baudrate=19200,
+			parity=serial.PARITY_NONE,
+			stopbits=serial.STOPBITS_ONE,
+			bytesize=serial.EIGHTBITS,
+			timeout=1)
+		print(tmp_ser.readline())
+	if use_chamber:
+		chamber_ser = minimalmodbus.Instrument(chamber_port, 1)
+		chamber_ser.serial.baudrate = 9600
 
     # Sanity checking print statements
-    disp_lst = []
-    if use_TMP102:
-    	disp_lst.append('Teensy Internal')
-    	disp_lst.append('TMP102')
-    if use_chamber:
-    	disp_lst.append('Chamber')
-    print('\t'.join(disp_lst))
+	disp_lst = []
+	if use_TMP102:
+		disp_lst.append('Teensy')
+		disp_lst.append('TMP102')
+	if use_chamber:
+		disp_lst.append('Chamber')
+	print('\t'.join(disp_lst))
 
-    for i in range(iterations):
-    	if use_TMP102:
-	    	# Read Teensy internal temp
-	    	teensy_ser.write(b'tempinternal\n')
-	    	teensy_val = float(teensy_ser.readline())
+	for i in range(iterations):
+		if use_TMP102:
+			# Read Teensy internal temp
+			tmp_ser.write(b'tempinternal\n')
+			teensy_val = float(tmp_ser.readline())
 
-	    	# Read TMP102 temperature
-	    	teensy_ser.write(b'temp\n')
-	    	tmp_val = float(tmp_ser.readline())
+			# Read TMP102 temperature
+			tmp_ser.write(b'temp\n')
+			tmp_val = float(tmp_ser.readline())
 
-	    	teensy_vec.append(teensy_val)
-	    	tmp_vec.append(tmp_val)
+			teensy_vec.append(teensy_val)
+			tmp_vec.append(tmp_val)
 
-	    if use_chamber:
-	    	chamber_val = temp_chamber.read_temp(chamber_ser)
-	    	chamber_vec.append(chamber_val)
+		if use_chamber:
+			chamber_val = temp_chamber.read_temp(chamber_ser)
+			chamber_vec.append(chamber_val)
 
-	    # Printing relevant values with each reading for sanity check
-	    disp_lst = []
-	    if use_TMP102:
-	    	disp_lst.append(str(teensy_val))
-	    	disp_lst.append(str(tmp_val))
-	    if use_chamber:
-	    	disp_lst.append(str(chamber_val))
-	    print('\t'.join(disp_lst))
+		# Printing relevant values with each reading for sanity check
+		disp_lst = []
+		if use_TMP102:
+			disp_lst.append(str(teensy_val))
+			disp_lst.append(str(tmp_val))
+		if use_chamber:
+			disp_lst.append(str(chamber_val))
+		print('\t'.join(disp_lst))
 
-	    # Pause between readings
-	    time.sleep(delay)
+		# Pause between readings
+		time.sleep(delay)
 
-   if use_TMP102:
-   	tmp_ser.close()
+	if use_TMP102:
+		tmp_ser.close()
 
-   if use_chamber:
-   		chamber_ser.serial.close()
+	if use_chamber:
+			chamber_ser.serial.close()
 
-   	return teensy_vec, tmp_vec, chamber_vec
+	return teensy_vec, tmp_vec, chamber_vec
 
 def test_main(num_iterations, scan_dict, teensy_port,):
 	'''

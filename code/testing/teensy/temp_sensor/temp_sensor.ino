@@ -6,8 +6,8 @@
 /* --- Pin Mappings (Teensy 3.6) --- */
 /* --------------------------------- */
 // VDD and GND
-const int pin_gnd = 17;
-const int pin_vdd = 16;
+const int pin_gnd = 16;
+const int pin_vdd = 17;
 
 /* ----------------------------- */
 /* --- Runs once at power-on --- */
@@ -50,11 +50,11 @@ void loop() {
     if (inputString == "tempinternal\n") {
       read_temp_internal();  
     }
+
+    // Reset to listen for a new '\n' terminated string over serial
+    inputString = "";
+    stringComplete = false;
   }
-
-  inputString = "";
-  stringComplete = false;
-
 }
 
 void read_temp_internal() {

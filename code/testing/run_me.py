@@ -85,6 +85,16 @@ def run_main():
 			fwriter.writerow(['Chamber'] + chamber_vec)
 			fwriter.writerow(['Bandgap (V)'] + vbg_vec)
 
+	########################################
+	### Various Temperature Measurements ###
+	########################################
+	if True:
+		teensy_vec, tmp_vec, chamber_ved = testing.temp_meas(
+			tmp_port="COM3",
+			chamber_port="COM4",
+			iterations=10,
+			delay=1)
+
 	###############
 	### Scratch ###
 	###############
