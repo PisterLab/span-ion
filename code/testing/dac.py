@@ -1,7 +1,55 @@
 import numpy as np
 from pprint import pprint
 
-def dac_dnl(code_data_dict):
+def calc_gain(code_data_dict):
+	'''
+	Inputs:
+		code_data_dict: Mapping with key:value of digital code:collection of 
+			analog measurements taken for that code. For example
+			{0: [0, 1e-3],
+			 1: [1, 1.1, 2, 0]}
+	Returns:
+		Float. DAC gain (volts/LSB).
+	'''
+	code_max = max(code_data_dict.keys())
+	code_min = min(code_data_dict.keys())
+	dy = np.mean(code_data_dict[code_max])-np.mean(code_data_dict[code_min])
+	dx = code_max - code_min
+	return dy/dx
+
+def calc_fsr(code_data_dict):
+	'''
+	Inputs:
+		code_data_dict: Mapping with key:value of digital code:collection of 
+			analog measurements taken for that code. For example
+			{0: [0, 1e-3],
+			 1: [1, 1.1, 2, 0]}
+	Returns:
+		Float. The full-scale range (V) of the DAC in question.
+	Notes:
+		This is only calculated using the endpoints of the DAC codes!
+		This will not warn you if there are skipped codes--use DNL for that.
+	'''
+	code_max = max(code_data_dict.keys())
+	code_min = min(code_data_dict.keys())
+	return np.mean(code_data_dict[code_max])-np.mean(code_data_dict[code_min])
+
+def calc_noise(code_data_dict):
+	'''
+	Inputs:
+		code_data_dict: Mapping with key:value of digital code:collection of 
+			analog measurements taken for that code. For example
+			{0: [0, 1e-3],
+			 1: [1, 1.1, 2, 0]}
+	Returns:
+		Dictionary. Key:value is code:RMS noise voltage.
+	'''
+	code_noise_dict = dict()
+	for code, val_vec in code_data_dict.items():
+		code_noise_dict[code] = np.std(val_vec)
+	return code_noise_dict
+
+def calc_dnl(code_data_dict):
 	'''
 	Inputs:
 		code_data_dict: Mapping with key:value of digital code:collection of 
@@ -34,7 +82,7 @@ def dac_dnl(code_data_dict):
 
 	return dnl_dict
 
-def dac_inl(code_data_dict):
+def calc_inl(code_data_dict):
 	'''
 	Inputs:
 		code_data_dict: Mapping with key:value of digital code:collection of 
@@ -46,7 +94,7 @@ def dac_inl(code_data_dict):
 	Raises:
 		See dac_dnl.
 	'''
-	dnl_dict = dac_dnl(code_data_dict)
+	dnl_dict = calc_dnl(code_data_dict)
 
 	code_max = max(code_data_dict.keys())
 	inl_dict = dict()

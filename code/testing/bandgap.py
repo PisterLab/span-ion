@@ -79,7 +79,7 @@ def get_data(teensy_port, temp_port="", chamber_port="", teensy_precision=16,
         # Trigger TMP102 temp reading if necessary
         if use_TMP102:
             temp_ser.write(b'temp\n')
-            print(temp_ser.readline())
+            # print(temp_ser.readline())
 
         # Read internal temp from Teensy
         teensy_val = float(teensy_ser.readline())

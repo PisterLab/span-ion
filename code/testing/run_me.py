@@ -40,7 +40,7 @@ def run_main():
 	#####################
 	### Test DACs ###
 	#####################
-	if True:
+	if False:
 		which_dac = spani_globals.OUT_REF_PREAMP
 		test_dac_params = dict(
 			com_port='COM5',
@@ -58,7 +58,7 @@ def run_main():
 		with open(file_out, 'w', newline='') as csvfile:
 			fwriter = csv.writer(csvfile, delimiter=",",
 				quotechar="|", quoting=csv.QUOTE_MINIMAL)
-			fwriter.writerow(['Code'])
+			fwriter.writerow(['Code']+[f'Iteration {i}' for i in range(1, num_iterations+1)])
 			for code, lsb_vec in dac_data.items():
 				fwriter.writerow([code] + list(lsb_vec))
 

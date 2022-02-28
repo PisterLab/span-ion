@@ -1,5 +1,6 @@
 #include <Wire.h> // Used to establish serial comms on I2C bus
 #include <SparkFunTMP102.h> // Used to send and receive specific info from the sensor
+#include <InternalTemperature.h> // Used to read the Teensy internal temperature
 
 /* --------------------------------- */
 /* --- Pin Mappings (Teensy 3.6) --- */
@@ -46,11 +47,28 @@ void loop() {
     if (inputString == "temp\n") {
       read_temp();
     }
+    if (inputString == "tempinternal\n") {
+      read_temp_internal();  
+    }
   }
 
   inputString = "";
   stringComplete = false;
 
+}
+
+void read_temp_internal() {
+  /*
+   * Inputs:
+   *  None.
+   * Returns:
+   *  None.
+   * Notes:
+   *  Prints the internal temperature (in Celsius) of the Teensy over
+   *  serial.
+  */
+    InternalTemperature.begin(TEMPERATURE_NO_ADC_SETTING_CHANGES);
+    Serial.println(InternalTemperature.readTemperatureC());
 }
 
 void read_temp() {
@@ -62,18 +80,18 @@ void read_temp() {
    * Notes:
    *  Queries the TMP102 and prints the temperature over serial.
   */
-  float temperature = 0;
+  float tmp = 0;
   // Turn sensor on to start temp measurement (~10uA)
   sensor0.wakeup();
 
   // Read temp data
-  temperature = sensor0.readTempC();
+  tmp = sensor0.readTempC();
 
   // Put sensor in sleep mode (<0.5uA)
   sensor0.sleep();
 
   // Print over serial
-  Serial.println(temperature);
+  Serial.println(tmp);
 } // end read_temp()
 
 void serialEvent() {
