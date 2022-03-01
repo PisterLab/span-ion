@@ -37,9 +37,9 @@ def run_main():
 		print(f"Programming scan...{asc}")
 		scan.test_program_scan(com_port=teensy_port, ASC=asc)
 
-	#####################
-	### Test DACs ###
-	#####################
+	############
+	### DACs ###
+	############
 	if False:
 		which_dac = spani_globals.OUT_REF_PREAMP
 		test_dac_params = dict(
@@ -89,11 +89,19 @@ def run_main():
 	### Various Temperature Measurements ###
 	########################################
 	if True:
-		teensy_vec, tmp_vec, chamber_ved = testing.temp_meas(
+		teensy_vec, tmp_vec, chamber_vec = testing.temp_meas(
 			tmp_port="COM3",
 			chamber_port="COM4",
-			iterations=10,
+			iterations=7200,
 			delay=1)
+
+		file_out = f'../../data/testing/{timestamp_str}_temp.csv'
+		with open(file_out, 'w', newline='') as csvfile:
+			fwriter = csv.writer(csvfile, delimiter=",", 
+				quotechar="|", quoting=csv.QUOTE_MINIMAL)
+			fwriter.writerow(['Teensy Internal Temp'] + teensy_vec)
+			fwriter.writerow(['TMP102'] + tmp_vec)
+			fwriter.writerow(['Chamber'] + chamber_vec)
 
 	###############
 	### Scratch ###
