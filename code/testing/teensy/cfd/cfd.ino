@@ -162,32 +162,38 @@ void loop() {
 		else if (inputString == "tdcmainconfig\n") {
 			tdc_write(CHAIN_MAIN);
 		}
-   else if (inputString == "tdcsmallconfig\n") {
+    else if (inputString == "tdcsmallconfig\n") {
       tdc_write(CHAIN_SMALL);
     }
 		else if (inputString == "peakreset\n") {
 			peak_reset();
 		}
+    else if (inputString == "peakread\n") {
+      peak_read();
+    }
 		else if (inputString == "bandgaptest\n") {
-		    bandgap_test();
+		  bandgap_test();
 		}
-   else if (inputString == "dacreadvddaon\n") {
+    else if (inputString == "dacreadvddaon\n") {
       dac_read(pin_vddaon);
     }
-   else if (inputString == "dacreadvddmain\n") {
+    else if (inputString == "dacreadvddmain\n") {
       dac_read(pin_vddmain);
     }
-   else if (inputString == "dacreadvddsmall\n") {
+    else if (inputString == "dacreadvddsmall\n") {
       dac_read(pin_vddsmall);
     }
-   else if (inputString == "dacreadmain\n") {
+    else if (inputString == "dacreadmain\n") {
       dac_read(pin_dac_main);
     }
-   else if (inputString == "dacreadsmall\n") {
+    else if (inputString == "dacreadsmall\n") {
       dac_read(pin_dac_small);
     }
-   else if (inputString == "dacreadpreamp\n") {
+    else if (inputString == "dacreadpreamp\n") {
       dac_read(pin_preamp_vref);
+    }
+    else if (inputString == "compoffsetsmall\n") {
+      comp_offset(CHAIN_SMALL);  
     }
 
 		// Reset to listen for a new '\n' terminated string over serial
@@ -470,15 +476,28 @@ void tdc_read(int chain) {
 /* ------------------------------------------ */
 void peak_reset() {
 /* 
- *  Resets the test structure peak detector
+ *  Resets the test structure peak detector.
 */
 	digitalWrite(pin_pk_rst, HIGH);
 	delayMicroseconds(50);
 	digitalWrite(pin_pk_rst, LOW);
 }
 
+void peak_read() {
+/*
+ * Inputs:
+ *  None.
+ * Returns:
+ *  None.
+ * Notes:
+ *  Reads the output voltage of the test peak detector and
+ *  prints over serial the output _in LSB_.
+*/
+  Serial.println(analogRead(pin_pk_out));
+}
+
 /* ------------------------------------------ */
-/* --- Temperature vs bandgap voltage test --- */
+/* --- Temperature vs Bandgap Voltage Test --- */
 /* ------------------------------------------ */
 void bandgap_test() {
 /*
@@ -513,6 +532,14 @@ void dac_read(int pin) {
 */
   Serial.println(analogRead(pin));
 }
+
+/* --------------------------------- */
+/* --- Signal Chain Measurements --- */
+/* --------------------------------- */
+void comp_offset(int ) {
+  
+}
+
 
 /* ------------- */
 /* --- Other --- */

@@ -4,7 +4,74 @@ from dac import *
 from gpib import *
 import spani_globals, scan, temp_chamber
 
-def test_dac(com_port, num_iterations, code_vec, dac_name, vfsr=3.3, precision=16, t_wait=.001):
+def test_pk_static(teensy_port, aux_port, num_iterations, vtest_vec, vfsr=3.3, 
+	precision=16, t_wait=0.001):
+	'''
+	Inputs:
+		teensy_port: String. Name of the COM port the main board Teensy is 
+			connected to.
+		aux_port: String. Name of the COM port the auxiliary Teensy is connected
+			to.
+		num_iterations: Integer. Number of times to measure a single vtest.
+		vtest_vec: Collection of ideal test voltages. These will be converted to 
+			LSBs for the Teensy's analogWrite. Repeated values will be removed.
+		vfsr: Float. The Teensy analogWrite full scale range in volts.
+		precision: Integer. The number of bits to use in _both_ Teensies'
+			analogRead and analogWrite.
+	Returns:
+		vtest_real_dict: Dictionary with key:value of (ideal test voltage):
+			(real test voltage given Teensy's precision restrictions).
+		vtest_vout_dict: Dictionary with key:value (ideal vtest):(collection
+			of output voltages)
+	Notes:
+		The argument for precision should match whatever's in the Teensy code!
+	'''
+	# Open serial connections
+	teensy_ser = serial.Serial(port=teensy_port,
+                    baudrate=19200,
+                    parity=serial.PARITY_NONE,
+                    stopbits=serial.STOPBITS_ONE,
+                    bytesize=serial.EIGHTBITS,
+                    timeout=1)
+
+	aux_ser = serial.Serial(port=aux_port,
+                    baudrate=19200,
+                    parity=serial.PARITY_NONE,
+                    stopbits=serial.STOPBITS_ONE,
+                    bytesize=serial.EIGHTBITS,
+                    timeout=1)
+
+	# Discretization of the Teensy PWM
+	vlsb = vfsr / (2**precision)
+
+	# Take num_iterations readings from the main Teensy
+	vtest_vout_dict = dict()
+	vtest_real_dict = dict()
+	for vtest in vtest_vec:
+		vout_vec = []
+		vtest_code = int(round(vtest/vlsb))
+		vtest_real = vtest_code * vlsb
+
+		# Reset the peak detector
+		teensy_ser.write(b'peakreset\n')
+
+		# Trigger the auxiliary Teensy to get the slow (~3.3V/ms) ramp to
+		# the target voltage
+		aux_ser.write(b'peakslow\n')
+		aux_ser.write(str(vtest_code).encode())
+
+		# Take num_iterations readings at the same voltage
+		for i in range(num_iterations):
+			teensy_ser.write(b'peakread\n')
+			vout = float(teensy_ser.readline())
+			vout_vec.append(vout)
+
+		vtest_vout_dict[vtest] = vout_vec
+		vtest_real_dict[vtest] = vtest_real
+	return vtest_real_dict, vtest_vout_dict
+
+def test_dac(com_port, num_iterations, code_vec, dac_name, vfsr=3.3, 
+	precision=16, t_wait=.001):
 	'''
 	Inputs:
 		com_port: String. Name of the COM port to connect to.

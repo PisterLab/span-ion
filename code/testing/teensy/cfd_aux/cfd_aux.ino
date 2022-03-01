@@ -1,0 +1,133 @@
+/*
+ * This is for a secondary Teensy intended to provide a variety of 
+ * slow analog signals for the SPAN-Ion chip. These were not
+ * connected to the original Teensy because of the additional capacitance
+ * that would be posed.
+*/
+
+/* --------------------------------- */
+/* --- Pin Mappings (Teensy 3.6) --- */
+/* --------------------------------- */
+// Small signal chain TODO pin numbers
+const int pin_zcd_vinn_small  = A0; // ZCD comparator inverting input
+const int pin_zcd_vinp_small  = A0; // ZCD comparator noninverting input
+const int pin_led_vinp_small  = A0; // LED comparator noninverting input
+
+// Main signal chain
+const int pin_vin_main        = A0; // Voltage input to the board amp for the signal input
+
+// Test structures
+const int pin_pk_vin          = A0; // Test peak detector input voltage
+
+// Constants
+const int B_ADC = 16; // Number of bits (precision) for analogRead
+
+/* ----------------------------- */
+/* --- Runs once at power-on --- */
+/* ----------------------------- */
+// Variables for command interpreter
+String inputString = "";
+boolean stringComplete = false;
+
+void setup() {
+  // Open USB serial port
+  Serial.begin(9600);
+
+  // Reserve 200 bytes for the inputString
+  inputString.reserve(200);
+
+  // Set up pins
+  // - Small Signal Chain
+  pinMode(pin_zcd_vinn_small, OUTPUT);
+  pinMode(pin_zcd_vinp_small, OUTPUT);
+  pinMode(pin_led_vinp_small, OUTPUT);
+
+  analogWrite(pin_zcd_vinn_small, 1<<B_ADC);
+  analogWrite(pin_zcd_vinp_small, 0);
+  analogWrite(pin_led_vinp_small, 0);
+  
+  // - Main Signal Chain
+  pinMode(pin_vin_main, OUTPUT);
+
+  analogWrite(pin_vin_main, 0);
+  
+  // - Test Structures
+  pinMode(pin_pk_vin, OUTPUT);
+
+  analogWrite(pin_pk_vin, 0);
+
+  // Setting the ADC precision
+  analogReadResolution(B_ADC);  // 16B -> 13ENOB
+} // end setup
+
+void loop() {
+if (stringComplete){
+    if (inputString == "peakslow\n"){
+      slow_ramp(pin_pk_vin);
+    } 
+    else if (inputString == "zcdcompnsmall\n") {
+      slow_ramp(pin_zcd_vinn_small);
+    }
+    else if (inputString == "zcdcomppsmall\n") {
+      slow_ramp(pin_zcd_vinp_small);  
+    }
+    else if (inputString == "ledcomppsmall\n") {
+      slow_ramp(pin_led_vinp_small);  
+    }
+    else if (inputString == "vinmain\n") {
+      slow_ramp(pin_vin_main);  
+    }
+
+    // Reset to listen for a new '\n' terminated string over serial
+    inputString = "";
+    stringComplete = false;
+  }
+
+} // end loop
+
+void slow_ramp(int pin) {
+/*
+ * Inputs:
+ *  None.
+ * Returns:
+ *  None.
+ * Notes:
+ *  Reads in the desired set voltage _in LSB_ over serial and sets
+ *  the pin voltage to that DC value with a ramp of roughly 3.3V/ms
+*/
+  // Read in the desired set voltage (in LSB)
+  while (!Serial.available()) {}
+  int vin_target = Serial.parseInt();
+  float delay_ms = 3.3/(1<<B_ADC);
+
+  // Set the desired voltage
+  for (int i=0; i<vin_target; i++) {
+    analogWrite(pin, i);
+    delay(delay_ms);
+  }
+} // end slow_ramp
+
+/* ------------- */
+/* --- Other --- */
+/* ------------- */
+void serialEvent() {
+/* 
+ *  Inputs:
+ *    None
+ *  Returns:
+ *    None
+ *  Notes:
+ *    SerialEvent occurs whenever new data comes in the hardware serial RX. This
+ *    routine is run between each time loop() runs, so using delay inside loop
+ *    can delay response. Multiple bytes of data may be available.
+*/
+  if (Serial.available()) {
+    char inChar = (char)Serial.read();
+    inputString += inChar;
+
+    // String terminates with \n
+    if (inChar == '\n') {
+      stringComplete = true;
+    }
+  }
+} // end serialEvent()

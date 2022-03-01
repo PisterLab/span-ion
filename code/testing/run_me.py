@@ -1,4 +1,5 @@
 import serial, pyvisa, minimalmodbus
+import numpy as np
 import random
 from datetime import date, datetime
 import os, sys, time, pdb, traceback
@@ -88,7 +89,7 @@ def run_main():
 	########################################
 	### Various Temperature Measurements ###
 	########################################
-	if True:
+	if False:
 		teensy_vec, tmp_vec, chamber_vec = testing.temp_meas(
 			tmp_port="COM3",
 			chamber_port="COM4",
@@ -102,6 +103,33 @@ def run_main():
 			fwriter.writerow(['Teensy Internal Temp'] + teensy_vec)
 			fwriter.writerow(['TMP102'] + tmp_vec)
 			fwriter.writerow(['Chamber'] + chamber_vec)
+
+	##################################
+	### Peak Detector Static Error ###
+	##################################
+	if True:
+		pk_static_params = dict(teensy_port="COM4",
+			aux_port="COM3",
+			num_iterations=1,
+			vfsr=3.3,
+			precision=16,
+			t_wait=0.001)
+		pk_static_params['vtest_vec'] = np.linspace(0, 
+			pk_static_params['vfsr'], 
+			2**pk_static_params['precision']+1)
+
+		vtest_real_dict, vtest_vout_dict = testing.test_pk_static(**pk_static_params)
+		file_out = f'../../data/testing/{timestamp_str}_pk_{pk_static_params["num_iterations"]}x.csv'
+
+		vtest_ideal_vec, vtest_real_vec = dict_format(vtest_real_dict)
+		vout_vec = [vtest_vout_dict[vtest_ideal] for vtest_ideal in vtest_ideal_vec]
+
+		with open(file_out, 'w', newline='') as csvfile:
+			fwriter = csv.writer(csvfile, delimiter=',',
+				quotechar="|", quoting=csv.QUOTE_MINIMAL)
+			fwriter.writerow(['Ideal Input'] + list(vtest_real_vec))
+			fwriter.writerow(['Practical Input'] + list(vtest_real_vec))
+			fwriter.writerow(['Output'] + vout_vec)
 
 	###############
 	### Scratch ###
