@@ -4,6 +4,69 @@ from dac import *
 from gpib import *
 import spani_globals, scan, temp_chamber
 
+def test_offset_zcd_static(teensy_port, aux_port, num_iterations, vtest_dict,
+	vfsr=3.3, precision=16, t_wait=0.001):
+	'''
+	Inputs:
+		teensy_port: String. Name of the COM port the main board Teensy is 
+			connected to.
+		aux_port: String. Name of the COM port the auxiliary Teensy is connected
+			to.
+		num_iterations: Integer. Number of times to measure for a single 
+			voltage setup.
+		vtest_dict: Dictionary. Key:value is (DC bias):(collection of 
+			differential input voltages). e.g. {0.5 : [0.1, -0.1]} corresponds to
+			(negative input, positive input) as (0.45,0.55)V and (0.55,0.45)V.
+		vfsr: Float. The Teensy analogWrite full scale range in volts.
+		precision: Integer. The number of bits to use in _both_ Teensies'
+			analogRead and analogWrite.
+		t_wait: Float. Time in seconds to wait on the TDC to register at least
+			one STOP event.
+	Returns:
+		high_rate_dict: Dictionary. Key:value is (vinp,vinn):(approximate rate
+			of STOP events in events/s). The rate of stop events bottoms out
+			at ~1event/t_wait; that is, if the event rate is lower than that, 
+			it just gives 0. 
+	Notes:
+		Measures the static offset of a comparator for ZCD small signal chain
+			comparator. 
+		Highly recommend having a high number of iterations to account for 
+			noise. The threshold cutoff for what constitutes a high vs low
+			output is TODO
+		The argument for precision should match whatever's in the Teensy code!
+	'''
+	# Open serial connections
+	teensy_ser = serial.Serial(port=teensy_port,
+                    baudrate=19200,
+                    parity=serial.PARITY_NONE,
+                    stopbits=serial.STOPBITS_ONE,
+                    bytesize=serial.EIGHTBITS,
+                    timeout=1)
+
+	aux_ser = serial.Serial(port=aux_port,
+                    baudrate=19200,
+                    parity=serial.PARITY_NONE,
+                    stopbits=serial.STOPBITS_ONE,
+                    bytesize=serial.EIGHTBITS,
+                    timeout=1)
+
+	# Discretization of the Teensy PWM
+	vlsb = vfsr / (2**precision)
+
+	# TODO prime small chain TDC
+	
+	teensy_ser.write(b'tdcsmallconfig')
+	teensy_ser.write()
+
+	# TODO set LED input voltage to a nice big value using aux Teensy
+	for i in range(num_iterations):
+		continue
+		# TODO give TDC start pulse
+		# TODO set voltages
+		# TODO when the TDC goes off 5x (limit of the TDC), reset the voltages
+		# TODO reset the TDC
+		# increment a count
+
 def test_pk_static(teensy_port, aux_port, num_iterations, vtest_vec, vfsr=3.3, 
 	precision=16, t_wait=0.001):
 	'''
@@ -18,6 +81,7 @@ def test_pk_static(teensy_port, aux_port, num_iterations, vtest_vec, vfsr=3.3,
 		vfsr: Float. The Teensy analogWrite full scale range in volts.
 		precision: Integer. The number of bits to use in _both_ Teensies'
 			analogRead and analogWrite.
+		t_wait: Float. Time in seconds to wait between each iteration.
 	Returns:
 		vtest_real_dict: Dictionary with key:value of (ideal test voltage):
 			(real test voltage given Teensy's precision restrictions).
@@ -65,6 +129,7 @@ def test_pk_static(teensy_port, aux_port, num_iterations, vtest_vec, vfsr=3.3,
 			teensy_ser.write(b'peakread\n')
 			vout = float(teensy_ser.readline())
 			vout_vec.append(vout)
+			time.sleep(t_wait)
 
 		vtest_vout_dict[vtest] = vout_vec
 		vtest_real_dict[vtest] = vtest_real

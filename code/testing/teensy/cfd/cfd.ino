@@ -328,7 +328,7 @@ void tdc_write(int chain) {
 	Serial.println("Executing TDC config");
   SPISettings settings_tdc_spi(16000000, MSBFIRST, SPI_MODE1);
 
-	// get bytes (sent as bytes!) over serial
+	// get bytes (sent as bytes! MSB first) over serial
 	char configbytes[N_TDC_CONFIG];
 	int count = 0;
 	
@@ -362,11 +362,24 @@ void tdc_write(int chain) {
 	// bring TDC enable high if it isn't already
 	digitalWrite(pin_tdc_en, HIGH);
 
-	// enforce no auto-increment and that it's a write
-	configbytes[0] |= 0xC00;
+	// enforce that it's a write
+  if (configbytes[0] | 0x40 != configbytes[0]) {
+    Serial.println("Encforcing write in TDC");
+    configbytes[0] |= 0x40;
+  } else {
+    Serial.println("TDC write setting correct");  
+  }
 
+  // enforce no auto-increment
+  if (configbytes[0] >> 7) {
+    Serial.println("Enforcing no increment in TDC");
+    configbytes[0] &= ~(0x1 << 7);
+  } else {
+    Serial.println("TDC no auto-increment setting correct");  
+  }
+  
 	// store the address being written to for later
-	ADDR_TDC = configbytes[0] & ~0xC00;
+	ADDR_TDC = configbytes[0] & 0x3F;
 
 	// forward bytes to the TDC 
 	digitalWrite(pin_spi_csb, LOW);
