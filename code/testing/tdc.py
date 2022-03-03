@@ -125,12 +125,12 @@ def construct_wdata1(force_cal=1, parity_en=1, trigg_edge=0, stop_edge=0,
 	'''
 	# Sanity checking values
 	assert start_meas in (0,1), f"START_MEAS {start_meas} must be 0 or 1"
-	assert meas_mode in range(4) f"MEAS_MODE {meas_mode} must be 0 through 3"
-	assert start_edge in (0,1) f"START_EDGE {start_edge} must be 0 or 1"
-	assert stop_edge in (0,1) f"STOP_EDGE {stop_edge} must be 0 or 1"
-	assert trigg_edge in (0,1) f"TRIGG_EDGE {trigg_edge} must be 0 or 1"
-	assert parity_en in (0,1) f"PARITY_EN {parity_en} must be 0 or 1"
-	assert force_cal in (0,1) f"FORCE_CAL {force_cal} must be 0 or 1"
+	assert meas_mode in range(4), f"MEAS_MODE {meas_mode} must be 0 through 3"
+	assert start_edge in (0,1), f"START_EDGE {start_edge} must be 0 or 1"
+	assert stop_edge in (0,1), f"STOP_EDGE {stop_edge} must be 0 or 1"
+	assert trigg_edge in (0,1), f"TRIGG_EDGE {trigg_edge} must be 0 or 1"
+	assert parity_en in (0,1), f"PARITY_EN {parity_en} must be 0 or 1"
+	assert force_cal in (0,1), f"FORCE_CAL {force_cal} must be 0 or 1"
 
 	return (force_cal << 7) + (parity_en << 6) + \
 		(trigg_edge << 5) + (stop_edge << 4) + \
@@ -271,9 +271,6 @@ def calc_tof(cal1, cal2, cal2_periods, time_1, time_x, count_n, tper, mode=2):
 		raise ValueError(f'Measurement mode {mode} must be 1 or 2')
 
 if __name__ == '__main__':
-
-	def construct_wdata1(force_cal=1, parity_en=1, trigg_edge=0, stop_edge=0, 
-	start_edge=0, meas_mode=1, start_meas=1) -> int:
 	wdata1 = construct_wdata1(force_cal=1,
 		parity_en=0,
 		trigg_edge=0,

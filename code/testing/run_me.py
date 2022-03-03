@@ -3,7 +3,7 @@ import numpy as np
 import random
 from datetime import date, datetime
 import os, sys, time, pdb, traceback
-import csv
+import csv, yaml
 
 import spani_globals, scan, bandgap, testing
 
@@ -107,7 +107,7 @@ def run_main():
 	##################################
 	### Peak Detector Static Error ###
 	##################################
-	if True:
+	if False:
 		pk_static_params = dict(teensy_port="COM4",
 			aux_port="COM3",
 			num_iterations=1,
@@ -130,6 +130,59 @@ def run_main():
 			fwriter.writerow(['Ideal Input'] + list(vtest_real_vec))
 			fwriter.writerow(['Practical Input'] + list(vtest_real_vec))
 			fwriter.writerow(['Output'] + vout_vec)
+
+	#########################################
+	### Small Chain ZCD Comparator Offset ###
+	#########################################
+	if True:
+
+
+		vincm_vec = np.arange(0.6, 0.9, 50e-3)
+		vdiff_vec = np.arange(-0.1, 0.1, 5e-3)
+		vtest_dict = {vincm:vdiff_vec for vincm in vincm_vec}
+
+		offset_zcd_params = dict(
+			teensy_port="COM3",
+			aux_port="COM4",
+			num_iterations=100,
+			vtest_dict=vtest_dict,
+			vfsr=3.3,
+			precision=16,
+			tref_clk=1/16e6)
+		
+		file_out = f'../../data/testing/{timestemp_str}_zcdsmall_{offset_zcd_params["num_iterations"]}x.yaml'
+
+		high_rate_dict = testing.test_offset_zcd_static(**offset_zcd_params)
+
+		# Restructuring some of the data to get vincm:dict(vdiff=[vdiff values],
+		# 											high_rate=[high_rate values])
+		restruct_dict = dict()
+		for vin_pair, high_rate in high_rate_dict.items():
+			vincm = vin_pair[0]
+			vdiff = vin_pair[1]
+			if vincm not in restruct_dict.keys():
+				restruct_dict[vincm] = dict(vdiff=[vdiff],
+											high_rate=[high_rate])
+			else:
+				restruct_dict[vincm]['vdiff'].append(vdiff)
+				restruct_dict[vincm]['high_rate'].append(high_rate)
+
+		# Dump into a yaml file because screw CSVs
+		with open(file_out, 'w') as outfile:
+			yaml.dump(erstruct_dict, outfile, default_flow_style=False)
+
+		# for vincm, vals in restruct_dict.keys():
+		# 	vdiff_vec = vals['vdiff']
+		# 	high_rate_vec = vals['high_rate']
+
+		# 	# Plot for visibility
+		# 	plt.figure()
+		# 	plt.plot(vdiff_vec, high_rate_vec)
+		# 	plt.xlabel('Differential Input Voltage')
+		# 	plt.ylabel('Noise Event Rate (event/s)')
+		# 	plt.grid(True)
+		# 	plt.show()
+
 
 	###############
 	### Scratch ###
