@@ -33,6 +33,7 @@ const int pin_spi_main_clk		  = 13;	// SPI clock for the main signal chain TDC
 const int pin_tdc_main_intrptb	= 9;	// Interrupt pin for the TDC for the main signal chain
 const int pin_tdc_main_en 		  = 8;	// Active high enable for main chain TDC
 const int pin_tdc_main_trig		  = 7; 	// Raises when TDC for main chain is ready
+const int pin_tdc_main_start    = 6;  // For triggering the TDC's start pulse
 
 const int pin_spi_small_csb 	  = A12;	// CSb for the small signal chain TDC
 const int pin_spi_small_din		  = 0; 	  // Data-in pin for the small signal chain TDC
@@ -40,18 +41,32 @@ const int pin_spi_small_dout 	  = 1;	  // Data-out pin for the small signal chai
 const int pin_spi_small_clk		  = A13;	// SPI clock for the small signal chain TDC
 const int pin_tdc_small_intrptb	= 27;	  // Interrupt pin for the TDC for the small signal chain
 const int pin_tdc_small_en 		  = 28;	  // Active high enable for small chain TDC
-const int pin_tdc_small_trig 	  = 29;	  // Raises when TDC for small chainis ready
+const int pin_tdc_small_trig 	  = 29;	  // Raises when TDC for small chain is ready
+const int pin_tdc_small_start   = 30;   // For triggering the TDC's start pulse
 
 // Constants
 const int N_SCAN 				    = 44;   // Number of scan bits
 const int N_TDC_CONFIG 			= 2; 	  // Number of TDC config bytes (not bits!)
-const int N_TDC_DOUT 			  = 4;	  // Number of TDC data out bytes (not bits!)
+const int N_TDC_DOUT 			  = 3;	  // Number of TDC data out bytes (not bits!)
 const int B_ADC 				    = 16;	  // Number of bits (precision) for Teensy analogRead
 const int CHAIN_MAIN			  = 0;	  // Used to indicate the main signal chain
 const int CHAIN_SMALL       = 1;	  // Used to indicate the small signal chain
 
 // Access address for the TDC
 char ADDR_TDC;
+const char ADDR_TIME1 = 0x10;
+const char ADDR_TIME2 = 0x12;
+const char ADDR_TIME3 = 0x14;
+const char ADDR_TIME4 = 0x16;
+const char ADDR_TIME5 = 0x18;
+const char ADDR_TIME6 = 0x1A;
+const char ADDR_CLOCK_COUNT1 = 0x11;
+const char ADDR_CLOCK_COUNT2 = 0x13;
+const char ADDR_CLOCK_COUNT3 = 0x15;
+const char ADDR_CLOCK_COUNT4 = 0x17;
+const char ADDR_CLOCK_COUNT5 = 0x19;
+const char ADDR_CALIBRATION1 = 0x1B;
+const char ADDR_CALIBRATION2 = 0x1C;
 
 /* ----------------------------- */
 /* --- Runs once at power-on --- */
@@ -108,26 +123,30 @@ void setup() {
   digitalWrite(pin_tdc_main_en,   LOW);
   digitalWrite(pin_tdc_small_en,  LOW);
 
-  // - SPI
+  // - TDC SPI and Such
   pinMode(pin_spi_main_csb, 		OUTPUT);
   pinMode(pin_spi_main_din, 		OUTPUT);
   pinMode(pin_spi_main_dout, 		INPUT);
   pinMode(pin_spi_main_clk, 		OUTPUT);
   pinMode(pin_tdc_main_intrptb, INPUT);
+  pinMode(pin_tdc_main_start,   OUTPUT);
 
   digitalWrite(pin_spi_main_csb,  HIGH);
   digitalWrite(pin_spi_main_din, 	LOW);
   digitalWrite(pin_spi_main_clk, 	LOW);
+  digitalWrite(pin_tdc_main_start,LOW);
 
   pinMode(pin_spi_small_csb, 		  OUTPUT);
   pinMode(pin_spi_small_din, 		  OUTPUT);
   pinMode(pin_spi_small_dout, 	  INPUT);
   pinMode(pin_spi_small_clk, 		  OUTPUT);
   pinMode(pin_tdc_small_intrptb,  INPUT);
+  pinMode(pin_tdc_small_start,    OUTPUT);
 
-  digitalWrite(pin_spi_small_csb, HIGH);
-  digitalWrite(pin_spi_small_din, LOW);
-  digitalWrite(pin_spi_small_clk, LOW);
+  digitalWrite(pin_spi_small_csb,   HIGH);
+  digitalWrite(pin_spi_small_din,   LOW);
+  digitalWrite(pin_spi_small_clk,   LOW);
+  digitalWrite(pin_tdc_small_start, LOW);
 
   // Setting the ADC precision
 	analogReadResolution(B_ADC);	// 16B -> 13ENOB
@@ -164,6 +183,12 @@ void loop() {
 		}
     else if (inputString == "tdcsmallconfig\n") {
       tdc_write(CHAIN_SMALL);
+    }
+    else if (inputString == "tdcmainstart\n") {
+      tdc_start(CHAIN_MAIN);
+    }
+    else if (inputString == "tdcsmallstart\n") {
+      tdc_start(CHAIN_SMALL);  
     }
 		else if (inputString == "peakreset\n") {
 			peak_reset();
@@ -363,7 +388,7 @@ void tdc_write(int chain) {
 	digitalWrite(pin_tdc_en, HIGH);
 
 	// enforce that it's a write
-  if (configbytes[0] | 0x40 != configbytes[0]) {
+  if ((configbytes[0] | 0x40) != configbytes[0]) {
     Serial.println("Encforcing write in TDC");
     configbytes[0] |= 0x40;
   } else {
@@ -444,44 +469,105 @@ void tdc_read(int chain) {
 	// wait until interrupt indicates measurement data is available
 	elapsedMillis waiting;
 	bool meas_done = false;
-	while (waiting < 100 && !meas_done) {
+	while (waiting < 1000 && !meas_done) {
 		meas_done = !digitalRead(pin_tdc_intrptb); // TODO check correctness
 	}
 
-	// warn if TDC measurement isn't ready within allocated time
+	// if TDC measurement isn't ready within allocated time, everything is 0
 	if (!meas_done) {
-		Serial.println("TDC interrupt wait timed out.");
-		return;
-	}
-
-	// send read command (no auto-increment, read)
-	digitalWrite(pin_spi_csb, LOW);
-	SPI.transfer(0x80 | ADDR_TDC);
-
-	// retrieve the bits from the TDC
-	int count = 0;
-    char val[N_TDC_DOUT];
-    while (count != N_TDC_DOUT) {
-
-		// read one byte at a time over SPI
-		val[count] = SPI.transfer(0);
-		count ++;
-	}
-
-	// end read process from TDC
-	digitalWrite(pin_spi_csb, HIGH);
+    for (int i=0; i<13; i++) {Serial.write(0);}
+	} else {
+  	// read from all timer outputs
+    int count;
+    char dout[N_TDC_DOUT];
+  	digitalWrite(pin_spi_csb, LOW);
+    char addr_time_vec[6] = {ADDR_TIME1, ADDR_TIME2, 
+                            ADDR_TIME3, ADDR_TIME4,
+                            ADDR_TIME5, ADDR_TIME6};
+    for (int i=0; i<6; i++) {
+      // send read command, enforce no auto-increment
+      SPI.transfer(0x80 | addr_time_vec[i]);
+  
+      // retrieve data from the TDC
+      count = 0;
+      while (count != N_TDC_DOUT) {
+        // read and write one byte at a time over SPI and then serial
+        dout[count] = SPI.transfer(0);
+        Serial.write(dout[count]);
+        count ++;
+      }
+    }
+  
+    // read from all clock count outputs
+    char addr_clkcount_vec[5] = {ADDR_CLOCK_COUNT1, 
+                                ADDR_CLOCK_COUNT2, 
+                                ADDR_CLOCK_COUNT3, 
+                                ADDR_CLOCK_COUNT4, 
+                                ADDR_CLOCK_COUNT5};
+    for (int i=0; i<5; i++) {
+      // send read command, enforce no auto-increment
+      SPI.transfer(0x80 | addr_clkcount_vec[i]);
+  
+      // retrieve data from the TDC
+      count = 0;
+      while (count != N_TDC_DOUT) {
+        // read and write one byte at a time over SPI and then serial
+        dout[count] = SPI.transfer(0);
+        Serial.write(dout[count]);
+        count ++;
+      }
+    }
+  
+    // read from calibration count outputs
+    char addr_cal_vec[2] = {ADDR_CALIBRATION1, ADDR_CALIBRATION2};
+    for (int i=0; i<2; i++) {
+      // send read command, enforce no auto-increment
+      SPI.transfer(0x80 | addr_cal_vec[i]);
+  
+      // retrieve data from the TDC
+      count = 0;
+      while (count != N_TDC_DOUT) {
+        dout[count] = SPI.transfer(0);
+        Serial.write(dout[count]);
+        count ++ ;  
+      }
+    }
+  
+  	// end read process from TDC
+    digitalWrite(pin_spi_csb, HIGH);
     SPI.endTransaction();
-
-	// forward the data byte(s) to the computer over serial
-	count = 0;
-    while (count != N_TDC_DOUT) {
-		Serial.write(val[count]);
-		count ++;
-	}
-
-	// terminator
-	Serial.println("TDC read complete");
+  
+  	// terminator
+  	Serial.println("TDC read complete");
+  }
 } // end tdc_read()
+
+void tdc_start(int chain) {
+/* 
+ * Inputs:
+ *  chain: CHAIN_MAIN or CHAIN_SMALL. The former indicates that
+ *    we'd like to program the TDC associated with the 
+ *    main signal chain; the latter indicates we'd like to 
+ *    program the TDC associated with the small signal
+ *    chain.
+ * Returns:
+ *  None.
+*/
+  // Figure out which pin to toggle based on the signal chain
+  int pin_start;
+  if (chain == CHAIN_MAIN) {
+    pin_start = pin_tdc_main_start;
+  } else if (chain == CHAIN_SMALL) {
+    pin_start = pin_tdc_small_start;
+  } else {
+    pin_start = pin_tdc_main_start;
+  }
+
+  // Toggle the pin high then low
+  digitalWrite(pin_start, HIGH);
+  delayMicroseconds(100);
+  digitalWrite(pin_start, LOW);
+} // end tdc_start
 
 
 /* ------------------------------------------ */

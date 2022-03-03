@@ -20,3 +20,14 @@ def block_print():
 
 def enable_print():
 	sys.stdout = sys.__stdout__
+
+def vdiff_conv(vincm, vdiff):
+	'''
+	Inputs:
+		vincm: Float. Input common mode in volts.
+		vdiff: Float. Input differential in volts.
+	Returns:
+		vinp: Float. Absolute positive input voltage.
+		vinn: Float. Absolute negative input voltage.
+	'''
+	return vincm+vdiff/2, vincm-vdiff/2
