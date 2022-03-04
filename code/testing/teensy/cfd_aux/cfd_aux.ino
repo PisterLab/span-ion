@@ -2,7 +2,7 @@
  * This is for a secondary Teensy intended to provide a variety of 
  * slow analog signals for the SPAN-Ion chip. These were not
  * connected to the original Teensy because of the additional capacitance
- * that would be posed.
+ * they would introduce for fast testing.
 */
 
 /* --------------------------------- */
@@ -13,8 +13,8 @@ const int pin_dac0 = A21;
 const int pin_dac1 = A22;
 
 // Small signal chain
-const int pin_zcd_vinn_small  = A0; // ZCD comparator inverting input
-const int pin_zcd_vinp_small  = A0; // ZCD comparator noninverting input
+const int pin_zcd_vinn_small  = A21; // ZCD comparator inverting input
+const int pin_zcd_vinp_small  = A22; // ZCD comparator noninverting input
 const int pin_led_vinp_small  = A0; // LED comparator noninverting input
 
 // Main signal chain

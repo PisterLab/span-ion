@@ -44,6 +44,8 @@ const int pin_tdc_small_en 		  = 28;	  // Active high enable for small chain TDC
 const int pin_tdc_small_trig 	  = 29;	  // Raises when TDC for small chain is ready
 const int pin_tdc_small_start   = 30;   // For triggering the TDC's start pulse
 
+const int pin_tdc_clk           = A0;   // 16MHz reference for TDC
+
 // Constants
 const int N_SCAN 				    = 44;   // Number of scan bits
 const int N_TDC_CONFIG 			= 2; 	  // Number of TDC config bytes (not bits!)
@@ -148,6 +150,12 @@ void setup() {
   digitalWrite(pin_spi_small_clk,   LOW);
   digitalWrite(pin_tdc_small_start, LOW);
 
+  pinMode(pin_tdc_clk,            OUTPUT);
+
+  analogWriteFrequency(pin_tdc_clk, 15000000);
+  analogWriteResolution(B_ADC);
+  analogWrite(pin_tdc_clk,  1<<(B_ADC-1));
+
   // Setting the ADC precision
 	analogReadResolution(B_ADC);	// 16B -> 13ENOB
 
@@ -155,7 +163,8 @@ void setup() {
 	SPI.begin();
 	SPISettings settings_tdc_spi(16000000, MSBFIRST, SPI_MODE1);
 
-	// TODO for Lydia: enable 16MHz clock for TDC reference
+	// TODO for Lydia: enable reference clock for TDC reference
+  
 } // end setup()
 
 /* ----------------------- */
@@ -580,7 +589,7 @@ void peak_reset() {
 	digitalWrite(pin_pk_rst, HIGH);
 	delayMicroseconds(100);
 	digitalWrite(pin_pk_rst, LOW);
-  delayMicroseconds(800);
+  delayMicroseconds(500);
 }
 
 void peak_read() {

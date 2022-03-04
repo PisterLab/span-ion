@@ -5,7 +5,7 @@ from gpib import *
 import spani_globals, scan, temp_chamber, tdc
 from pprint import pprint
 
-def test_offset_zcd_static(teensy_port, aux_port, num_iterations, vtest_dict,
+def test_slow_zcd(teensy_port, aux_port, num_iterations, vtest_dict,
 	vfsr=3.3, precision=16, tref_clk=1/16e6):
 	'''
 	Inputs:
@@ -42,36 +42,38 @@ def test_offset_zcd_static(teensy_port, aux_port, num_iterations, vtest_dict,
                     parity=serial.PARITY_NONE,
                     stopbits=serial.STOPBITS_ONE,
                     bytesize=serial.EIGHTBITS,
-                    timeout=1)
+                    timeout=5)
 
 	aux_ser = serial.Serial(port=aux_port,
                     baudrate=19200,
                     parity=serial.PARITY_NONE,
                     stopbits=serial.STOPBITS_ONE,
                     bytesize=serial.EIGHTBITS,
-                    timeout=1)
+                    timeout=5)
 
 	# Discretization of the Teensy PWM
 	vlsb = vfsr / (2**precision)	
 
 	# Construct the config commands
-	wdata1 = tdc.construct_wdata1(force_cal=1,
+	wdata1_dict = dict(force_cal=1,
 			parity_en=0,
 			trigg_edge=0,
 			stop_edge=0,
 			start_edge=0,
 			meas_mode=2,
 			start_meas=1)
+	wdata1 = tdc.construct_wdata1(**wdata1_dict)
 	int_command1, int_wdata1 = tdc.construct_config(is_read=False, 
-		addr=int(tdc.reg_addr_map['CONFIG1']),
+		addr=int(tdc.reg_addr_map['CONFIG1'], 16),
 		wdata=wdata1)
 
-	wdata2 = tdc.construct_wdata2(calibration2_periods=1,
+	wdata2_dict = dict(calibration2_periods=1,
 			avg_cycles=0,
 			num_stop=4)
-	num_timers = code_numstop_map[wdata2['num_stop']]
+	wdata2 = tdc.construct_wdata2(**wdata2_dict)
+	num_timers = tdc.code_numstop_map[wdata2_dict['num_stop']]
 	int_command2, int_wdata2 = tdc.construct_config(is_read=False,
-		addr=int(tdc.reg_addr_map['CONFIG2']),
+		addr=int(tdc.reg_addr_map['CONFIG2'], 16),
 		wdata=wdata2)
 
 	# Get absolute voltages from common mode + differential voltages
@@ -130,7 +132,11 @@ def test_offset_zcd_static(teensy_port, aux_port, num_iterations, vtest_dict,
 					# 1 byte (x3) at a time for the TIME registers
 					val_time = 0
 					for byte_num in range(3):
-						val_time = val_time + (teensy_ser.read().decode() << byte_num)
+						time_bytes = teensy_ser.read()
+						time_int = int.from_bytes(time_bytes, 
+												byteorder='big',
+												signed=False)
+						val_time = val_time + (time_int << byte_num)
 					time_vec[timer_num] = val_time
 
 				# ...for each clock count
@@ -139,7 +145,11 @@ def test_offset_zcd_static(teensy_port, aux_port, num_iterations, vtest_dict,
 					# 1 byte (x3) at a time for the CLOCK_COUNT registers
 					val_count = 0
 					for byte_num in range(3):
-						val_count = val_count + (teensy_ser.read().decode() >> byte_num)
+						count_bytes = teensy_ser.read()
+						count_int = int.from_bytes(count_bytes,
+												byteorder='big',
+												signed=False)
+						val_count = val_count + (count_int << byte_num)
 					clk_count_vec[clk_count_num] = val_count
 
 				# ...for each calibration value
@@ -148,22 +158,26 @@ def test_offset_zcd_static(teensy_port, aux_port, num_iterations, vtest_dict,
 					# 1 byte (x3) at a time for the CALIBRATION registers
 					val_cal = 0
 					for byte_num in range(3):
-						val_cal = val_cal + (teensy_ser.read().decode() >> byte_num)
+						cal_bytes = teensy_ser.read()
+						cal_int = int.from_bytes(cal_bytes,
+												byteorder='big',
+												signed=False)
+						val_cal = val_cal + (cal_int << byte_num)
 					cal_vec[cal_num] = val_cal
 
 				# Calculate the times of flight between each detected STOP pulse and
 				# the START pulse
 				tof_vec = []
-				time_x_vec = time_vec[:-1] if wdata1['meas_mode'] == 1 else time_vec[1:]
+				time_x_vec = time_vec[:-1] if wdata1_dict['meas_mode'] == 1 else time_vec[1:]
 				for i,time_x in enumerate(time_x_vec):
 					tof_vec.append(tdc.calc_tof(cal1=cal_vec[0],
 						cal2=cal_vec[1],
-						cal2_periods=tdc.code_cal2_map[wdata2['calibration2_periods']],
+						cal2_periods=tdc.code_cal2_map[wdata2_dict['calibration2_periods']],
 						time_1=time_vec[0],
 						time_x=time_x,
 						count_n=clk_count_vec[i],
 						tper=tref_clk,
-						mode=wdata1['meas_mode']))
+						mode=wdata1_dict['meas_mode']))
 
 				# TODO change for efficiency - currently just throwing out 
 				# irrelevant data, e.g. unused TIMEx data

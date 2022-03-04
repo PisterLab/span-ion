@@ -107,7 +107,7 @@ def run_main():
 	##################################
 	### Peak Detector Static Error ###
 	##################################
-	if True:
+	if False:
 		pk_static_params = dict(teensy_port="COM5",
 			aux_port="COM3",
 			num_iterations=200,
@@ -131,6 +131,29 @@ def run_main():
 						output=vout_vec)
 		with open(file_out, 'w') as outfile:
 			yaml.dump(data_dict, outfile, default_flow_style=False)
+
+	####################################
+	### Small Chain ZCD Slow Testing ###
+	####################################
+	if True:
+		small_zcd_params = dict(
+			teensy_port="COM5",
+			aux_port="COM3",
+			num_iterations=1,
+			vfsr=3.3,
+			precision=16, 
+			tref_clk=1/15e6)
+		vlsb = small_zcd_params['vfsr'] / (2**small_zcd_params['precision'])
+		vincm_vec = list(np.arange(0.5, 0.9, 0.1))
+		vdiff_vec = np.arange(-0.3, 0.3, 10e-3)
+		small_zcd_params['vtest_dict'] = {vincm:list(vdiff_vec) for vincm in vincm_vec}
+
+		file_out = f'../../data/testing/{timestamp_str}_zcdSmallSlow_{small_zcd_params["num_iterations"]}x.yaml'
+
+		high_rate_dict = testing.test_slow_zcd(**small_zcd_params)
+
+		with open(file_out, 'w') as outfile:
+			yaml.dump(high_rate_dict, outfile, defualt_flow_style=False)
 
 	################################################		
 	### Scratch: Testing Teensy DAC Voltage Ramp ###
