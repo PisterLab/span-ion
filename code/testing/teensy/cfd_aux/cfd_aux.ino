@@ -8,7 +8,11 @@
 /* --------------------------------- */
 /* --- Pin Mappings (Teensy 3.6) --- */
 /* --------------------------------- */
-// Small signal chain TODO pin numbers
+// Useful pins to use elsewhere
+const int pin_dac0 = A21;
+const int pin_dac1 = A22;
+
+// Small signal chain
 const int pin_zcd_vinn_small  = A0; // ZCD comparator inverting input
 const int pin_zcd_vinp_small  = A0; // ZCD comparator noninverting input
 const int pin_led_vinp_small  = A0; // LED comparator noninverting input
@@ -17,7 +21,7 @@ const int pin_led_vinp_small  = A0; // LED comparator noninverting input
 const int pin_vin_main        = A0; // Voltage input to the board amp for the signal input
 
 // Test structures
-const int pin_pk_vin          = A0; // Test peak detector input voltage
+const int pin_pk_vin          = A21; // Test peak detector input voltage
 
 // Constants
 const int B_ADC = 16; // Number of bits (precision) for analogRead
@@ -35,6 +39,10 @@ void setup() {
 
   // Reserve 200 bytes for the inputString
   inputString.reserve(200);
+
+  // Setting the ADC precision
+  analogReadResolution(B_ADC);  // 16B -> 13ENOB
+  analogWriteResolution(B_ADC); // 16B -> 13ENOB?
 
   // Set up pins
   // - Small Signal Chain
@@ -55,9 +63,6 @@ void setup() {
   pinMode(pin_pk_vin, OUTPUT);
 
   analogWrite(pin_pk_vin, 0);
-
-  // Setting the ADC precision
-  analogReadResolution(B_ADC);  // 16B -> 13ENOB
 } // end setup
 
 void loop() {
@@ -93,18 +98,16 @@ void slow_ramp(int pin) {
  *  None.
  * Notes:
  *  Reads in the desired set voltage _in LSB_ over serial and sets
- *  the pin voltage to that DC value with a ramp of roughly 3.3V/ms
+ *  the pin voltage to that DC value with a ramp of roughly 3.3V/ms.
 */
   // Read in the desired set voltage (in LSB)
-  while (!Serial.available()) {}
+  while(!Serial.available()) {}
   int vin_target = Serial.parseInt();
-  float delay_ms = 3.3/(1<<B_ADC);
+  Serial.println(vin_target);
 
   // Set the desired voltage
-  for (int i=0; i<vin_target; i++) {
-    analogWrite(pin, i);
-    delay(delay_ms);
-  }
+  analogWrite(pin, vin_target);
+  
 } // end slow_ramp
 
 /* ------------- */

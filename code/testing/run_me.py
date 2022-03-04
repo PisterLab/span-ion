@@ -5,7 +5,7 @@ from datetime import date, datetime
 import os, sys, time, pdb, traceback
 import csv, yaml
 
-import spani_globals, scan, bandgap, testing
+import spani_globals, scan, bandgap, testing, plotting
 
 def run_main():
 	timestamp = datetime.now()
@@ -107,36 +107,57 @@ def run_main():
 	##################################
 	### Peak Detector Static Error ###
 	##################################
-	if False:
-		pk_static_params = dict(teensy_port="COM4",
+	if True:
+		pk_static_params = dict(teensy_port="COM5",
 			aux_port="COM3",
-			num_iterations=1,
+			num_iterations=200,
 			vfsr=3.3,
 			precision=16,
-			t_wait=0.001)
-		pk_static_params['vtest_vec'] = np.linspace(0, 
-			pk_static_params['vfsr'], 
-			2**pk_static_params['precision']+1)
+			t_wait=.1)
+		vlsb = pk_static_params['vfsr'] / (2**pk_static_params['precision'])
+		pk_static_params['vtest_vec'] = np.arange(0.5, 1.3, 3e-3)
 
+		print("Starting peak detector test...")
 		vtest_real_dict, vtest_vout_dict = testing.test_pk_static(**pk_static_params)
-		file_out = f'../../data/testing/{timestamp_str}_pk_{pk_static_params["num_iterations"]}x.csv'
+		print("Ending peak detector test...")
+		file_out = f'../../data/testing/{timestamp_str}_pk_{pk_static_params["num_iterations"]}x.yaml'
 
-		vtest_ideal_vec, vtest_real_vec = dict_format(vtest_real_dict)
+		vtest_ideal_vec, vtest_real_vec = plotting.dict_format(vtest_real_dict)
 		vout_vec = [vtest_vout_dict[vtest_ideal] for vtest_ideal in vtest_ideal_vec]
+		
+		# Restructuring the dictionary
+		data_dict = dict(ideal=[float(v) for v in vtest_ideal_vec], 
+						real=vtest_real_vec,
+						output=vout_vec)
+		with open(file_out, 'w') as outfile:
+			yaml.dump(data_dict, outfile, default_flow_style=False)
 
-		with open(file_out, 'w', newline='') as csvfile:
-			fwriter = csv.writer(csvfile, delimiter=',',
-				quotechar="|", quoting=csv.QUOTE_MINIMAL)
-			fwriter.writerow(['Ideal Input'] + list(vtest_real_vec))
-			fwriter.writerow(['Practical Input'] + list(vtest_real_vec))
-			fwriter.writerow(['Output'] + vout_vec)
+	################################################		
+	### Scratch: Testing Teensy DAC Voltage Ramp ###
+	################################################
+	if False:
+		vlsb = 3.3/(2**16)
+		# vdac_vec = np.arange(0.5, 1.8, vlsb*10)
+		vdac_vec = np.arange(0.5, 1.8, 0.1)
+		aux_ser = serial.Serial(port="COM3",
+                    baudrate=19200,
+                    parity=serial.PARITY_NONE,
+                    stopbits=serial.STOPBITS_ONE,
+                    bytesize=serial.EIGHTBITS,
+                    timeout=2)
+		
+		for vdac in vdac_vec:
+			code = int(round(vdac/vlsb))
+			aux_ser.write(b'peakslow\n')
+			aux_ser.write(str(code).encode())
+			print(f'Voltage/Code: {round(vdac, 4)}/{code}')
+			print(f'Ramping to code {aux_ser.readline()}')
+			time.sleep(1)
 
 	#########################################
 	### Small Chain ZCD Comparator Offset ###
 	#########################################
-	if True:
-
-
+	if False:
 		vincm_vec = np.arange(0.6, 0.9, 50e-3)
 		vdiff_vec = np.arange(-0.1, 0.1, 5e-3)
 		vtest_dict = {vincm:vdiff_vec for vincm in vincm_vec}
@@ -169,7 +190,7 @@ def run_main():
 
 		# Dump into a yaml file because screw CSVs
 		with open(file_out, 'w') as outfile:
-			yaml.dump(erstruct_dict, outfile, default_flow_style=False)
+			yaml.dump(restruct_dict, outfile, default_flow_style=False)
 
 		# for vincm, vals in restruct_dict.keys():
 		# 	vdiff_vec = vals['vdiff']

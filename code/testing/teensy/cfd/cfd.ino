@@ -578,8 +578,9 @@ void peak_reset() {
  *  Resets the test structure peak detector.
 */
 	digitalWrite(pin_pk_rst, HIGH);
-	delayMicroseconds(50);
+	delayMicroseconds(100);
 	digitalWrite(pin_pk_rst, LOW);
+  delayMicroseconds(800);
 }
 
 void peak_read() {

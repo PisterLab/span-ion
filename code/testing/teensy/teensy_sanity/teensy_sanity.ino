@@ -8,7 +8,18 @@ const int pin_scan_outb     = A18;  // ASC output data
 const int pin_scan_clk      = A17;  // ASC clock
 const int pin_scan_loadb    = A16;  // ASC load
 
+// Miscellaneous analogRead/Write-enabled pin
+const int pin_dac1 = A22;
+const int pin_dac0 = A21;
+
+// Constants
+const int B_ADC = 16; // Resolution for ADC read/write
+
 void setup() {
+  analogReadResolution(B_ADC);  // 16B -> 13ENOB
+  analogWriteResolution(B_ADC); // 16B -> 13ENOB?
+  // analogWriteFrequency(dac1, 915.527);
+  
   pinMode(pin_scan_inb,       OUTPUT);
   pinMode(pin_scan_outb,      INPUT);
   pinMode(pin_scan_clk,       OUTPUT);
@@ -17,6 +28,12 @@ void setup() {
   digitalWrite(pin_scan_inb,    LOW);
   digitalWrite(pin_scan_clk,    LOW);
   digitalWrite(pin_scan_loadb,  HIGH);
+
+  pinMode(pin_dac1,         OUTPUT);
+  pinMode(pin_dac0,         OUTPUT);
+  
+  analogWrite(pin_dac1,     1<<B_ADC);
+  analogWrite(pin_dac0,     1<<(B_ADC-1));
 }
 
 void loop() {
@@ -27,7 +44,7 @@ void loop() {
   }
 
   // --- Teensy Internal Temp Sensor ---
-  if (true) {
+  if (false) {
     check_internalTemp();
   }
 }

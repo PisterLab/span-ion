@@ -3,6 +3,7 @@ import time, sys, os
 from dac import *
 from gpib import *
 import spani_globals, scan, temp_chamber, tdc
+from pprint import pprint
 
 def test_offset_zcd_static(teensy_port, aux_port, num_iterations, vtest_dict,
 	vfsr=3.3, precision=16, tref_clk=1/16e6):
@@ -176,7 +177,7 @@ def test_offset_zcd_static(teensy_port, aux_port, num_iterations, vtest_dict,
 
 
 def test_pk_static(teensy_port, aux_port, num_iterations, vtest_vec, vfsr=3.3, 
-	precision=16, t_wait=0.001):
+	precision=16, t_wait=0.01):
 	'''
 	Inputs:
 		teensy_port: String. Name of the COM port the main board Teensy is 
@@ -211,7 +212,7 @@ def test_pk_static(teensy_port, aux_port, num_iterations, vtest_vec, vfsr=3.3,
                     parity=serial.PARITY_NONE,
                     stopbits=serial.STOPBITS_ONE,
                     bytesize=serial.EIGHTBITS,
-                    timeout=1)
+                    timeout=10)
 
 	# Discretization of the Teensy PWM
 	vlsb = vfsr / (2**precision)
@@ -224,23 +225,30 @@ def test_pk_static(teensy_port, aux_port, num_iterations, vtest_vec, vfsr=3.3,
 		vtest_code = int(round(vtest/vlsb))
 		vtest_real = vtest_code * vlsb
 
-		# Reset the peak detector
-		teensy_ser.write(b'peakreset\n')
-
-		# Trigger the auxiliary Teensy to get the slow (~3.3V/ms) ramp to
+		# Trigger the auxiliary Teensy to get the ramp to
 		# the target voltage
 		aux_ser.write(b'peakslow\n')
 		aux_ser.write(str(vtest_code).encode())
+		print(aux_ser.readline())
+
+		# Reset the peak detector
+		# aux_ser.write(b'peakslow\n')
+		# aux_ser.write(str(0).encode())
+		# aux_ser.readline()
+		teensy_ser.write(b'peakreset\n')
 
 		# Take num_iterations readings at the same voltage
 		for i in range(num_iterations):
 			teensy_ser.write(b'peakread\n')
-			vout = float(teensy_ser.readline())
+			vout_code = int(teensy_ser.readline())
+			vout = vout_code / 2**precision * vfsr
 			vout_vec.append(vout)
 			time.sleep(t_wait)
 
 		vtest_vout_dict[vtest] = vout_vec
 		vtest_real_dict[vtest] = vtest_real
+		print(f'{round(vtest,4)} \t {vtest_code} \t {round(vtest_real,4)} \t {[round(vout, 4) for vout in vout_vec]}')
+
 	return vtest_real_dict, vtest_vout_dict
 
 def test_dac(com_port, num_iterations, code_vec, dac_name, vfsr=3.3, 
