@@ -1,4 +1,3 @@
-#include <SPI.h>
 #include <InternalTemperature.h>
 /* --------------------------------- */
 /* --- Pin Mappings (Teensy 3.6) --- */
@@ -150,6 +149,7 @@ void setup() {
   digitalWrite(pin_spi_small_clk,   LOW);
   digitalWrite(pin_tdc_small_start, LOW);
 
+  // - TDC Reference Clock
   pinMode(pin_tdc_clk,            OUTPUT);
 
   analogWriteFrequency(pin_tdc_clk, 15000000);
@@ -158,12 +158,6 @@ void setup() {
 
   // Setting the ADC precision
 	analogReadResolution(B_ADC);	// 16B -> 13ENOB
-
-	// Initialize SPI speed, mode, and endianness
-	SPI.begin();
-	SPISettings settings_tdc_spi(16000000, MSBFIRST, SPI_MODE0);
-
-	// TODO for Lydia: enable reference clock for TDC reference
   
 } // end setup()
 
@@ -343,12 +337,60 @@ void asc_read() {
 /* ----------------------------------- */
 /* --- TDC Control & Communication --- */
 /* ----------------------------------- */
+void spitick(int pin_clk) {
+/*
+*/
+  digitalWrite(pin_clk, LOW);
+  delayMicroseconds(100);
+  digitalWrite(pin_clk, HIGH);
+  delayMicroseconds(100);
+} // end spitick()
+
+void bitbang_byte_in(char msg_byte, int pin_din, int pin_clk) {
+/*
+ * Inputs:
+ *  msg_byte: Character. Byte that's going to be sent MSB-first.
+ *  pin_spi_din: Integer. Pin for SPI data-in to the other device from
+ *    the Teensy.
+ *  pin_spi_clk: Integer. Pin on the Teensy associated with the SPI clock.
+ * Returns:
+ *  None.
+ * Notes:
+ *  Bit-bangs the byte to the device in question, MSB-first.
+*/
+  for (int j=0; j<8; j++) {
+    // NB: bitRead starts from the LSB
+    if (bitRead(msg_byte, 8-j)) {digitalWrite(pin_din, HIGH);}
+    else {digitalWrite(pin_din, LOW);}
+    spitick(pin_clk);
+  }
+}
+
+char bitbang_byte_out(int pin_dout, int pin_clk) {
+/*
+ * Inputs:
+ *  pin_dout: Integer. Pin on the Teensy associated with TDC data-out.
+ *  pin_clk: Integer. Pin on the Teensy associated with the SPI clock.
+ * Returns:
+ *  Character. The byte (MSB reads out first) read out.
+ * Notes:
+ *  MSB comes out first.
+*/  
+  char msg_byte = 0;
+  int valb = 0;
+  
+  for (int j=0; j<8; j++) {
+    valb = digitalRead(pin_dout);
+    if (valb) {bitSet(msg_byte, 8-j);}
+    else {bitClear(msg_byte, 8-j);}
+    spitick(pin_clk);
+  }
+  return msg_byte;
+}
+
 void tdc_write(int chain) {
 /*
-	Uses the Teensy' SPI library to program the TDC using
-	the TDC's SPI interface.
-	SPI library documentation:
-		https://www.pjrc.com/teensy/td_libs_SPI.html
+	Bit bangs SPI communication to the TDC.
 	TI TDC device documentation:
 		https://www.ti.com/lit/ds/symlink/tdc7200.pdf?ts=1636125541217 
 
@@ -360,8 +402,7 @@ void tdc_write(int chain) {
 			chain.
 */
 	Serial.println("Executing TDC config");
-  SPISettings settings_tdc_spi(16000000, MSBFIRST, SPI_MODE0);
-
+ 
 	// get bytes (sent as bytes! MSB first) over serial
 	char configbytes[N_TDC_CONFIG];
 	int count = 0;
@@ -379,18 +420,20 @@ void tdc_write(int chain) {
 	int pin_spi_csb;
 	int pin_tdc_en;
 	int pin_tdc_trig;
+  int pin_spi_din;
+  int pin_spi_clk;
 	if (chain == CHAIN_MAIN){
 		pin_spi_csb 	= pin_spi_main_csb;
 		pin_tdc_en 		= pin_tdc_main_en;
 		pin_tdc_trig 	= pin_tdc_main_trig;
-	    SPI.setMOSI	(pin_spi_main_din); 		// TODO check
-	    SPI.setSCK	(pin_spi_main_clk);
+    pin_spi_din   = pin_spi_main_din;
+    pin_spi_clk   = pin_spi_main_clk;
 	} else {
 		pin_spi_csb 	= pin_spi_small_csb;
 		pin_tdc_en 		= pin_tdc_small_en;
 		pin_tdc_trig 	= pin_tdc_small_trig;
-	    SPI.setMOSI	(pin_spi_small_din); 		// TODO check
-	    SPI.setSCK	(pin_spi_small_clk);
+    pin_spi_din   = pin_spi_small_din;
+    pin_spi_clk   = pin_spi_small_clk;
 	}
 	
 	// bring TDC enable high if it isn't already
@@ -398,36 +441,35 @@ void tdc_write(int chain) {
 
 	// enforce that it's a write
   if ((configbytes[0] | 0x40) != configbytes[0]) {
-    Serial.println("Encforcing write in TDC");
+    Serial.println("WARNING: Encforcing write in TDC");
     configbytes[0] |= 0x40;
   } else {
-    Serial.println("TDC write setting correct");  
+    Serial.println("OK: TDC write setting correct");  
   }
 
   // enforce no auto-increment
   if (configbytes[0] >> 7) {
-    Serial.println("Enforcing no increment in TDC");
+    Serial.println("WARNING: Enforcing no increment in TDC");
     configbytes[0] &= ~(0x1 << 7);
   } else {
-    Serial.println("TDC no auto-increment setting correct");  
+    Serial.println("OK: TDC no auto-increment setting correct");  
   }
   
-	// store the address being written to for later
+	// store the address being written to
 	ADDR_TDC = configbytes[0] & 0x3F;
 
-	// forward bytes to the TDC 
+	// bit-bang over SPI to the TDC, MSB first
 	digitalWrite(pin_spi_csb, LOW);
-	SPI.beginTransaction(settings_tdc_spi);
 	count = 0;
-    while (count != N_TDC_CONFIG) {
-		// transfer one byte at a time over SPI
-		SPI.transfer(configbytes[count]);
+  char msg_byte;
+  while (count != N_TDC_CONFIG) {
+    msg_byte = configbytes[count];
+    bitbang_byte_in(msg_byte, pin_spi_din, pin_spi_clk);
 		count ++;
 	}
 
 	// end write process to TDC
 	digitalWrite(pin_spi_csb, HIGH);
-    SPI.endTransaction();
 
 	Serial.println("TDC config complete");
 
@@ -436,43 +478,50 @@ void tdc_write(int chain) {
 	while (waiting < 5000) {
 		if (digitalRead(pin_tdc_trig) == HIGH) {
 			// tell the computer that the TDC is armed
-			Serial.println("TDC armed");
+			Serial.println("OK: TDC armed");
 			return;
 		}
 	}
 
 	// if timeout, warn the computer
-	Serial.println("TDC trigger not high");
+	Serial.println("WARNING: TDC trigger not high");
 } // end tdc_write()
 
 
 void tdc_read(int chain) {
 /*
-	Uses the Teensy's SPI library to read from the TDC
-	using the TDC's SPI interface.
-
-	Inputs:
-		chain: CHAIN_MAIN or CHAIN_SMALL to indicate which
-			TDC to communicate with. CHAIN_MAIN (the variable name)
-			indicates that we'd like to read from the TDC
-			that's connected to the main signal chain. CHAIN_SMALL
-			indicates that we'd like to read from the TDC that's 
-			connected to the small signal chain.
+ * Uses the Teensy's SPI library to read from the TDC
+ * using the TDC's SPI interface.
+ * Inputs:
+ *  chain: CHAIN_MAIN or CHAIN_SMALL to indicate which
+ *    communicate with. CHAIN_MAIN (the variable name)
+ *    indicates that we'd like to read from the TDC
+ *    that's connected to the main signal chain. CHAIN_SMALL
+ *    indicates that we'd like to read from the TDC that's 
+ *    connected to the small signal chain.
 */
 	// select signal chain-specific SPI pins
 	int pin_spi_csb;
+  int pin_tdc_en;
 	int pin_tdc_intrptb;
+  int pin_spi_din;
+  int pin_spi_dout;
+  int pin_spi_clk;
 
-    if (chain == CHAIN_MAIN){
-    	pin_spi_csb 	= pin_spi_main_csb;
-    	pin_tdc_intrptb = pin_tdc_main_intrptb;
-    	SPI.setMISO (pin_spi_main_dout);		// TODO check
-    	SPI.setSCK	(pin_spi_main_clk);
-	} else {
-		pin_spi_csb 	= pin_spi_small_csb;
+  if (chain == CHAIN_MAIN){
+  	pin_spi_csb 	  = pin_spi_main_csb;
+    pin_tdc_en      = pin_tdc_main_en;
+  	pin_tdc_intrptb = pin_tdc_main_intrptb;
+    pin_spi_din     = pin_spi_main_din;
+    pin_spi_dout    = pin_spi_main_dout;
+    pin_spi_clk     = pin_spi_main_clk;
+  } else {
+		pin_spi_csb 	  = pin_spi_small_csb;
+    pin_tdc_en      = pin_tdc_small_en;
 		pin_tdc_intrptb	= pin_tdc_small_intrptb;
-		SPI.setMISO (pin_spi_small_dout);		// TODO check
-		SPI.setSCK (pin_spi_small_clk);
+    pin_spi_din     = pin_spi_small_din;
+    pin_spi_dout    = pin_spi_small_dout;
+    pin_spi_clk     = pin_spi_small_clk;
 	}
 
 	// wait until interrupt indicates measurement data is available
@@ -489,19 +538,22 @@ void tdc_read(int chain) {
   	// read from all timer outputs
     int count;
     char dout[N_TDC_DOUT];
+    digitalWrite(pin_tdc_en, HIGH);
   	digitalWrite(pin_spi_csb, LOW);
     char addr_time_vec[6] = {ADDR_TIME1, ADDR_TIME2, 
                             ADDR_TIME3, ADDR_TIME4,
                             ADDR_TIME5, ADDR_TIME6};
+    char msg_byte;
     for (int i=0; i<6; i++) {
       // send read command, enforce no auto-increment
-      SPI.transfer(0x80 | addr_time_vec[i]);
+      msg_byte = 0x80 | addr_time_vec[i];
+      bitbang_byte_in(msg_byte, pin_spi_din, pin_spi_clk);
   
       // retrieve data from the TDC
       count = 0;
       while (count != N_TDC_DOUT) {
         // read and write one byte at a time over SPI and then serial
-        dout[count] = SPI.transfer(0);
+        dout[count] = bitbang_byte_out(pin_spi_dout, pin_spi_clk);
         Serial.write(dout[count]);
         count ++;
       }
@@ -515,13 +567,14 @@ void tdc_read(int chain) {
                                 ADDR_CLOCK_COUNT5};
     for (int i=0; i<5; i++) {
       // send read command, enforce no auto-increment
-      SPI.transfer(0x80 | addr_clkcount_vec[i]);
+      msg_byte = 0x80 | addr_clkcount_vec[i];
+      bitbang_byte_in(msg_byte, pin_spi_din, pin_spi_clk);
   
       // retrieve data from the TDC
       count = 0;
       while (count != N_TDC_DOUT) {
         // read and write one byte at a time over SPI and then serial
-        dout[count] = SPI.transfer(0);
+        dout[count] = bitbang_byte_out(pin_spi_dout, pin_spi_clk);
         Serial.write(dout[count]);
         count ++;
       }
@@ -531,20 +584,20 @@ void tdc_read(int chain) {
     char addr_cal_vec[2] = {ADDR_CALIBRATION1, ADDR_CALIBRATION2};
     for (int i=0; i<2; i++) {
       // send read command, enforce no auto-increment
-      SPI.transfer(0x80 | addr_cal_vec[i]);
+      msg_byte = 0x80 | addr_cal_vec[i];
+      bitbang_byte_in(msg_byte, pin_spi_din, pin_spi_clk);
   
       // retrieve data from the TDC
       count = 0;
       while (count != N_TDC_DOUT) {
-        dout[count] = SPI.transfer(0);
+        dout[count] = bitbang_byte_out(pin_spi_dout, pin_spi_clk);
         Serial.write(dout[count]);
-        count ++ ;  
+        count ++;
       }
     }
   
   	// end read process from TDC
     digitalWrite(pin_spi_csb, HIGH);
-    SPI.endTransaction();
   
   	// terminator
   	Serial.println("TDC read complete");
