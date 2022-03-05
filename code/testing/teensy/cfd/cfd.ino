@@ -36,8 +36,8 @@ const int pin_tdc_main_trig		  = 7; 	// Raises when TDC for main chain is ready
 const int pin_tdc_main_start    = 6;  // For triggering the TDC's start pulse
 
 const int pin_spi_small_csb 	  = A12;	// CSb for the small signal chain TDC
-const int pin_spi_small_din		  = 0; 	  // Data-in pin for the small signal chain TDC
-const int pin_spi_small_dout 	  = 1;	  // Data-out pin for the small signal chain TDC
+const int pin_spi_small_din		  = 1; 	  // Data-in pin for the small signal chain TDC - switched on board
+const int pin_spi_small_dout 	  = 0;	  // Data-out pin for the small signal chain TDC - switched on board
 const int pin_spi_small_clk		  = A13;	// SPI clock for the small signal chain TDC
 const int pin_tdc_small_intrptb	= 27;	  // Interrupt pin for the TDC for the small signal chain
 const int pin_tdc_small_en 		  = 28;	  // Active high enable for small chain TDC
@@ -161,7 +161,7 @@ void setup() {
 
 	// Initialize SPI speed, mode, and endianness
 	SPI.begin();
-	SPISettings settings_tdc_spi(16000000, MSBFIRST, SPI_MODE1);
+	SPISettings settings_tdc_spi(16000000, MSBFIRST, SPI_MODE0);
 
 	// TODO for Lydia: enable reference clock for TDC reference
   
@@ -360,7 +360,7 @@ void tdc_write(int chain) {
 			chain.
 */
 	Serial.println("Executing TDC config");
-  SPISettings settings_tdc_spi(16000000, MSBFIRST, SPI_MODE1);
+  SPISettings settings_tdc_spi(16000000, MSBFIRST, SPI_MODE0);
 
 	// get bytes (sent as bytes! MSB first) over serial
 	char configbytes[N_TDC_CONFIG];
@@ -433,8 +433,8 @@ void tdc_write(int chain) {
 
 	// wait for indication that TDC is armed
 	elapsedMillis waiting;
-	while (waiting < 1000) {
-		if (digitalRead(pin_tdc_trig)) {
+	while (waiting < 5000) {
+		if (digitalRead(pin_tdc_trig) == HIGH) {
 			// tell the computer that the TDC is armed
 			Serial.println("TDC armed");
 			return;
@@ -442,7 +442,7 @@ void tdc_write(int chain) {
 	}
 
 	// if timeout, warn the computer
-	Serial.println("TDC trigger not armed");
+	Serial.println("TDC trigger not high");
 } // end tdc_write()
 
 

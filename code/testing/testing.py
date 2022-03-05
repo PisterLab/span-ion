@@ -103,15 +103,15 @@ def test_slow_zcd(teensy_port, aux_port, num_iterations, vtest_dict,
 				# Reset and configure TDC connected to small signal chain
 				teensy_ser.write(b'tdcsmallconfig\n')
 				print(teensy_ser.readline())
-				teensy_ser.write(int_command1.to_bytes(1, 'big'))
-				teensy_ser.write(int_wdata1.to_bytes(1, 'big'))
+				teensy_ser.write(int_command2.to_bytes(1, 'big'))
+				teensy_ser.write(int_wdata2.to_bytes(1, 'big'))
 				for _ in range(4):
 					print(teensy_ser.readline())
 
 				teensy_ser.write(b'tdcsmallconfig\n')
 				print(teensy_ser.readline())
-				teensy_ser.write(int_command2.to_bytes(1, 'big'))
-				teensy_ser.write(int_wdata2.to_bytes(1, 'big'))
+				teensy_ser.write(int_command1.to_bytes(1, 'big'))
+				teensy_ser.write(int_wdata1.to_bytes(1, 'big'))
 				for _ in range(4):
 					print(teensy_ser.readline())
 
