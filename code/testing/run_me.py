@@ -135,7 +135,7 @@ def run_main():
 	####################################
 	### Small Chain ZCD Slow Testing ###
 	####################################
-	if True:
+	if False:
 		small_zcd_params = dict(
 			teensy_port="COM5",
 			aux_port="COM3",
@@ -153,7 +153,22 @@ def run_main():
 		high_rate_dict = testing.test_slow_zcd(**small_zcd_params)
 
 		with open(file_out, 'w') as outfile:
-			yaml.dump(high_rate_dict, outfile, defualt_flow_style=False)
+			yaml.dump(high_rate_dict, outfile, default_flow_style=False)
+
+	############################################
+	### Scratch: Reading Values from the TDC ###
+	############################################
+	if True:
+		teensy_port = 'COM5'
+		teensy_ser = serial.Serial(port=teensy_port,
+			baudrate=19200,
+			parity=serial.PARITY_NONE,
+			stopbits=serial.STOPBITS_ONE,
+			bytesize=serial.EIGHTBITS,
+			timeout=5)
+		for _ in range(28*4):
+			print(teensy_ser.readline())
+
 
 	################################################		
 	### Scratch: Testing Teensy DAC Voltage Ramp ###

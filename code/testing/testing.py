@@ -133,6 +133,7 @@ def test_slow_zcd(teensy_port, aux_port, num_iterations, vtest_dict,
 					val_time = 0
 					for byte_num in range(3):
 						time_bytes = teensy_ser.read()
+						print(time_bytes)
 						time_int = int.from_bytes(time_bytes, 
 												byteorder='big',
 												signed=False)
@@ -146,6 +147,7 @@ def test_slow_zcd(teensy_port, aux_port, num_iterations, vtest_dict,
 					val_count = 0
 					for byte_num in range(3):
 						count_bytes = teensy_ser.read()
+						print(count_bytes)
 						count_int = int.from_bytes(count_bytes,
 												byteorder='big',
 												signed=False)
@@ -159,11 +161,14 @@ def test_slow_zcd(teensy_port, aux_port, num_iterations, vtest_dict,
 					val_cal = 0
 					for byte_num in range(3):
 						cal_bytes = teensy_ser.read()
+						print(cal_bytes)
 						cal_int = int.from_bytes(cal_bytes,
 												byteorder='big',
 												signed=False)
 						val_cal = val_cal + (cal_int << byte_num)
 					cal_vec[cal_num] = val_cal
+
+				print(f'Time: {time_vec}\n Cal: {cal_vec}\n Count: {clk_count_vec}')
 
 				# Calculate the times of flight between each detected STOP pulse and
 				# the START pulse

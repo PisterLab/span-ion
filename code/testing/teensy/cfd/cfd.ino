@@ -176,10 +176,10 @@ void loop() {
 			asc_load();
 		}
 		else if (inputString == "tdcmainread\n") {
-			tdc_read(CHAIN_MAIN);
+			tdc_read_meas(CHAIN_MAIN);
 		}
 		else if (inputString == "tdcsmallread\n") {
-			tdc_read(CHAIN_SMALL);
+			tdc_read_meas(CHAIN_SMALL);
 		}
 		else if (inputString == "tdcmainconfig\n") {
 			tdc_write(CHAIN_MAIN);
@@ -340,9 +340,9 @@ void asc_read() {
 void spitick(int pin_clk) {
 /*
 */
-  digitalWrite(pin_clk, LOW);
-  delayMicroseconds(100);
   digitalWrite(pin_clk, HIGH);
+  delayMicroseconds(100);
+  digitalWrite(pin_clk, LOW);
   delayMicroseconds(100);
 } // end spitick()
 
@@ -487,8 +487,7 @@ void tdc_write(int chain) {
 	Serial.println("WARNING: TDC trigger not high");
 } // end tdc_write()
 
-
-void tdc_read(int chain) {
+void tdc_read_meas(int chain) {
 /*
  * Uses the Teensy's SPI library to read from the TDC
  * using the TDC's SPI interface.
@@ -546,7 +545,7 @@ void tdc_read(int chain) {
     char msg_byte;
     for (int i=0; i<6; i++) {
       // send read command, enforce no auto-increment
-      msg_byte = 0x80 | addr_time_vec[i];
+      msg_byte = addr_time_vec[i];
       bitbang_byte_in(msg_byte, pin_spi_din, pin_spi_clk);
   
       // retrieve data from the TDC
@@ -567,7 +566,7 @@ void tdc_read(int chain) {
                                 ADDR_CLOCK_COUNT5};
     for (int i=0; i<5; i++) {
       // send read command, enforce no auto-increment
-      msg_byte = 0x80 | addr_clkcount_vec[i];
+      msg_byte = addr_clkcount_vec[i];
       bitbang_byte_in(msg_byte, pin_spi_din, pin_spi_clk);
   
       // retrieve data from the TDC
@@ -583,8 +582,9 @@ void tdc_read(int chain) {
     // read from calibration count outputs
     char addr_cal_vec[2] = {ADDR_CALIBRATION1, ADDR_CALIBRATION2};
     for (int i=0; i<2; i++) {
+      digitalWrite(pin_spi_csb, LOW);
       // send read command, enforce no auto-increment
-      msg_byte = 0x80 | addr_cal_vec[i];
+      msg_byte = addr_cal_vec[i];
       bitbang_byte_in(msg_byte, pin_spi_din, pin_spi_clk);
   
       // retrieve data from the TDC
@@ -602,7 +602,7 @@ void tdc_read(int chain) {
   	// terminator
   	Serial.println("TDC read complete");
   }
-} // end tdc_read()
+} // end tdc_read_meas()
 
 void tdc_start(int chain) {
 /* 
