@@ -159,7 +159,7 @@ def run_main():
 	### Scratch: Reading Values from the TDC ###
 	############################################
 	if True:
-		teensy_port = 'COM5'
+		teensy_port = 'COM6'
 		teensy_ser = serial.Serial(port=teensy_port,
 			baudrate=19200,
 			parity=serial.PARITY_NONE,

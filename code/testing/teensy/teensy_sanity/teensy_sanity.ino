@@ -23,8 +23,8 @@ const int pin_tdc_main_trig     = 7;  // Raises when TDC for main chain is ready
 const int pin_tdc_main_start    = 6;  // For triggering the TDC's start pulse
 
 const int pin_spi_small_csb     = A12;  // CSb for the small signal chain TDC
-const int pin_spi_small_din     = 1;    // Data-in pin for the small signal chain TDC - switched on board
-const int pin_spi_small_dout    = 0;    // Data-out pin for the small signal chain TDC - switched on board
+const int pin_spi_small_din     = 0;    // Data-in pin for the small signal chain TDC
+const int pin_spi_small_dout    = 1;    // Data-out pin for the small signal chain TDC
 const int pin_spi_small_clk     = A13;  // SPI clock for the small signal chain TDC
 const int pin_tdc_small_intrptb = 27;   // Interrupt pin for the TDC for the small signal chain
 const int pin_tdc_small_en      = 28;   // Active high enable for small chain TDC
@@ -58,6 +58,36 @@ void setup() {
   analogWrite(pin_dac1,     1<<B_ADC);
   analogWrite(pin_dac0,     1<<(B_ADC-1));
 
+  pinMode(pin_spi_main_csb,     OUTPUT);
+  pinMode(pin_spi_main_din,     OUTPUT);
+  pinMode(pin_spi_main_dout,    INPUT);
+  pinMode(pin_spi_main_clk,     OUTPUT);
+  pinMode(pin_tdc_main_intrptb, INPUT);
+  pinMode(pin_tdc_main_en,      OUTPUT);
+  pinMode(pin_tdc_main_trig,    INPUT);
+  pinMode(pin_tdc_main_start,   OUTPUT);
+
+  analogWrite(pin_spi_main_csb,   HIGH);
+  analogWrite(pin_spi_main_din,   LOW);
+  analogWrite(pin_spi_main_clk,   LOW);
+  analogWrite(pin_tdc_main_en,    LOW);
+  analogWrite(pin_tdc_main_start, LOW);
+
+  pinMode(pin_spi_small_csb,     OUTPUT);
+  pinMode(pin_spi_small_din,     OUTPUT);
+  pinMode(pin_spi_small_dout,    INPUT);
+  pinMode(pin_spi_small_clk,     OUTPUT);
+  pinMode(pin_tdc_small_intrptb, INPUT);
+  pinMode(pin_tdc_small_en,      OUTPUT);
+  pinMode(pin_tdc_small_trig,    INPUT);
+  pinMode(pin_tdc_small_start,   OUTPUT);
+
+  analogWrite(pin_spi_small_csb,   HIGH);
+  analogWrite(pin_spi_small_din,   LOW);
+  analogWrite(pin_spi_small_clk,   LOW);
+  analogWrite(pin_tdc_small_en,    LOW);
+  analogWrite(pin_tdc_small_start, LOW);
+
 //  Gets the 16MHz clock out from pin 9
 //  SIM_SOPT2 = (SIM_SOPT2 & ~0xE0) | 0xC0;
 //  OSC0_CR |= 0x80;
@@ -82,16 +112,15 @@ void loop() {
   }
 
   // --- Reading Nonzero Value from TDC Register ---
-  if (false) {
-    for (char addr=0; addr<0x1C; addr++) {
+  if (true) {
+    for (char addr=0; addr<0x0A; addr++) {
       tdc_read_reg(CHAIN_SMALL, addr);
     }
   }
 
   // --- Reading Data Out from TDC Registers During Write ---
-  if (true) {
+  if (false) {
     for (char addr=0; addr<0x02; addr++) {
-      Serial.println(addr);
       tdc_write_reg(CHAIN_SMALL, addr);  
     }
   }
@@ -155,18 +184,19 @@ void tdc_write_reg(int chain, char addr) {
 
   for (int j=0; j<8; j++) {
     // Bitbang the write command
-    if (bitRead(msg_in, 8-j)) {digitalWrite(pin_spi_din, HIGH);}
+    if (bitRead(msg_in, 7-j)) {digitalWrite(pin_spi_din, HIGH);}
     else {digitalWrite(pin_spi_din, LOW);}
 
     spitick(pin_spi_clk);
 
     // dout should lag din for write commands by half a clock cycle
     val = digitalRead(pin_spi_dout);
-    if (val) {bitSet(msg_out, 8-j);}
-    else {bitClear(msg_out, 8-j);}
+    if (val) {bitSet(msg_out, 7-j);}
+    else {bitClear(msg_out, 7-j);}
   }
+  Serial.println(addr, HEX);
   Serial.println(msg_in, BIN);
-  Serial.println(msg_out, BIN);
+  Serial.println(msg_out, HEX);
   Serial.println("----");
 }
 
@@ -191,27 +221,31 @@ void tdc_read_reg(int chain, char addr) {
     pin_spi_dout    = pin_spi_small_dout;
     pin_spi_clk     = pin_spi_small_clk;
   }
+
+  // Reset the register values to defaults
+  digitalWrite(pin_tdc_en, LOW);
+  digitalWrite(pin_tdc_en,  HIGH);
   
   // Send read command, enforce no auto-increment
-  digitalWrite(pin_tdc_en,  HIGH);
   digitalWrite(pin_spi_csb, LOW);
   char msg_byte = addr;
   bitbang_byte_in(msg_byte, pin_spi_din, pin_spi_clk);
-  Serial.println(msg_byte);
   
   // retrieve one byte of data from the TDC
   char dout;
   dout = bitbang_byte_out(pin_spi_dout, pin_spi_clk);
-  Serial.println(dout);
   digitalWrite(pin_spi_csb, HIGH);
 
+  Serial.println(addr, HEX);
+  Serial.println(msg_byte, HEX);
+  Serial.println(dout, HEX);
   Serial.println("---");
-  digitalWrite(pin_tdc_en, LOW);
 } // end tdc_read_reg
 
 void spitick(int pin_clk) {
 /*
 */
+  delayMicroseconds(100);
   digitalWrite(pin_clk, HIGH);
   delayMicroseconds(100);
   digitalWrite(pin_clk, LOW);
@@ -232,7 +266,7 @@ void bitbang_byte_in(char msg_byte, int pin_din, int pin_clk) {
 */
   for (int j=0; j<8; j++) {
     // NB: bitRead starts from the LSB
-    if (bitRead(msg_byte, 8-j)) {digitalWrite(pin_din, HIGH);}
+    if (bitRead(msg_byte, 7-j)) {digitalWrite(pin_din, HIGH);}
     else {digitalWrite(pin_din, LOW);}
     spitick(pin_clk);
   }
@@ -253,9 +287,9 @@ char bitbang_byte_out(int pin_dout, int pin_clk) {
   
   for (int j=0; j<8; j++) {
     valb = digitalRead(pin_dout);
-    if (valb) {bitSet(msg_byte, 8-j);}
-    else {bitClear(msg_byte, 8-j);}
+    if (valb) {bitSet(msg_byte, 7-j);}
+    else {bitClear(msg_byte, 7-j);}
     spitick(pin_clk);
   }
   return msg_byte;
-} // end bitbang_byte-out
+} // end bitbang_byte_out

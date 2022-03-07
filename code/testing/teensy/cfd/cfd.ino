@@ -360,11 +360,11 @@ void bitbang_byte_in(char msg_byte, int pin_din, int pin_clk) {
 */
   for (int j=0; j<8; j++) {
     // NB: bitRead starts from the LSB
-    if (bitRead(msg_byte, 8-j)) {digitalWrite(pin_din, HIGH);}
+    if (bitRead(msg_byte, 7-j)) {digitalWrite(pin_din, HIGH);}
     else {digitalWrite(pin_din, LOW);}
     spitick(pin_clk);
   }
-}
+} // end bitbang_byte_in
 
 char bitbang_byte_out(int pin_dout, int pin_clk) {
 /*
@@ -381,12 +381,12 @@ char bitbang_byte_out(int pin_dout, int pin_clk) {
   
   for (int j=0; j<8; j++) {
     valb = digitalRead(pin_dout);
-    if (valb) {bitSet(msg_byte, 8-j);}
-    else {bitClear(msg_byte, 8-j);}
+    if (valb) {bitSet(msg_byte, 7-j);}
+    else {bitClear(msg_byte, 7-j);}
     spitick(pin_clk);
   }
   return msg_byte;
-}
+} // end bitbang_byte_out
 
 void tdc_write(int chain) {
 /*
