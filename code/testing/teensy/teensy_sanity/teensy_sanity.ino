@@ -119,10 +119,15 @@ void loop() {
   }
 
   // --- Reading Data Out from TDC Registers During Write ---
-  if (true) {
+  if (false) {
     for (char addr=0; addr<0x02; addr++) {
       tdc_write_reg(CHAIN_SMALL, addr);  
     }
+  }
+
+  // --- Writing to and Reading out from Registers ---
+  if (true) {
+      tdc_rw_reg(CHAIN_SMALL);
   }
 }
 
@@ -203,7 +208,7 @@ void tdc_write_reg(int chain, char addr) {
   Serial.println(msg_in, BIN);
   Serial.println(msg_out, HEX);
   Serial.println("----");
-}
+} // end tdc_write_reg
 
 void tdc_read_reg(int chain, char addr) {
   // select signal chain-specific SPI pins
@@ -236,7 +241,7 @@ void tdc_read_reg(int chain, char addr) {
   char msg_byte = addr;
   bitbang_byte_in(msg_byte, pin_spi_din, pin_spi_clk);
   
-  // retrieve one byte of data from the TDC
+  // Retrieve one byte of data from the TDC
   char dout;
   dout = bitbang_byte_out(pin_spi_dout, pin_spi_clk);
   digitalWrite(pin_spi_csb, HIGH);
@@ -246,6 +251,69 @@ void tdc_read_reg(int chain, char addr) {
   Serial.println(dout, HEX);
   Serial.println("---");
 } // end tdc_read_reg
+
+void tdc_rw_reg(int chain) {  
+  // select signal chain-specific SPI pins
+  int pin_spi_csb;
+  int pin_tdc_en;
+  int pin_spi_din;
+  int pin_spi_dout;
+  int pin_spi_clk;
+
+  if (chain == CHAIN_MAIN){
+    pin_spi_csb     = pin_spi_main_csb;
+    pin_tdc_en      = pin_tdc_main_en;
+    pin_spi_din     = pin_spi_main_din;
+    pin_spi_dout    = pin_spi_main_dout;
+    pin_spi_clk     = pin_spi_main_clk;
+  } else {
+    pin_spi_csb     = pin_spi_small_csb;
+    pin_tdc_en      = pin_tdc_small_en;
+    pin_spi_din     = pin_spi_small_din;
+    pin_spi_dout    = pin_spi_small_dout;
+    pin_spi_clk     = pin_spi_small_clk;
+  }
+  char msg_read;
+  char msg_write;
+  char dout;
+
+  // Reset the register values to defaults
+  digitalWrite(pin_tdc_en, LOW);
+  digitalWrite(pin_tdc_en,  HIGH);
+  
+  for (char addr=0; addr<0x0A; addr++) {
+    for (char din=0x00; din<0xFF; din++) {
+      digitalWrite(pin_spi_csb, LOW);
+  
+      // Send write command, enforce no auto-increment
+      msg_write = 0x40 | addr;
+      bitbang_byte_in(msg_write, pin_spi_din, pin_spi_clk);
+
+      // Send write data
+      bitbang_byte_in(din, pin_spi_din, pin_spi_clk);
+
+      digitalWrite(pin_spi_csb, HIGH);
+      delayMicroseconds(100);
+      digitalWrite(pin_spi_csb, LOW);
+  
+      // Send read command for same register, enforce no auto-increment
+      msg_read = addr;
+      bitbang_byte_in(msg_read, pin_spi_din, pin_spi_clk);
+      
+      // Retrieve read data
+      dout = bitbang_byte_out(pin_spi_dout, pin_spi_clk);
+      digitalWrite(pin_spi_csb, HIGH);
+  
+      Serial.println(msg_write, HEX);
+      Serial.println(msg_read, HEX);
+      Serial.println(din, HEX);
+      Serial.println(dout, HEX);
+      Serial.println("-------");
+    }
+  }
+  digitalWrite(pin_tdc_en, LOW);
+  
+}
 
 void spitick(int pin_clk) {
 /*

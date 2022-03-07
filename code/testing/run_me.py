@@ -155,9 +155,9 @@ def run_main():
 		with open(file_out, 'w') as outfile:
 			yaml.dump(high_rate_dict, outfile, default_flow_style=False)
 
-	############################################
-	### Scratch: Reading Values from the TDC ###
-	############################################
+	########################################
+	### Scratch: R/W Values from the TDC ###
+	########################################
 	if True:
 		teensy_port = 'COM6'
 		teensy_ser = serial.Serial(port=teensy_port,
@@ -166,7 +166,7 @@ def run_main():
 			stopbits=serial.STOPBITS_ONE,
 			bytesize=serial.EIGHTBITS,
 			timeout=5)
-		for _ in range(28*4):
+		for _ in range(28*5):
 			print(teensy_ser.readline())
 
 
