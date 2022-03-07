@@ -153,13 +153,32 @@ void check_levelshift(int pin_arr[], int num_pins) {
 }
 
 void check_internalTemp() {
+/*  
+ * Inputs:
+ *  None.
+ * Returns:
+ *  None.
+ * Notes:
+ *  - Reads the internal temperature temperature from the Teensy and 
+ *    prints it over serial. Recommend .decode() on the receiving side
+*/
   for (int i=0; i<100; i++) {
     Serial.println(InternalTemperature.readTemperatureC());
   }
 }
 
 void tdc_write_reg(int chain, char addr) {
-// select signal chain-specific SPI pins
+/*
+ * Inputs:
+ *  chain: The signal chain (CHAIN_MAIN vs. CHAIN_SMALL)
+ *    to test.
+ *  addr: Byte. The address of the register to write to.
+ * Returns:
+ *  None.
+ * Notes:
+ *  Unfinished. Do not use.
+*/
+  // select signal chain-specific SPI pins
   int pin_spi_csb;
   int pin_tdc_en;
   int pin_spi_din;
@@ -211,6 +230,25 @@ void tdc_write_reg(int chain, char addr) {
 } // end tdc_write_reg
 
 void tdc_read_reg(int chain, char addr) {
+/*
+ * Inputs:
+ *  chain: The signal chain (CHAIN_MAIN vs. CHAIN_SMALL)
+ *    to test.
+ *  addr: Byte. The address of the register to write to.
+ * Returns:
+ *  None.
+ * Notes:
+ *  - Sets all TDC registers to default values by toggling
+ *    the TDC reset pin (tdc_en), then reads from the registers
+ *    which have a single byte of data.
+ *  - Prints the following over serial in this order:
+ *    (1) Address
+ *    (2) The bits banged over SPI to to the TDC
+ *    (3) The byte of data read out from the TDC
+ *    (4) A separating line to make things easier to read
+ *  - See Table 1 (https://www.ti.com/lit/ds/symlink/tdc7200.pdf) 
+ *    "Register Summary" for the expected values from each of the registers.
+*/
   // select signal chain-specific SPI pins
   int pin_spi_csb;
   int pin_tdc_en;
@@ -252,7 +290,25 @@ void tdc_read_reg(int chain, char addr) {
   Serial.println("---");
 } // end tdc_read_reg
 
-void tdc_rw_reg(int chain) {  
+void tdc_rw_reg(int chain) {
+/*
+ * Inputs:
+ *  chain: The signal chain (CHAIN_MAIN vs. CHAIN_SMALL)
+ *    to test.
+ * Returns:
+ *  None.
+ * Notes:
+ *  - Writes data 0x00 -> 0xFF to each single-byte register in the TDC,
+ *    then reads the data from the same register right after.
+ *  - Prints the following over serial in this order:
+ *    (1) The write command byte
+ *    (2) The read command byte--it should only differ from the write
+ *        command byte by 0x40
+ *    (3) The data written to the register
+ *    (4) The data read out from the register; it should match the data
+ *        written to the register.
+ *    (5) A separating line to make things easier to read
+*/
   // select signal chain-specific SPI pins
   int pin_spi_csb;
   int pin_tdc_en;

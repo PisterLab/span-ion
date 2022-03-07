@@ -158,6 +158,11 @@ def run_main():
 	########################################
 	### Scratch: R/W Values from the TDC ###
 	########################################
+	"""
+	teensy_sanity.ino
+		tdc_rw_reg()
+		tdc_read_reg()
+	"""
 	if True:
 		teensy_port = 'COM6'
 		teensy_ser = serial.Serial(port=teensy_port,
@@ -173,6 +178,10 @@ def run_main():
 	################################################		
 	### Scratch: Testing Teensy DAC Voltage Ramp ###
 	################################################
+	"""
+	teensy_sanity.ino
+		setup()
+	"""
 	if False:
 		vlsb = 3.3/(2**16)
 		# vdac_vec = np.arange(0.5, 1.8, vlsb*10)
