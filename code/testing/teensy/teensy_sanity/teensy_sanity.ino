@@ -112,14 +112,14 @@ void loop() {
   }
 
   // --- Reading Nonzero Value from TDC Register ---
-  if (true) {
+  if (false) {
     for (char addr=0; addr<0x0A; addr++) {
       tdc_read_reg(CHAIN_SMALL, addr);
     }
   }
 
   // --- Reading Data Out from TDC Registers During Write ---
-  if (false) {
+  if (true) {
     for (char addr=0; addr<0x02; addr++) {
       tdc_write_reg(CHAIN_SMALL, addr);  
     }
@@ -187,12 +187,17 @@ void tdc_write_reg(int chain, char addr) {
     if (bitRead(msg_in, 7-j)) {digitalWrite(pin_spi_din, HIGH);}
     else {digitalWrite(pin_spi_din, LOW);}
 
-    spitick(pin_spi_clk);
+    digitalWrite(pin_spi_clk, HIGH);
+    delayMicroseconds(100);
 
     // dout should lag din for write commands by half a clock cycle
     val = digitalRead(pin_spi_dout);
     if (val) {bitSet(msg_out, 7-j);}
-    else {bitClear(msg_out, 7-j);}
+    else {bitClear(msg_out, 7-j);
+
+    digitalWrite(pin_spi_clk, LOW);
+    delayMicroseconds(100);
+    }
   }
   Serial.println(addr, HEX);
   Serial.println(msg_in, BIN);
