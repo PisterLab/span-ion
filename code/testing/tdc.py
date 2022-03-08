@@ -252,7 +252,7 @@ def calc_tof(cal1, cal2, cal2_periods, time_1, time_x, count_n, tper, mode=2):
 		count_n: Value of nth clock count, i.e. registers CLOCK_COUNTn.
 			Only used for mode 2.
 		tper: External clock period (s).
-		mode: 1 or 2 for measurement modes 1 and 2, per documentation (see
+		mode: 0 or 1 for measurement modes 1 and 2, per documentation (see
 			see notes).
 	Returns:
 		Returns the time of flight between the START to the nth STOP in seconds.
@@ -263,9 +263,9 @@ def calc_tof(cal1, cal2, cal2_periods, time_1, time_x, count_n, tper, mode=2):
 	'''
 	cal_count = (cal2 - cal1)/(cal2_periods-1)
 	norm_lsb = tper/cal_count
-	if mode == 1:
+	if mode == 0:
 		return time_x * norm_lsb
-	elif mode == 2:
+	elif mode == 1:
 		return norm_lsb * (time_1 - time_x) + (count_n * tper)
 	else:
 		raise ValueError(f'Measurement mode {mode} must be 1 or 2')

@@ -126,12 +126,12 @@ void loop() {
   }
 
   // --- Writing to and Reading out from Registers ---
-  if (false) {
+  if (true) {
       tdc_rw_reg(CHAIN_SMALL);
   }
 
   // --- Arm the TDC for Measurement ---
-  if (true) {
+  if (false) {
     tdc_arm(CHAIN_SMALL);
   }
 }

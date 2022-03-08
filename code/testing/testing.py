@@ -89,8 +89,7 @@ def test_slow_zcd(teensy_port, aux_port, num_iterations, vtest_dict,
 			vinp, vinn = spani_globals.vdiff_conv(vincm, vdiff)
 			codep = int(round(vinp / vlsb))
 			coden = int(round(vinn / vlsb))
-			print(f'P/N: ({vinp}, {vinn})')
-
+			
 			# tdiff_arr[i][j] is for the ith iteration of the jth timer pair
 			# [
 			# [t1-t0, t2-t1, t3-t2], <- iteration 0
@@ -100,18 +99,22 @@ def test_slow_zcd(teensy_port, aux_port, num_iterations, vtest_dict,
 			
 			# Take data over many iterations for the same input voltage pair
 			for i in range(num_iterations):
+				print(f'--- P/N: ({vinp}, {vinn}) -> Iteration {i}')
 				# Reset and configure TDC connected to small signal chain
-				teensy_ser.write(b'tdcsmallconfig\n')
+				teensy_ser.write(b'tdcsmallreset\n')
 				print(teensy_ser.readline())
-				teensy_ser.write(int_command1.to_bytes(1, 'big'))
-				teensy_ser.write(int_wdata1.to_bytes(1, 'big'))
-				for _ in range(6):
-					print(teensy_ser.readline())
 
 				teensy_ser.write(b'tdcsmallconfig\n')
 				print(teensy_ser.readline())
 				teensy_ser.write(int_command2.to_bytes(1, 'big'))
 				teensy_ser.write(int_wdata2.to_bytes(1, 'big'))
+				for _ in range(6):
+					print(teensy_ser.readline())
+
+				teensy_ser.write(b'tdcsmallconfig\n')
+				print(teensy_ser.readline())
+				teensy_ser.write(int_command1.to_bytes(1, 'big'))
+				teensy_ser.write(int_wdata1.to_bytes(1, 'big'))
 				for _ in range(6):
 					print(teensy_ser.readline())
 
@@ -126,19 +129,23 @@ def test_slow_zcd(teensy_port, aux_port, num_iterations, vtest_dict,
 
 				# Reading ALL the data
 				teensy_ser.write(b'tdcsmallread\n')
+				for _ in range(2):
+					print(teensy_ser.readline())
+
 				# ...for each timer output
 				time_vec = [0]*6
 				for timer_num, _ in enumerate(time_vec):
 					# 1 byte (x3) at a time for the TIME registers
 					val_time = 0
 					for byte_num in range(3):
-						time_bytes = teensy_ser.read()
+						time_bytes = teensy_ser.readline()
 						print(time_bytes)
 						time_int = int.from_bytes(time_bytes, 
 												byteorder='big',
 												signed=False)
-						val_time = val_time + (time_int << byte_num)
-					time_vec[timer_num] = val_time
+						val_time = val_time + (time_int << (byte_num*8))
+					# Getting rid of parity bits, etc.
+					time_vec[timer_num] = val_time % (1<<23) 
 
 				# ...for each clock count
 				clk_count_vec = [0]*5
@@ -146,13 +153,13 @@ def test_slow_zcd(teensy_port, aux_port, num_iterations, vtest_dict,
 					# 1 byte (x3) at a time for the CLOCK_COUNT registers
 					val_count = 0
 					for byte_num in range(3):
-						count_bytes = teensy_ser.read()
-						print(count_bytes)
+						count_bytes = teensy_ser.readline()
 						count_int = int.from_bytes(count_bytes,
 												byteorder='big',
 												signed=False)
-						val_count = val_count + (count_int << byte_num)
-					clk_count_vec[clk_count_num] = val_count
+						val_count = val_count + (count_int << (byte_num*8))
+					# Getting rid of parity bits, etc.
+					clk_count_vec[clk_count_num] = val_count % (1<<16)
 
 				# ...for each calibration value
 				cal_vec = [0]*2
@@ -160,39 +167,49 @@ def test_slow_zcd(teensy_port, aux_port, num_iterations, vtest_dict,
 					# 1 byte (x3) at a time for the CALIBRATION registers
 					val_cal = 0
 					for byte_num in range(3):
-						cal_bytes = teensy_ser.read()
-						print(cal_bytes)
+						cal_bytes = teensy_ser.readline()
 						cal_int = int.from_bytes(cal_bytes,
 												byteorder='big',
 												signed=False)
-						val_cal = val_cal + (cal_int << byte_num)
-					cal_vec[cal_num] = val_cal
+						val_cal = val_cal + (cal_int << (byte_num*8))
+					# Getting rid of parity bits, etc.
+					cal_vec[cal_num] = val_cal % (1<<23)
 
+				# Final message from Teensy
+				print(teensy_ser.readline())
+				
+				# Print statements for visibility
 				print(f'Time: {time_vec}\n Cal: {cal_vec}\n Count: {clk_count_vec}')
 
 				# Calculate the times of flight between each detected STOP pulse and
 				# the START pulse
 				tof_vec = []
-				time_x_vec = time_vec[:-1] if wdata1_dict['meas_mode'] == 1 else time_vec[1:]
-				for i,time_x in enumerate(time_x_vec):
+				assert cal_vec[0] != cal_vec[1], f'Calibration data incorrect'
+
+				time_x_vec = time_vec[:-1] if wdata1_dict['meas_mode'] == 0 else time_vec[1:]
+				for j, time_x in enumerate(time_x_vec):
 					tof_vec.append(tdc.calc_tof(cal1=cal_vec[0],
 						cal2=cal_vec[1],
 						cal2_periods=tdc.code_cal2_map[wdata2_dict['calibration2_periods']],
 						time_1=time_vec[0],
 						time_x=time_x,
-						count_n=clk_count_vec[i],
+						count_n=clk_count_vec[j],
 						tper=tref_clk,
 						mode=wdata1_dict['meas_mode']))
 
 				# TODO change for efficiency - currently just throwing out 
 				# irrelevant data, e.g. unused TIMEx data
 				tof_vec = tof_vec[:num_timers]
-				tdiff_vec = tof_vec[1:] - tof_vec[:-1]
+				tdiff_vec = np.array(tof_vec[1:]) - np.array(tof_vec[:-1])
+
+				# Throwing out overflow values
+				tdiff_vec = [tdiff for tdiff in tdiff_vec if tdiff > 0]
 				tdiff_arr[i] = tdiff_vec
 
 			# Find the average time between comparator noise-induced STOP triggers
 			tdiff_avg = np.mean(tdiff_arr)
 			high_rate_dict[(vincm,vdiff)] = 0 if tdiff_avg<=0 else tdiff_avg
+	return high_rate_dict
 
 
 def test_pk_static(teensy_port, aux_port, num_iterations, vtest_vec, vfsr=3.3, 

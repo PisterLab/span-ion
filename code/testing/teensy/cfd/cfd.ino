@@ -57,6 +57,7 @@ const int CHAIN_SMALL       = 1;	  // Used to indicate the small signal chain
 char ADDR_TDC;
 const char ADDR_CONFIG1 = 0x00;
 const char ADDR_CONFIG2 = 0x01;
+const char ADDR_INT_STATUS = 0x02;
 const char ADDR_TIME1 = 0x10;
 const char ADDR_TIME2 = 0x12;
 const char ADDR_TIME3 = 0x14;
@@ -154,7 +155,7 @@ void setup() {
   // - TDC Reference Clock
   pinMode(pin_tdc_clk,            OUTPUT);
 
-  analogWriteFrequency(pin_tdc_clk, 15000000);
+  analogWriteFrequency(pin_tdc_clk, 3750000);
   analogWriteResolution(B_ADC);
   analogWrite(pin_tdc_clk,  1<<(B_ADC-1));
 
@@ -194,6 +195,12 @@ void loop() {
     }
     else if (inputString == "tdcsmallstart\n") {
       tdc_start(CHAIN_SMALL);  
+    }
+    else if (inputString == "tdcmainreset\n") {
+      tdc_reset(CHAIN_MAIN);  
+    }
+    else if (inputString == "tdcsmallreset\n") {
+      tdc_reset(CHAIN_SMALL);  
     }
 		else if (inputString == "peakreset\n") {
 			peak_reset();
@@ -481,8 +488,13 @@ void tdc_write(int chain) {
     trig_ok = (digitalRead(pin_tdc_trig) == HIGH);
   }
 
-  if (trig_ok) {Serial.println("OK: Trigger good");}
-  else {Serial.println("ERROR: Trigger not high");}
+  if (ADDR_TDC != ADDR_CONFIG1) {
+    Serial.println("OK: Trigger doesn't need to be high");
+  } else if (!trig_ok) {
+    Serial.println("ERROR: Trigger not high");
+  } else {
+    Serial.println("OK: Trigger good");
+  }
 
 } // end tdc_write()
 
@@ -523,85 +535,122 @@ void tdc_read_meas(int chain) {
 	}
 
 	// wait until interrupt indicates measurement data is available
-	elapsedMillis waiting;
-	bool meas_done = false;
-	while (waiting < 1000 && !meas_done) {
-		meas_done = !digitalRead(pin_tdc_intrptb); // TODO check correctness
+  // or overflow has been reached
+  char msg_read;
+  bool meas_done = false;
+  bool meas_overflow = false;
+  char int_status;
+	while (!(meas_done || meas_overflow)) {
+    digitalWrite(pin_spi_csb, HIGH);
+    delayMicroseconds(10);
+    digitalWrite(pin_spi_csb, LOW);
+
+    // Send read command to get interrupt status
+    msg_read = ADDR_INT_STATUS;
+    bitbang_byte_in(msg_read, pin_spi_din, pin_spi_clk);
+
+    // Retrieve read data
+    int_status = bitbang_byte_out(pin_spi_dout, pin_spi_clk);
+    digitalWrite(pin_spi_csb, HIGH);
+
+    // Check statuses
+		meas_overflow = bitRead(int_status, 1) || bitRead(int_status, 2);
+    meas_done = bitRead(int_status, 0);
 	}
 
-	// if TDC measurement isn't ready within allocated time, everything is 0
-	if (!meas_done) {
-    for (int i=0; i<13; i++) {Serial.write(0);}
-	} else {
-  	// read from all timer outputs
-    int count;
-    char dout[N_TDC_DOUT];
-    digitalWrite(pin_tdc_en, HIGH);
-  	digitalWrite(pin_spi_csb, LOW);
-    char addr_time_vec[6] = {ADDR_TIME1, ADDR_TIME2, 
-                            ADDR_TIME3, ADDR_TIME4,
-                            ADDR_TIME5, ADDR_TIME6};
-    char msg_byte;
-    for (int i=0; i<6; i++) {
-      // send read command, enforce no auto-increment
-      msg_byte = addr_time_vec[i];
-      bitbang_byte_in(msg_byte, pin_spi_din, pin_spi_clk);
-  
-      // retrieve data from the TDC
-      count = 0;
-      while (count != N_TDC_DOUT) {
-        // read and write one byte at a time over SPI and then serial
-        dout[count] = bitbang_byte_out(pin_spi_dout, pin_spi_clk);
-        Serial.write(dout[count]);
-        count ++;
-      }
+ if (meas_done) {Serial.println("OK: Measurement done");}
+ else {Serial.println("OK: Measurement not done");}
+
+ if (meas_overflow) {Serial.println("OK: Measurement overflow");}
+ else {Serial.println("OK: No overflow");}
+ 
+	// read from all timer outputs
+  int count;
+  char dout[N_TDC_DOUT];
+  digitalWrite(pin_tdc_en, HIGH);
+	
+  char addr_time_vec[6] = {ADDR_TIME1, ADDR_TIME2, 
+                          ADDR_TIME3, ADDR_TIME4,
+                          ADDR_TIME5, ADDR_TIME6};
+  char msg_byte;
+  for (int i=0; i<6; i++) {
+    digitalWrite(pin_spi_csb, LOW);
+    // send read command, enforce no auto-increment
+    msg_byte = addr_time_vec[i];
+    bitbang_byte_in(msg_byte, pin_spi_din, pin_spi_clk);
+
+    // retrieve data from the TDC
+    count = 0;
+    while (count != N_TDC_DOUT) {
+      // read and write one byte at a time over SPI and then serial
+      dout[count] = bitbang_byte_out(pin_spi_dout, pin_spi_clk);
+      Serial.println(dout[count]);
+      count ++;
     }
-  
-    // read from all clock count outputs
-    char addr_clkcount_vec[5] = {ADDR_CLOCK_COUNT1, 
-                                ADDR_CLOCK_COUNT2, 
-                                ADDR_CLOCK_COUNT3, 
-                                ADDR_CLOCK_COUNT4, 
-                                ADDR_CLOCK_COUNT5};
-    for (int i=0; i<5; i++) {
-      // send read command, enforce no auto-increment
-      msg_byte = addr_clkcount_vec[i];
-      bitbang_byte_in(msg_byte, pin_spi_din, pin_spi_clk);
-  
-      // retrieve data from the TDC
-      count = 0;
-      while (count != N_TDC_DOUT) {
-        // read and write one byte at a time over SPI and then serial
-        dout[count] = bitbang_byte_out(pin_spi_dout, pin_spi_clk);
-        Serial.write(dout[count]);
-        count ++;
-      }
-    }
-  
-    // read from calibration count outputs
-    char addr_cal_vec[2] = {ADDR_CALIBRATION1, ADDR_CALIBRATION2};
-    for (int i=0; i<2; i++) {
-      digitalWrite(pin_spi_csb, LOW);
-      // send read command, enforce no auto-increment
-      msg_byte = addr_cal_vec[i];
-      bitbang_byte_in(msg_byte, pin_spi_din, pin_spi_clk);
-  
-      // retrieve data from the TDC
-      count = 0;
-      while (count != N_TDC_DOUT) {
-        dout[count] = bitbang_byte_out(pin_spi_dout, pin_spi_clk);
-        Serial.write(dout[count]);
-        count ++;
-      }
-    }
-  
-  	// end read process from TDC
     digitalWrite(pin_spi_csb, HIGH);
-  
-  	// terminator
-  	Serial.println("TDC read complete");
+    delayMicroseconds(1);
   }
+
+  // read from all clock count outputs
+  char addr_clkcount_vec[5] = {ADDR_CLOCK_COUNT1, 
+                              ADDR_CLOCK_COUNT2, 
+                              ADDR_CLOCK_COUNT3, 
+                              ADDR_CLOCK_COUNT4, 
+                              ADDR_CLOCK_COUNT5};
+  for (int i=0; i<5; i++) {
+    digitalWrite(pin_spi_csb, LOW);
+    // send read command, enforce no auto-increment
+    msg_byte = addr_clkcount_vec[i];
+    bitbang_byte_in(msg_byte, pin_spi_din, pin_spi_clk);
+
+    // retrieve data from the TDC
+    count = 0;
+    while (count != N_TDC_DOUT) {
+      // read and write one byte at a time over SPI and then serial
+      dout[count] = bitbang_byte_out(pin_spi_dout, pin_spi_clk);
+      Serial.println(dout[count], HEX);
+      count ++;
+    }
+    digitalWrite(pin_spi_csb, HIGH);
+  }
+
+  // read from calibration count outputs
+  char addr_cal_vec[2] = {ADDR_CALIBRATION1, ADDR_CALIBRATION2};
+  for (int i=0; i<2; i++) {
+    digitalWrite(pin_spi_csb, LOW);
+    // send read command, enforce no auto-increment
+    msg_byte = addr_cal_vec[i];
+    bitbang_byte_in(msg_byte, pin_spi_din, pin_spi_clk);
+
+    // retrieve data from the TDC
+    count = 0;
+    while (count != N_TDC_DOUT) {
+      dout[count] = bitbang_byte_out(pin_spi_dout, pin_spi_clk);
+      Serial.println(dout[count]);
+      count ++;
+    }
+    digitalWrite(pin_spi_csb, HIGH);
+  }
+
+	// terminator
+	Serial.println("TDC read complete");
 } // end tdc_read_meas()
+
+void tdc_reset(int chain) {
+  int pin_reset;
+  if (chain == CHAIN_MAIN) {
+    pin_reset = pin_tdc_main_en;
+  } else {
+    pin_reset = pin_tdc_small_en;
+  }
+
+  digitalWrite(pin_reset, LOW);
+  delayMicroseconds(10);
+  digitalWrite(pin_reset, HIGH);
+  delayMicroseconds(10);
+
+  Serial.println("TDC successfully reset");
+}
 
 void tdc_start(int chain) {
 /* 

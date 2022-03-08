@@ -137,8 +137,7 @@ def run_main():
 	####################################
 	if True:
 		teensy_port = 'COM5'
-
-		# Program scan
+		
 		asc_params = dict(
 			# MSB -> LSB
 			preamp_res 		= [0, 0],
@@ -155,22 +154,25 @@ def run_main():
 			en_main			= [0],
 			en_small		= [1])
 
-		print("Constructing scan chain...")
-		asc = scan.construct_ASC(**asc_params)
-		print(f"Programming scan...{asc}")
-		testing.test_program_scan(com_port=teensy_port, ASC=asc)
-
-		# Run the test
 		small_zcd_params = dict(
 			teensy_port=teensy_port,
 			aux_port="COM3",
 			num_iterations=1,
 			vfsr=3.3,
 			precision=16, 
-			tref_clk=1/15e6)
+			tref_clk=1/3.75e6)
+
+		# Program scan
+		print("Constructing scan chain...")
+		asc = scan.construct_ASC(**asc_params)
+		print(f"Programming scan...{asc}")
+		testing.test_program_scan(com_port=teensy_port, ASC=asc)
+
+		# Run the test
 		vlsb = small_zcd_params['vfsr'] / (2**small_zcd_params['precision'])
 		vincm_vec = list(np.arange(0.5, 0.9, 0.1))
-		vdiff_vec = np.arange(-0.3, 0.3, 10e-3)
+		vdiff_vec = [0]
+		# vdiff_vec = np.arange(-0.1, 0.1, 50e-3)
 		small_zcd_params['vtest_dict'] = {vincm:list(vdiff_vec) for vincm in vincm_vec}
 
 		file_out = f'../../data/testing/{timestamp_str}_zcdSmallSlow_{small_zcd_params["num_iterations"]}x.yaml'
