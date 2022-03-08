@@ -60,7 +60,7 @@ def test_slow_zcd(teensy_port, aux_port, num_iterations, vtest_dict,
 			trigg_edge=0,
 			stop_edge=0,
 			start_edge=0,
-			meas_mode=2,
+			meas_mode=1,
 			start_meas=1)
 	wdata1 = tdc.construct_wdata1(**wdata1_dict)
 	int_command1, int_wdata1 = tdc.construct_config(is_read=False, 
@@ -103,16 +103,16 @@ def test_slow_zcd(teensy_port, aux_port, num_iterations, vtest_dict,
 				# Reset and configure TDC connected to small signal chain
 				teensy_ser.write(b'tdcsmallconfig\n')
 				print(teensy_ser.readline())
-				teensy_ser.write(int_command2.to_bytes(1, 'big'))
-				teensy_ser.write(int_wdata2.to_bytes(1, 'big'))
-				for _ in range(4):
+				teensy_ser.write(int_command1.to_bytes(1, 'big'))
+				teensy_ser.write(int_wdata1.to_bytes(1, 'big'))
+				for _ in range(6):
 					print(teensy_ser.readline())
 
 				teensy_ser.write(b'tdcsmallconfig\n')
 				print(teensy_ser.readline())
-				teensy_ser.write(int_command1.to_bytes(1, 'big'))
-				teensy_ser.write(int_wdata1.to_bytes(1, 'big'))
-				for _ in range(4):
+				teensy_ser.write(int_command2.to_bytes(1, 'big'))
+				teensy_ser.write(int_wdata2.to_bytes(1, 'big'))
+				for _ in range(6):
 					print(teensy_ser.readline())
 
 				# Give the TDC a start pulse
@@ -420,7 +420,7 @@ def test_program_scan(com_port, ASC) -> None:
 		timeout=5)
 	
 	# Program Teensy, close if incorrect
-	program_scan(ser=ser, ASC=ASC)
+	scan.program_scan(ser=ser, ASC=ASC)
 	
 	# Otherwise just close normally
 	ser.close()
@@ -538,7 +538,7 @@ def test_main(num_iterations, scan_dict, teensy_port,):
 	'''
 	# Program scan
 	asc = construct_scan(**scan_dict)
-	program_scan(com_port=teensy_port, ASC=asc)
+	scan.program_scan(com_port=teensy_port, ASC=asc)
 
 	# Connect to function generator
 	rm = pyvisa.ResourceManager()

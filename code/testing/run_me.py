@@ -36,7 +36,7 @@ def run_main():
 		asc = scan.construct_ASC(**asc_params)
 		# asc = [1, 1] * 22
 		print(f"Programming scan...{asc}")
-		scan.test_program_scan(com_port=teensy_port, ASC=asc)
+		testing.test_program_scan(com_port=teensy_port, ASC=asc)
 
 	############
 	### DACs ###
@@ -135,9 +135,34 @@ def run_main():
 	####################################
 	### Small Chain ZCD Slow Testing ###
 	####################################
-	if False:
+	if True:
+		teensy_port = 'COM5'
+
+		# Program scan
+		asc_params = dict(
+			# MSB -> LSB
+			preamp_res 		= [0, 0],
+			delay_res 		= [0, 0],
+			watchdog_res 	= [0, 0, 0, 0],
+			attenuator_sel	= [0, 0, 0],
+			dac_sel 		= [0, 0, 0, 0, 0, 0, 0, 0],
+			az_main_gain 	= [0, 0, 0],
+			az_aux_gain 	= [0, 0, 0],
+			oneshot_res 	= [0, 0],
+			vref_preamp 	= [0, 0, 0, 0, 0, 0, 0, 0],
+			vdd_aon			= [0, 0, 0, 0, 0],
+			vdd_signal		= [0, 0, 0, 0, 0],
+			en_main			= [0],
+			en_small		= [1])
+
+		print("Constructing scan chain...")
+		asc = scan.construct_ASC(**asc_params)
+		print(f"Programming scan...{asc}")
+		testing.test_program_scan(com_port=teensy_port, ASC=asc)
+
+		# Run the test
 		small_zcd_params = dict(
-			teensy_port="COM5",
+			teensy_port=teensy_port,
 			aux_port="COM3",
 			num_iterations=1,
 			vfsr=3.3,
@@ -162,9 +187,10 @@ def run_main():
 	teensy_sanity.ino
 		tdc_rw_reg()
 		tdc_read_reg()
+		tdc_arm()
 	"""
-	if True:
-		teensy_port = 'COM6'
+	if False:
+		teensy_port = 'COM5'
 		teensy_ser = serial.Serial(port=teensy_port,
 			baudrate=19200,
 			parity=serial.PARITY_NONE,

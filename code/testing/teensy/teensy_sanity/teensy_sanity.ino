@@ -82,11 +82,11 @@ void setup() {
   pinMode(pin_tdc_small_trig,    INPUT);
   pinMode(pin_tdc_small_start,   OUTPUT);
 
-  analogWrite(pin_spi_small_csb,   HIGH);
-  analogWrite(pin_spi_small_din,   LOW);
-  analogWrite(pin_spi_small_clk,   LOW);
-  analogWrite(pin_tdc_small_en,    LOW);
-  analogWrite(pin_tdc_small_start, LOW);
+  digitalWrite(pin_spi_small_csb,   HIGH);
+  digitalWrite(pin_spi_small_din,   LOW);
+  digitalWrite(pin_spi_small_clk,   LOW);
+  digitalWrite(pin_tdc_small_en,    LOW);
+  digitalWrite(pin_tdc_small_start, LOW);
 
 //  Gets the 16MHz clock out from pin 9
 //  SIM_SOPT2 = (SIM_SOPT2 & ~0xE0) | 0xC0;
@@ -126,8 +126,13 @@ void loop() {
   }
 
   // --- Writing to and Reading out from Registers ---
-  if (true) {
+  if (false) {
       tdc_rw_reg(CHAIN_SMALL);
+  }
+
+  // --- Arm the TDC for Measurement ---
+  if (true) {
+    tdc_arm(CHAIN_SMALL);
   }
 }
 
@@ -152,6 +157,9 @@ void check_levelshift(int pin_arr[], int num_pins) {
   delayMicroseconds(50);
 }
 
+/* ---------------------------- */
+/* --- Internal Thermometer --- */
+/* ---------------------------- */
 void check_internalTemp() {
 /*  
  * Inputs:
@@ -167,6 +175,9 @@ void check_internalTemp() {
   }
 }
 
+/* ----------- */
+/* --- TDC --- */
+/* ----------- */
 void tdc_write_reg(int chain, char addr) {
 /*
  * Inputs:
@@ -367,10 +378,111 @@ void tdc_rw_reg(int chain) {
       Serial.println("-------");
     }
   }
-  digitalWrite(pin_tdc_en, LOW);
-  
-}
+  digitalWrite(pin_tdc_en, LOW); 
+} // end tdc_rw_reg
 
+void tdc_arm(int chain) {
+/*
+ * Inputs:
+ *  chain: The signal chain (CHAIN_MAIN vs. CHAIN_SMALL)
+ *    to test.
+ * Returns:
+ *  None.
+ * Notes:
+ *  - Writes to the CONFIG1 and CONFIG2 registers on the TDC
+ *    to arm the TDC for a reading
+ *  - Prints to serial whether the TRIG pin has pulled high (it should)
+ *  - Feeds in the START pulse so the TRIG pin should pull low, and
+ *    spits out over serial whether it worked
+*/
+  // select signal chain-specific SPI pins
+  int pin_spi_csb;
+  int pin_tdc_en;
+  int pin_tdc_trig;
+  int pin_tdc_start;
+  int pin_spi_din;
+  int pin_spi_clk;
+
+  if (chain == CHAIN_MAIN){
+    pin_spi_csb     = pin_spi_main_csb;
+    pin_tdc_en      = pin_tdc_main_en;
+    pin_tdc_trig    = pin_tdc_main_trig;
+    pin_tdc_start   = pin_tdc_main_start;
+    pin_spi_din     = pin_spi_main_din;
+    pin_spi_clk     = pin_spi_main_clk;
+  } else {
+    pin_spi_csb     = pin_spi_small_csb;
+    pin_tdc_en      = pin_tdc_small_en;
+    pin_tdc_trig    = pin_tdc_small_trig;
+    pin_tdc_start   = pin_tdc_small_start;
+    pin_spi_din     = pin_spi_small_din;
+    pin_spi_clk     = pin_spi_small_clk;
+  }
+
+  // Configure the TDC to run a measurement
+  char cmd_config1 = 0x40 | 0x00;
+  char cmd_config2 = 0x40 | 0x01;
+  char config1 = 0b10000011;
+  char config2 = 0b11000000;
+
+  // Reset the TDC
+  digitalWrite(pin_tdc_en, LOW);
+  if (digitalRead(pin_tdc_trig) == LOW) {
+    Serial.println("OK: 1");
+  }
+  else {
+    Serial.println("WARNING: 1");
+  }
+
+  digitalWrite(pin_tdc_en, HIGH);
+  delayMicroseconds(100);
+  if (digitalRead(pin_tdc_trig) == LOW) {
+    Serial.println("OK: 2");
+  }
+  else {
+    Serial.println("WARNING: 2");
+  }
+
+  // Configure CONFIG1 register
+  digitalWrite(pin_spi_csb, LOW);
+  bitbang_byte_in(cmd_config1, pin_spi_din, pin_spi_clk);
+  bitbang_byte_in(config1, pin_spi_din, pin_spi_clk);
+  digitalWrite(pin_spi_csb, HIGH);
+
+  // Configure CONFIG2 register
+  digitalWrite(pin_spi_csb, LOW);
+  bitbang_byte_in(cmd_config2, pin_spi_din, pin_spi_clk);
+  bitbang_byte_in(config2, pin_spi_din, pin_spi_clk);
+  digitalWrite(pin_spi_csb, HIGH);
+  
+  // Wait on the trigger pin to pull high when the TDC is ready
+  elapsedMillis waiting;
+  bool trig_ok = false;
+  while (waiting < 1000 && !trig_ok) {
+    trig_ok = (digitalRead(pin_tdc_trig) == HIGH);
+  }
+
+  if (trig_ok) {
+    Serial.println("OK: Trigger high, TDC armed");
+  } else {
+    Serial.println("WARNING: Trigger low, TDC not armed");
+  }
+
+  // Send over the START pulse, check that the trigger goes low
+  digitalWrite(pin_tdc_start, HIGH);
+  delayMicroseconds(100);
+  digitalWrite(pin_tdc_start, LOW);
+
+  if (digitalRead(pin_tdc_trig) == LOW) {
+    Serial.println("OK: Trigger low, START received");
+  } else {
+    Serial.println("WARNING: Trigger high, START not received");
+  }
+} // end tdc_arm
+
+/* ------------------------------------------- */
+/* --- Communications Bit-Byte Miscellanea --- */
+/* ------------------------------------------- */
 void spitick(int pin_clk) {
 /*
 */

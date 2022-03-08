@@ -35,15 +35,15 @@ const int pin_tdc_main_trig		  = 7; 	// Raises when TDC for main chain is ready
 const int pin_tdc_main_start    = 6;  // For triggering the TDC's start pulse
 
 const int pin_spi_small_csb 	  = A12;	// CSb for the small signal chain TDC
-const int pin_spi_small_din		  = 1; 	  // Data-in pin for the small signal chain TDC - switched on board
-const int pin_spi_small_dout 	  = 0;	  // Data-out pin for the small signal chain TDC - switched on board
+const int pin_spi_small_din		  = 0; 	  // Data-in pin for the small signal chain TDC
+const int pin_spi_small_dout 	  = 1;	  // Data-out pin for the small signal chain TDC
 const int pin_spi_small_clk		  = A13;	// SPI clock for the small signal chain TDC
 const int pin_tdc_small_intrptb	= 27;	  // Interrupt pin for the TDC for the small signal chain
 const int pin_tdc_small_en 		  = 28;	  // Active high enable for small chain TDC
 const int pin_tdc_small_trig 	  = 29;	  // Raises when TDC for small chain is ready
 const int pin_tdc_small_start   = 30;   // For triggering the TDC's start pulse
 
-const int pin_tdc_clk           = A0;   // 16MHz reference for TDC
+const int pin_tdc_clk           = A0;   // TDC reference clock
 
 // Constants
 const int N_SCAN 				    = 44;   // Number of scan bits
@@ -55,6 +55,8 @@ const int CHAIN_SMALL       = 1;	  // Used to indicate the small signal chain
 
 // Access address for the TDC
 char ADDR_TDC;
+const char ADDR_CONFIG1 = 0x00;
+const char ADDR_CONFIG2 = 0x01;
 const char ADDR_TIME1 = 0x10;
 const char ADDR_TIME2 = 0x12;
 const char ADDR_TIME3 = 0x14;
@@ -340,6 +342,7 @@ void asc_read() {
 void spitick(int pin_clk) {
 /*
 */
+  delayMicroseconds(100);
   digitalWrite(pin_clk, HIGH);
   delayMicroseconds(100);
   digitalWrite(pin_clk, LOW);
@@ -436,34 +439,34 @@ void tdc_write(int chain) {
     pin_spi_clk   = pin_spi_small_clk;
 	}
 	
-	// bring TDC enable high if it isn't already
-	digitalWrite(pin_tdc_en, HIGH);
-
 	// enforce that it's a write
-  if ((configbytes[0] | 0x40) != configbytes[0]) {
-    Serial.println("WARNING: Encforcing write in TDC");
-    configbytes[0] |= 0x40;
+  if (!bitRead(configbytes[0], 6)) {
+    Serial.println("WARNING: Enforcing write in TDC");
+    bitSet(configbytes[0], 6);
   } else {
     Serial.println("OK: TDC write setting correct");  
   }
 
   // enforce no auto-increment
-  if (configbytes[0] >> 7) {
+  if (bitRead(configbytes[0], 7)) {
     Serial.println("WARNING: Enforcing no increment in TDC");
-    configbytes[0] &= ~(0x1 << 7);
+    bitClear(configbytes[0], 7);
   } else {
     Serial.println("OK: TDC no auto-increment setting correct");  
   }
   
 	// store the address being written to
 	ADDR_TDC = configbytes[0] & 0x3F;
+  Serial.println(ADDR_TDC, HEX);
 
 	// bit-bang over SPI to the TDC, MSB first
+  digitalWrite(pin_tdc_en, HIGH);
 	digitalWrite(pin_spi_csb, LOW);
 	count = 0;
   char msg_byte;
   while (count != N_TDC_CONFIG) {
     msg_byte = configbytes[count];
+    Serial.println(msg_byte, BIN);
     bitbang_byte_in(msg_byte, pin_spi_din, pin_spi_clk);
 		count ++;
 	}
@@ -471,20 +474,16 @@ void tdc_write(int chain) {
 	// end write process to TDC
 	digitalWrite(pin_spi_csb, HIGH);
 
-	Serial.println("TDC config complete");
-
 	// wait for indication that TDC is armed
+  boolean trig_ok = ADDR_TDC != ADDR_CONFIG1;
 	elapsedMillis waiting;
-	while (waiting < 5000) {
-		if (digitalRead(pin_tdc_trig) == HIGH) {
-			// tell the computer that the TDC is armed
-			Serial.println("OK: TDC armed");
-			return;
-		}
-	}
+	while (waiting < 1000 && !trig_ok) {
+    trig_ok = (digitalRead(pin_tdc_trig) == HIGH);
+  }
 
-	// if timeout, warn the computer
-	Serial.println("WARNING: TDC trigger not high");
+  if (trig_ok) {Serial.println("OK: Trigger good");}
+  else {Serial.println("ERROR: Trigger not high");}
+
 } // end tdc_write()
 
 void tdc_read_meas(int chain) {
