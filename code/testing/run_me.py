@@ -157,7 +157,7 @@ def run_main():
 		small_zcd_params = dict(
 			teensy_port=teensy_port,
 			aux_port="COM3",
-			num_iterations=1,
+			num_iterations=100,
 			vfsr=3.3,
 			precision=16, 
 			tref_clk=1/3.75e6)
@@ -170,9 +170,8 @@ def run_main():
 
 		# Run the test
 		vlsb = small_zcd_params['vfsr'] / (2**small_zcd_params['precision'])
-		vincm_vec = list(np.arange(0.5, 0.9, 0.1))
-		vdiff_vec = [0]
-		# vdiff_vec = np.arange(-0.1, 0.1, 50e-3)
+		vincm_vec = list(np.arange(0.5, 0.9, 50e-3))
+		vdiff_vec = np.arange(-0.1, 0.1, 10e-3)
 		small_zcd_params['vtest_dict'] = {vincm:list(vdiff_vec) for vincm in vincm_vec}
 
 		file_out = f'../../data/testing/{timestamp_str}_zcdSmallSlow_{small_zcd_params["num_iterations"]}x.yaml'

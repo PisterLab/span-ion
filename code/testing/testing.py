@@ -23,10 +23,8 @@ def test_slow_zcd(teensy_port, aux_port, num_iterations, vtest_dict,
 			analogRead and analogWrite.
 		tref_clk: Float. Clock period of the reference clock in seconds.
 	Returns:
-		high_rate_dict: Dictionary. Key:value is (vincm,vdiff):(approximate rate
-			of STOP events in events/s). The rate of stop events bottoms out
-			at ~1event/(wait time set within the Teensy); that is, if the event 
-			rate is lower than that, it just gives 0. 
+		high_rate_dict: Dictionary. Key:value is vincm:dict(vdiff_vec, rate_vec=(approximate
+			1/time between stop events, capped out at 1/(TDC dynamic range)).
 	Notes:
 		Intended for use in measuring the static offset (and it can get input-
 			referred noise too, hmm) 
@@ -85,6 +83,7 @@ def test_slow_zcd(teensy_port, aux_port, num_iterations, vtest_dict,
 
 	# Iterate through all input voltage vinp-vinn pairs
 	for vincm, vdiff_vec in vtest_dict.items():
+		high_rate_vec = []
 		for vdiff in vdiff_vec:
 			vinp, vinn = spani_globals.vdiff_conv(vincm, vdiff)
 			codep = int(round(vinp / vlsb))
@@ -95,7 +94,8 @@ def test_slow_zcd(teensy_port, aux_port, num_iterations, vtest_dict,
 			# [t1-t0, t2-t1, t3-t2], <- iteration 0
 			# [t1-t0, t2-t1, t3-t2], <- iteration 1
 			# ...]
-			tdiff_arr = np.zeros((num_iterations, num_timers-1))
+			# tdiff_arr = np.zeros((num_iterations, num_timers-1))
+			tdiff_arr = [list() for _ in range(num_iterations)]
 			
 			# Take data over many iterations for the same input voltage pair
 			for i in range(num_iterations):
@@ -118,14 +118,14 @@ def test_slow_zcd(teensy_port, aux_port, num_iterations, vtest_dict,
 				for _ in range(6):
 					print(teensy_ser.readline())
 
-				# Give the TDC a start pulse
-				teensy_ser.write(b'tdcsmallstart\n')
-
 				# Set ZCD input voltages TODO check that integers parse correctly
 				aux_ser.write(b'zcdcomppsmall\n')
 				aux_ser.write(codep)
 				aux_ser.write(b'zcdcompnsmall\n')
 				aux_ser.write(coden)
+
+				# Give the TDC a start pulse
+				teensy_ser.write(b'tdcsmallstart\n')
 
 				# Reading ALL the data
 				teensy_ser.write(b'tdcsmallread\n')
@@ -138,8 +138,7 @@ def test_slow_zcd(teensy_port, aux_port, num_iterations, vtest_dict,
 					# 1 byte (x3) at a time for the TIME registers
 					val_time = 0
 					for byte_num in range(3):
-						time_bytes = teensy_ser.readline()
-						print(time_bytes)
+						time_bytes = teensy_ser.readline().strip()
 						time_int = int.from_bytes(time_bytes, 
 												byteorder='big',
 												signed=False)
@@ -153,7 +152,7 @@ def test_slow_zcd(teensy_port, aux_port, num_iterations, vtest_dict,
 					# 1 byte (x3) at a time for the CLOCK_COUNT registers
 					val_count = 0
 					for byte_num in range(3):
-						count_bytes = teensy_ser.readline()
+						count_bytes = teensy_ser.readline().strip()
 						count_int = int.from_bytes(count_bytes,
 												byteorder='big',
 												signed=False)
@@ -167,7 +166,7 @@ def test_slow_zcd(teensy_port, aux_port, num_iterations, vtest_dict,
 					# 1 byte (x3) at a time for the CALIBRATION registers
 					val_cal = 0
 					for byte_num in range(3):
-						cal_bytes = teensy_ser.readline()
+						cal_bytes = teensy_ser.readline().strip()
 						cal_int = int.from_bytes(cal_bytes,
 												byteorder='big',
 												signed=False)
@@ -203,12 +202,14 @@ def test_slow_zcd(teensy_port, aux_port, num_iterations, vtest_dict,
 				tdiff_vec = np.array(tof_vec[1:]) - np.array(tof_vec[:-1])
 
 				# Throwing out overflow values
-				tdiff_vec = [tdiff for tdiff in tdiff_vec if tdiff > 0]
+				# tdiff_vec = [tdiff for tdiff in tdiff_vec if tdiff > 0]
 				tdiff_arr[i] = tdiff_vec
 
 			# Find the average time between comparator noise-induced STOP triggers
-			tdiff_avg = np.mean(tdiff_arr)
-			high_rate_dict[(vincm,vdiff)] = 0 if tdiff_avg<=0 else tdiff_avg
+			tdiff_avg = float(np.mean(tdiff_arr))
+			high_rate_vec.append(0 if tdiff_avg == 0 else 1/tdiff_avg)
+		high_rate_dict[float(vincm)] = dict(vdiff_vec=[float(vdiff) for vdiff in vdiff_vec],
+											rate_vec=list(high_rate_vec))
 	return high_rate_dict
 
 

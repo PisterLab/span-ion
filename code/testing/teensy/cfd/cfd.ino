@@ -584,7 +584,7 @@ void tdc_read_meas(int chain) {
     while (count != N_TDC_DOUT) {
       // read and write one byte at a time over SPI and then serial
       dout[count] = bitbang_byte_out(pin_spi_dout, pin_spi_clk);
-      Serial.println(dout[count]);
+      Serial.println(dout[count], HEX);
       count ++;
     }
     digitalWrite(pin_spi_csb, HIGH);
@@ -672,8 +672,12 @@ void tdc_start(int chain) {
   } else {
     pin_start = pin_tdc_main_start;
   }
-
-  // Toggle the pin high then low
+  // Reset the latched input to the TDC
+  digitalWrite(pin_tdc_rstb, LOW);
+  delayMicroseconds(1);
+  digitalWrite(pin_tdc_rstb, HIGH);
+  
+  // Toggle the start pin high then low
   digitalWrite(pin_start, HIGH);
   delayMicroseconds(100);
   digitalWrite(pin_start, LOW);
