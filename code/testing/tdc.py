@@ -210,6 +210,14 @@ def get_addr(int_command):
 	int_addr = int_command % (1<<6)
 	return hex(int_addr)
 
+def is_overflow_clk(int_status):
+	int_bit = int_status & (1<<2)
+	return int_bit == 1
+
+def is_overflow_coarse(int_status):
+	int_bit = int_status & (1<<1)
+	return int_bit == 1
+
 def config_tdc(teensy_ser, int_command, int_wdata, is_read=False):
 	'''
 	Inputs:
