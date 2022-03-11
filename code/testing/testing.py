@@ -5,34 +5,34 @@ from gpib import *
 import spani_globals, scan, temp_chamber, tdc
 from pprint import pprint
 
-def test_slow_zcd(teensy_port, aux_port, num_iterations, vtest_dict,
-	vfsr=3.3, precision=16, tref_clk=1/16e6):
+def test_offset_small(teensy_port, aux_port, num_iterations, vincm_vec, vdd=1.8,
+		vfsr=3.3, precision=16, tref_clk=1/15e6):
 	'''
 	Inputs:
-		teensy_port: String. Name of the COM port the main board Teensy is 
-			connected to.
-		aux_port: String. Name of the COM port the auxiliary Teensy is connected
-			to.
-		num_iterations: Integer. Number of times to measure for a single 
+		teensy_port:
+		aux_port:
+		num_iterations: Integer. Number of times to measure for a single
 			voltage setup.
-		vtest_dict: Dictionary. Key:value is (DC bias):(collection of 
-			differential input voltages). e.g. {0.5 : [0.1, -0.1]} corresponds to
-			(negative input, positive input) as (0.45,0.55)V and (0.55,0.45)V.
+		vincm_vec: Collection of floats. Input common mode voltages (in volts)
+			for driving the comparator.
+		vdd: Float. Supply voltage of the device in question. This will put a
+			cap on the maximum input voltage.
 		vfsr: Float. The Teensy analogWrite full scale range in volts.
 		precision: Integer. The number of bits to use in _both_ Teensies'
 			analogRead and analogWrite.
 		tref_clk: Float. Clock period of the reference clock in seconds.
 	Returns:
-		high_rate_dict: Dictionary. Key:value is vincm:dict(vdiff_vec, rate_vec=(approximate
-			1/time between stop events, capped out at 1/(TDC dynamic range)).
+		overflow_fracs: Dictionary. Key:value is (input common mode):
+			dict(vdiff_vec=collection of differential voltages, overflow_fracs=
+			(collection of floats that are the # of times there was overflow/
+			number of iterations for that single differential voltage))
 	Notes:
-		Intended for use in measuring the static offset (and it can get input-
-			referred noise too, hmm) 
-		Highly recommend having a high number of iterations to account for 
-			noise.
+		Intended for use in measuring the static offset of the ZCD.
+		Highly recommend having at least 100 iterations to account for noise.
 		The argument for precision should match whatever's in the Teensy code!
 	'''
-	high_rate_dict = dict()
+	overflow_fracs = {vincm:dict(vdiff_vec=tuple(), overflow_fracs=tuple())
+		for vincm in vincm_vec}
 
 	# Open serial connections
 	teensy_ser = serial.Serial(port=teensy_port,
@@ -49,10 +49,10 @@ def test_slow_zcd(teensy_port, aux_port, num_iterations, vtest_dict,
                     bytesize=serial.EIGHTBITS,
                     timeout=5)
 
-	# Discretization of the Teensy PWM
-	vlsb = vfsr / (2**precision)	
+	# Discretization of the Teensy output voltage
+	vlsb = vfsr / (2**precision)
 
-	# Construct the config commands
+	# Construct the TDC config commands
 	wdata1_dict = dict(force_cal=1,
 			parity_en=0,
 			trigg_edge=0,
@@ -74,12 +74,94 @@ def test_slow_zcd(teensy_port, aux_port, num_iterations, vtest_dict,
 		addr=int(tdc.reg_addr_map['CONFIG2'], 16),
 		wdata=wdata2)
 
-	# Get absolute voltages from common mode + differential voltages
-	vin_vec = []
+	# Iterate through all input voltage input settings
 	for vincm, vdiff_vec in vtest_dict.items():
 		for vdiff in vdiff_vec:
 			vinp, vinn = spani_globals.vdiff_conv(vincm, vdiff)
-			vin_vec.append((vinp, vinn))
+			codep = int(round(vinp / vlsb))
+			coden = int(round(vinn / vlsb))
+
+			for i_iter in range(num_iterations):
+				print()
+			
+
+	return overflow_fracs
+
+def test_slow_zcd(teensy_port, aux_port, num_iterations, vtest_dict,
+	vfsr=3.3, precision=16, tref_clk=1/16e6):
+	'''
+	Inputs:
+		teensy_port: String. Name of the COM port the main board Teensy is 
+			connected to.
+		aux_port: String. Name of the COM port the auxiliary Teensy is connected
+			to.
+		num_iterations: Integer. Number of times to measure for a single 
+			voltage setup.
+		vtest_dict: Dictionary. Key:value is (DC bias):(collection of 
+			differential input voltages). e.g. {0.5 : [0.1, -0.1]} corresponds to
+			(negative input, positive input) as (0.45,0.55)V and (0.55,0.45)V.
+		vfsr: Float. The Teensy analogWrite full scale range in volts.
+		precision: Integer. The number of bits to use in _both_ Teensies'
+			analogRead and analogWrite.
+		tref_clk: Float. Clock period of the reference clock in seconds.
+	Returns:
+		high_rate_dict: Dictionary. Key:value is vincm:dict(vdiff_vec, rate_vec=(approximate
+			1/time between stop events, capped out at 1/(TDC dynamic range)).
+	Notes:
+		Intended for use in measuring the static offset and input-referred noise
+			of the ZCD.
+		Highly recommend having a high number of iterations to account for 
+			noise.
+		The argument for precision should match whatever's in the Teensy code!
+	'''
+	high_rate_dict = dict()
+
+	# Open serial connections
+	teensy_ser = serial.Serial(port=teensy_port,
+                    baudrate=19200,
+                    parity=serial.PARITY_NONE,
+                    stopbits=serial.STOPBITS_ONE,
+                    bytesize=serial.EIGHTBITS,
+                    timeout=5)
+
+	aux_ser = serial.Serial(port=aux_port,
+                    baudrate=19200,
+                    parity=serial.PARITY_NONE,
+                    stopbits=serial.STOPBITS_ONE,
+                    bytesize=serial.EIGHTBITS,
+                    timeout=5)
+
+	# Discretization of the Teensy output voltage
+	vlsb = vfsr / (2**precision)
+
+	# Construct the TDC config commands
+	wdata1_dict = dict(force_cal=1,
+			parity_en=0,
+			trigg_edge=0,
+			stop_edge=0,
+			start_edge=0,
+			meas_mode=1,
+			start_meas=1)
+	wdata1 = tdc.construct_wdata1(**wdata1_dict)
+	int_command1, int_wdata1 = tdc.construct_config(is_read=False, 
+		addr=int(tdc.reg_addr_map['CONFIG1'], 16),
+		wdata=wdata1)
+
+	wdata2_dict = dict(calibration2_periods=1,
+			avg_cycles=0,
+			num_stop=4)
+	wdata2 = tdc.construct_wdata2(**wdata2_dict)
+	num_timers = tdc.code_numstop_map[wdata2_dict['num_stop']]
+	int_command2, int_wdata2 = tdc.construct_config(is_read=False,
+		addr=int(tdc.reg_addr_map['CONFIG2'], 16),
+		wdata=wdata2)
+
+	# # Get absolute voltages from common mode + differential voltages
+	# vin_vec = []
+	# for vincm, vdiff_vec in vtest_dict.items():
+	# 	for vdiff in vdiff_vec:
+	# 		vinp, vinn = spani_globals.vdiff_conv(vincm, vdiff)
+	# 		vin_vec.append((vinp, vinn))
 
 	# Iterate through all input voltage vinp-vinn pairs
 	for vincm, vdiff_vec in vtest_dict.items():

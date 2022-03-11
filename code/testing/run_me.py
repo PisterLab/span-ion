@@ -136,7 +136,7 @@ def run_main():
 	### Small Chain ZCD Slow Testing ###
 	####################################
 	if True:
-		teensy_port = 'COM5'
+		teensy_port = 'COM6'
 		
 		asc_params = dict(
 			# MSB -> LSB
@@ -191,7 +191,7 @@ def run_main():
 		tdc_arm()
 	"""
 	if False:
-		teensy_port = 'COM5'
+		teensy_port = 'COM6'
 		teensy_ser = serial.Serial(port=teensy_port,
 			baudrate=19200,
 			parity=serial.PARITY_NONE,
