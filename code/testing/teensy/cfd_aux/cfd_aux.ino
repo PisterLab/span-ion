@@ -93,16 +93,19 @@ if (stringComplete){
 void slow_ramp(int pin) {
 /*
  * Inputs:
- *  None.
+ *  pin: Integer. The pin to ramp.
  * Returns:
  *  None.
  * Notes:
  *  Reads in the desired set voltage _in LSB_ over serial and sets
  *  the pin voltage to that DC value with a ramp of roughly 3.3V/ms.
 */
-  // Read in the desired set voltage (in LSB)
-  while(!Serial.available()) {}
-  int vin_target = Serial.parseInt();
+  // Read in the desired set voltage (in LSB, MSB first)
+  int vin_target = 0;
+  for (int i=0; i<2; i++) {
+    while(!Serial.available());
+    vin_target = (vin_target << 8) + Serial.read();
+  }
   Serial.println(vin_target);
 
   // Set the desired voltage

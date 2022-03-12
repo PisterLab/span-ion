@@ -5,7 +5,7 @@ from gpib import *
 import spani_globals, scan, temp_chamber, tdc
 from pprint import pprint
 
-def test_offset_small(teensy_port, aux_port, num_iterations, vincm_vec, vdd=1.8,
+def test_offset_small(teensy_port, aux_port, num_iterations, vtest_dict, vdd=1.8,
 		vfsr=3.3, precision=16, tref_clk=1/15e6):
 	'''
 	Inputs:
@@ -13,8 +13,9 @@ def test_offset_small(teensy_port, aux_port, num_iterations, vincm_vec, vdd=1.8,
 		aux_port:
 		num_iterations: Integer. Number of times to measure for a single
 			voltage setup.
-		vincm_vec: Collection of floats. Input common mode voltages (in volts)
-			for driving the comparator.
+		vtest_dict: Dictionary. Key:value is (DC bias):(collection of 
+			differential input voltages). e.g. {0.5 : [0.1, -0.1]} corresponds to
+			(negative input, positive input) as (0.45,0.55)V and (0.55,0.45)V.
 		vdd: Float. Supply voltage of the device in question. This will put a
 			cap on the maximum input voltage.
 		vfsr: Float. The Teensy analogWrite full scale range in volts.
@@ -32,7 +33,7 @@ def test_offset_small(teensy_port, aux_port, num_iterations, vincm_vec, vdd=1.8,
 		The argument for precision should match whatever's in the Teensy code!
 	'''
 	overflow_fracs = {vincm:dict(vdiff_vec=tuple(), overflow_fracs=tuple())
-		for vincm in vincm_vec}
+		for vincm in vtest_dict.keys()}
 
 	# Open serial connections
 	teensy_ser = serial.Serial(port=teensy_port,
@@ -74,12 +75,6 @@ def test_offset_small(teensy_port, aux_port, num_iterations, vincm_vec, vdd=1.8,
 		addr=int(tdc.reg_addr_map['CONFIG2'], 16),
 		wdata=wdata2)
 
-	read_order = ['INT_STATUS', 'TIME1', 'CALIBRATION1', 'CALIBRATION2', 'CLOCK_COUNT1']
-
-	int_command_time, _ tdc.construct_config(is_read=True,
-		addr=int(tdc.reg_addr_map['TIME1'], 16))
-	int_command_cal
-
 	# Iterate through all input voltage input settings
 	for vincm, vdiff_vec in vtest_dict.items():
 		overflow_vec = []
@@ -90,57 +85,79 @@ def test_offset_small(teensy_port, aux_port, num_iterations, vincm_vec, vdd=1.8,
 			coden = int(round(vinn / vlsb))
 
 			count_overflow = 0
-			for i_iter in range(num_iterations):
+			for _ in range(num_iterations):
 				# Reset the TDC
+				print('Resetting TDC')
 				teensy_ser.write(b'tdcsmallreset\n')
 				
 				# Configure the TDC
+				print('--- Configuring CONFIG1')
 				teensy_ser.write(b'tdcsmallconfig\n')
 				teensy_ser.write(int_command1.to_bytes(1, 'big'))
 				teensy_ser.write(int_wdata1.to_bytes(1, 'big'))
-				print(teensy_ser.readline())
+				for _ in range(5):
+					print(teensy_ser.readline())
 
+				print('--- Configuring CONFIG2')
 				teensy_ser.write(b'tdcsmallconfig\n')
 				teensy_ser.write(int_command2.to_bytes(1, 'big'))
 				teensy_ser.write(int_wdata2.to_bytes(1, 'big'))
-				print(teensy_ser.readline())
+				for _ in range(5):
+					print(teensy_ser.readline())
 
-				# Set ZCD input voltages TODO check that integers parse correctly
+				# Set ZCD input voltages
 				aux_ser.write(b'zcdcomppsmall\n')
-				aux_ser.write(codep)
+				aux_ser.write(codep.to_bytes(2, 'big'))
+				print(f'P: {aux_ser.readline()}')
 				aux_ser.write(b'zcdcompnsmall\n')
-				aux_ser.write(coden)
+				aux_ser.write(coden.to_bytes(2, 'big'))
+				print(f'N: {aux_ser.readline()}')
 
-				# Read data from relevant registers
-				data_dict = dict()
-				for reg in read_order:
+				# Feed the start pulse
+				teensy_ser.write(b'tdcsmallstart\n')
+
+				# Read data from interrupt status register
+				has_finished = False
+				while not has_finished:
 					val_reg = 0
 					int_cmd, _ = tdc.construct_config(is_read=True,
-						addr=int(tdc.reg_addr_map[reg], 16))
+						addr=int(tdc.reg_addr_map['INT_STATUS'], 16))
+					print(f'--- Reading INT_STATUS')
 					teensy_ser.write(b'tdcsmallread\n')
 					teensy_ser.write(int_cmd.to_bytes(1, 'big'))
 					for _ in range(4):
 						print(teensy_ser.readline())
-					num_bytes = tdc.reg_size_map[reg]//8
+
+					num_bytes = tdc.reg_size_map['INT_STATUS']//8
 					for i in range(num_bytes):
 						val_bytes = teensy_ser.readline().strip()
 						val_int = int.from_bytes(val_bytes, byteorder='big',
 							signed='False')
 						val_reg = (val_reg << 8) + val_int
-					data_dict[reg] = val_reg
+
+					print(f'-> {hex(val_reg)}')
+				
+					has_started = tdc.is_started(val_reg)
+					has_finished = tdc.is_done(val_reg)
+					has_ovfl_clk = tdc.is_overflow_clk(val_reg)
+					has_ovfl_coarse = tdc.is_overflow_coarse(val_reg)
+
+					# Sanity checking with some visibility
+					print(f'\t Measurement Started: {has_started}')
+					print(f'\t Measurement Done: {has_finished}')
+					print(f'\t Clock Overflow: {has_ovfl_clk}')
+					print(f'\t Coarse Overflow: {has_ovfl_coarse}')
 
 				# Determine if there was overflow
-				int_status = data_dict['INT_STATUS']
-				is_overflow = tdc.is_overflow_clk(int_status) \
-					or tdc.is_overflow_coarse(int_status)
+				has_ovfl = has_ovfl_clk or has_ovfl_coarse
 				
 				# If there was, count it for that particular differential input
-				if is_overflow:
+				if has_ovfl:
 					count_overflow = count_overflow + 1
-			overflow_vec.append(count_overflow/num_iterations)
+			overflow_vec.append(float(count_overflow/num_iterations))
 
-		overflow_fracs[vincm]['vdiff_vec'] = list(vdiff_vec)
-		overflow_fracs[vincm]['overflow_fracs'] = list(overflow_vec)
+		overflow_fracs[float(vincm)]['vdiff_vec'] = [float(vdiff) for vdiff in vdiff_vec]
+		overflow_fracs[float(vincm)]['overflow_fracs'] = list(overflow_vec)
 
 	return overflow_fracs
 

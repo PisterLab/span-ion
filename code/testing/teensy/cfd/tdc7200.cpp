@@ -181,7 +181,7 @@ void tdc_write(char cmd, char din, int pin_spi_csb, int pin_tdc_en, int pin_spi_
    *    computer, enforcing that is's a write operation with no auto-incrementing.
    *  Bitbangs the command to the TDC, MSB first.
   */
-  Serial.println("Executing TDC write");
+  Serial.println("Executing TDC write " + String(cmd, BIN));
 
   // Warn the user if it isn't a write
   if (!bitRead(cmd, 6)) {Serial.println("WARNING: Command is not a write");}
@@ -199,8 +199,8 @@ void tdc_write(char cmd, char din, int pin_spi_csb, int pin_tdc_en, int pin_spi_
 
   Serial.println("Wrote data " 
     + String(din, BIN) + 
-    " to TDC address " 
-    + String(get_addr(cmd), BIN));
+    " to TDC address 0x" 
+    + String(get_addr(cmd), HEX));
 } // end tdc_write()
 
 void tdc_read(char cmd, int pin_spi_csb, int pin_tdc_en, int pin_spi_din, 
@@ -229,7 +229,7 @@ void tdc_read(char cmd, int pin_spi_csb, int pin_tdc_en, int pin_spi_din,
  *  Reads out the output data from the TDC (the return value).
  *  dout is a pointer and will be used to retrieve the data.
 */
-  Serial.println("Executing TDC read");
+  Serial.println("Executing TDC read " + String(cmd, BIN));
 
   // Warn the user if it isn't a read
   if (bitRead(cmd, 6)) {Serial.println("WARNING: Command is not a read");
@@ -240,6 +240,8 @@ void tdc_read(char cmd, int pin_spi_csb, int pin_tdc_en, int pin_spi_din,
   } else {Serial.println("OK: TDC no auto-increment");}
 
   // Bit-bang over SPI to the TDC, MSB-first
+  digitalWrite(pin_spi_csb, HIGH);
+  delayMicroseconds(30);
   digitalWrite(pin_spi_csb, LOW);
   bitbang_byte_in(cmd, pin_spi_din, pin_spi_clk);
 
@@ -249,7 +251,7 @@ void tdc_read(char cmd, int pin_spi_csb, int pin_tdc_en, int pin_spi_din,
   }
   digitalWrite(pin_spi_csb, HIGH);
   
-  Serial.println("Accessed register at address " + String(cmd & 0x3F, BIN));
+  Serial.println("Accessed register at address 0x" + String(cmd & 0x3F, HEX));
 } // end tdc_read()
 
 /* ---------------------------- */
@@ -289,7 +291,7 @@ void tdc_start(int pin_start, int pin_latch_rstb) {
 */
   // Reset the latched input to the TDC
   digitalWrite(pin_latch_rstb, LOW);
-  delayMicroseconds(1);
+  delayMicroseconds(10);
   digitalWrite(pin_latch_rstb, HIGH);
   
   // Toggle the start pin high then low
@@ -321,9 +323,8 @@ void tdc_config(int pin_spi_csb, int pin_tdc_en, int pin_spi_din, int pin_spi_cl
   bool trig_ok = false;
   // Read two bytes over serial to write to the config register
   for (int i=0; i<2; i++) {
-    if (Serial.available()) {
-      msg_in_bytes[i] = Serial.read();
-    }
+    while (!Serial.available());
+    msg_in_bytes[i] = Serial.read();
   }
 
   addr = get_addr(msg_in_bytes[0]);
@@ -365,9 +366,8 @@ void tdc_read_print(int pin_spi_csb, int pin_tdc_en,
   char addr = 0;
   int num_bytes;
   // Read byte over serial to send to the TDC
-  if (Serial.available()) {
-    cmd = Serial.read();
-  }
+  while (!Serial.available());
+  cmd = Serial.read();
 
   bitbang_byte_in(cmd, pin_spi_din, pin_spi_clk);
 

@@ -136,7 +136,7 @@ def run_main():
 	### Small Chain ZCD Slow Testing ###
 	####################################
 	if True:
-		teensy_port = 'COM6'
+		teensy_port = 'COM5'
 		
 		asc_params = dict(
 			# MSB -> LSB
@@ -154,11 +154,12 @@ def run_main():
 			en_main			= [0],
 			en_small		= [1])
 
-		small_zcd_params = dict(
+		offset_small_params = dict(
 			teensy_port=teensy_port,
 			aux_port="COM3",
-			num_iterations=100,
+			num_iterations=200,
 			vfsr=3.3,
+			vdd=1.8,
 			precision=16, 
 			tref_clk=1/3.75e6)
 
@@ -169,17 +170,17 @@ def run_main():
 		testing.test_program_scan(com_port=teensy_port, ASC=asc)
 
 		# Run the test
-		vlsb = small_zcd_params['vfsr'] / (2**small_zcd_params['precision'])
-		vincm_vec = list(np.arange(0.5, 0.9, 50e-3))
-		vdiff_vec = np.arange(-0.1, 0.1, 10e-3)
-		small_zcd_params['vtest_dict'] = {vincm:list(vdiff_vec) for vincm in vincm_vec}
+		vlsb = offset_small_params['vfsr'] / (2**offset_small_params['precision'])
+		vincm_vec = np.arange(0.5, 0.9, 50e-3)
+		vdiff_vec = np.arange(-0.2, 0.2, 5e-3)
+		offset_small_params['vtest_dict'] = {float(vincm):list(vdiff_vec) for vincm in vincm_vec}
 
-		file_out = f'../../data/testing/{timestamp_str}_zcdSmallSlow_{small_zcd_params["num_iterations"]}x.yaml'
+		file_out = f'../../data/testing/{timestamp_str}_zcdSmallOffset_{offset_small_params["num_iterations"]}x.yaml'
 
-		high_rate_dict = testing.test_slow_zcd(**small_zcd_params)
+		overflow_dict = testing.test_offset_small(**offset_small_params)
 
 		with open(file_out, 'w') as outfile:
-			yaml.dump(high_rate_dict, outfile, default_flow_style=False)
+			yaml.dump(overflow_dict, outfile, default_flow_style=False)
 
 	########################################
 	### Scratch: R/W Values from the TDC ###

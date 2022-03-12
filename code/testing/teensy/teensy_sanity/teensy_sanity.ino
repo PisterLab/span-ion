@@ -126,7 +126,7 @@ void loop() {
   }
 
   // --- Writing to and Reading out from Registers ---
-  if (true) {
+  if (false) {
       tdc_rw_reg(CHAIN_SMALL);
   }
 

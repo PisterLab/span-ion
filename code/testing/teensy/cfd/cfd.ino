@@ -50,8 +50,6 @@ const int pin_tdc_clk           = A0;   // TDC reference clock
 
 // Constants
 const int B_ADC 				    = 16;	  // Number of bits (precision) for Teensy analogRead
-const int CHAIN_MAIN			  = 0;	  // Used to indicate the main signal chain
-const int CHAIN_SMALL       = 1;	  // Used to indicate the small signal chain
 
 /* ----------------------------- */
 /* --- Runs once at power-on --- */

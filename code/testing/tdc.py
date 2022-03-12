@@ -211,12 +211,20 @@ def get_addr(int_command):
 	return hex(int_addr)
 
 def is_overflow_clk(int_status):
-	int_bit = int_status & (1<<2)
-	return int_bit == 1
+	int_bit_shifte = int_status & (1<<2)
+	return int_bit_shifte != 0
 
 def is_overflow_coarse(int_status):
-	int_bit = int_status & (1<<1)
-	return int_bit == 1
+	int_bit_shifte = int_status & (1<<1)
+	return int_bit_shifte != 0
+
+def is_done(int_status):
+	int_bit_shifte = int_status & (1<<4)
+	return int_bit_shifte != 0
+
+def is_started(int_status):
+	int_bit_shifte = int_status & (1<<3)
+	return int_bit_shifte != 0
 
 def config_tdc(teensy_ser, int_command, int_wdata, is_read=False):
 	'''
