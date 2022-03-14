@@ -274,6 +274,8 @@ void tdc_reset(int pin_tdc_en) {
   
   // Allow TDC to initialize
   delayMicroseconds(30);
+  
+  Serial.println("TDC disabled and enabled");
 } // end tdc_reset()
 
 void tdc_start(int pin_start, int pin_latch_rstb) {
@@ -298,6 +300,8 @@ void tdc_start(int pin_start, int pin_latch_rstb) {
   digitalWrite(pin_start, HIGH);
   delayMicroseconds(100);
   digitalWrite(pin_start, LOW);
+
+  Serial.println("Start sent to TDC");
 } // end tdc_start()
 
 /* ------------------------------- */

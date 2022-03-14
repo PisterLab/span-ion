@@ -88,7 +88,14 @@ def test_offset_small(teensy_port, aux_port, num_iterations, vtest_dict, vdd=1.8
 			for _ in range(num_iterations):
 				# Reset the TDC
 				print('Resetting TDC')
+				aux_ser.write(b'zcdcomppsmall\n')
+				aux_ser.write(int(0).to_bytes(2, 'big'))
+				aux_ser.readline()
+				aux_ser.write(b'zcdcompnsmall\n')
+				aux_ser.write(int(round(vfsr / vlsb)-1).to_bytes(2, 'big'))
+				aux_ser.readline()
 				teensy_ser.write(b'tdcsmallreset\n')
+				print(aux_ser.readline())
 				
 				# Configure the TDC
 				print('--- Configuring CONFIG1')
@@ -115,6 +122,7 @@ def test_offset_small(teensy_port, aux_port, num_iterations, vtest_dict, vdd=1.8
 
 				# Feed the start pulse
 				teensy_ser.write(b'tdcsmallstart\n')
+				print(aux_ser.readline())
 
 				# Read data from interrupt status register
 				has_finished = False
