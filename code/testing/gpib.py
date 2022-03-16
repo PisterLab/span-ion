@@ -14,7 +14,6 @@ class LabInstrument(object):
 		self.rsrc = None
 		self.is_open = False
 
-	def open(self):
 		is_correct = False
 		while not is_correct:
 			# List resources for user selection by index
@@ -108,7 +107,7 @@ class DG535(LabInstrument):
 		# Querying DG535 status
 		self.rsrc.write("CL") # Clear DG535
 		print(f"Instrument Status:\t{self.rsrc.query('IS')}")
-		print(f"Error Status:\t{self.rsrc.query("ES")}")
+		print(f"Error Status:\t{self.rsrc.query('ES')}")
 
 		# DG535 initialization
 		cmd_vec = [
@@ -155,3 +154,29 @@ class DG535(LabInstrument):
 # 		sm.write(f'{smu_str}.measure.rangev = {vrange}')
 
 # 	return
+
+if __name__ == "__main__":
+	is_correct = False
+	rm = pyvisa.ResourceManager()
+	# List resources for user selection by index
+	num_rsrc = len(rm.list_resources())
+	print('Index: Resource ID')
+	for i, x in enumerate(rm.list_resources()):
+		print(f'{i}: {x}')
+
+	while True:
+		idx_str = input('Choose Device Index: ')
+		try:
+			rsrc = rm.open_resource(rm.list_resources()[int(idx_str)])
+			break
+		except Exception as e:
+			print(e)
+
+	# Sanity checking that it's the correct device
+	print(rsrc.query("*IDN?"))
+	is_correct_raw = input('Is this the correct device? (y/n): ').lower()
+	is_correct = (is_correct_raw == 'y')
+
+	# If not correct, close the connection
+	if not is_correct:
+		rsrc.close()
