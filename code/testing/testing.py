@@ -5,6 +5,38 @@ from gpib import *
 import spani_globals, scan, temp_chamber, tdc
 from pprint import pprint
 
+def test_tdiff_small(teensy_port, num_iterations, twait=0, gpib_addr=15):
+	'''
+	Measures the time between the input DG535 pulse and the output pulse.
+	Inputs:
+		teensy_port: String. Name of the COM port the main board Teensy is 
+			connected to.
+		num_iterations: Integer. Number of times to measure for a single
+			amplitude.
+		twait: Float. Time in seconds between measurement start and actual 
+			DG535 trigger. e.g. twait = 1e-9 means the DG535 triggers 1ns after
+			the measurement actually starts.
+		gpib_addr: Integer. The GPIB address associated with the DG535.
+	Returns:
+		tdiff_vec: Collection of floats. The time difference (in seconds) 
+			between the input DG535 pulse and output pulse.
+	'''
+	# Open connections to Teensy and DG535
+	teensy_ser = serial.Serial(port=teensy_port,
+                    baudrate=19200,
+                    parity=serial.PARITY_NONE,
+                    stopbits=serial.STOPBITS_ONE,
+                    bytesize=serial.EIGHTBITS,
+                    timeout=5)
+
+	rm = pyvisa.ResourceManager()
+	dg535 = DG535(rm, gpib_addr)
+	dg535.open()
+
+	
+
+	pass
+
 def test_offset_small(teensy_port, aux_port, num_iterations, vtest_dict, vdd=1.8,
 		vfsr=3.3, precision=16, tref_clk=1/15e6):
 	'''
@@ -168,214 +200,6 @@ def test_offset_small(teensy_port, aux_port, num_iterations, vtest_dict, vdd=1.8
 		overflow_fracs[float(vincm)]['overflow_fracs'] = list(overflow_vec)
 
 	return overflow_fracs
-
-# def test_slow_zcd(teensy_port, aux_port, num_iterations, vtest_dict,
-# 	vfsr=3.3, precision=16, tref_clk=1/16e6):
-# 	'''
-# 	Inputs:
-# 		teensy_port: String. Name of the COM port the main board Teensy is 
-# 			connected to.
-# 		aux_port: String. Name of the COM port the auxiliary Teensy is connected
-# 			to.
-# 		num_iterations: Integer. Number of times to measure for a single 
-# 			voltage setup.
-# 		vtest_dict: Dictionary. Key:value is (DC bias):(collection of 
-# 			differential input voltages). e.g. {0.5 : [0.1, -0.1]} corresponds to
-# 			(negative input, positive input) as (0.45,0.55)V and (0.55,0.45)V.
-# 		vfsr: Float. The Teensy analogWrite full scale range in volts.
-# 		precision: Integer. The number of bits to use in _both_ Teensies'
-# 			analogRead and analogWrite.
-# 		tref_clk: Float. Clock period of the reference clock in seconds.
-# 	Returns:
-# 		high_rate_dict: Dictionary. Key:value is vincm:dict(vdiff_vec, rate_vec=(approximate
-# 			1/time between stop events, capped out at 1/(TDC dynamic range)).
-# 	Notes:
-# 		Intended for use in measuring the static offset and input-referred noise
-# 			of the ZCD.
-# 		Highly recommend having a high number of iterations to account for 
-# 			noise.
-# 		The argument for precision should match whatever's in the Teensy code!
-# 	'''
-# 	high_rate_dict = dict()
-
-# 	# Open serial connections
-# 	teensy_ser = serial.Serial(port=teensy_port,
-#                     baudrate=19200,
-#                     parity=serial.PARITY_NONE,
-#                     stopbits=serial.STOPBITS_ONE,
-#                     bytesize=serial.EIGHTBITS,
-#                     timeout=5)
-
-# 	aux_ser = serial.Serial(port=aux_port,
-#                     baudrate=19200,
-#                     parity=serial.PARITY_NONE,
-#                     stopbits=serial.STOPBITS_ONE,
-#                     bytesize=serial.EIGHTBITS,
-#                     timeout=5)
-
-# 	# Discretization of the Teensy output voltage
-# 	vlsb = vfsr / (2**precision)
-
-# 	# Construct the TDC config commands
-# 	wdata1_dict = dict(force_cal=1,
-# 			parity_en=0,
-# 			trigg_edge=0,
-# 			stop_edge=0,
-# 			start_edge=0,
-# 			meas_mode=1,
-# 			start_meas=1)
-# 	wdata1 = tdc.construct_wdata1(**wdata1_dict)
-# 	int_command1, int_wdata1 = tdc.construct_config(is_read=False, 
-# 		addr=int(tdc.reg_addr_map['CONFIG1'], 16),
-# 		wdata=wdata1)
-
-# 	wdata2_dict = dict(calibration2_periods=1,
-# 			avg_cycles=0,
-# 			num_stop=4)
-# 	wdata2 = tdc.construct_wdata2(**wdata2_dict)
-# 	num_timers = tdc.code_numstop_map[wdata2_dict['num_stop']]
-# 	int_command2, int_wdata2 = tdc.construct_config(is_read=False,
-# 		addr=int(tdc.reg_addr_map['CONFIG2'], 16),
-# 		wdata=wdata2)
-
-# 	# # Get absolute voltages from common mode + differential voltages
-# 	# vin_vec = []
-# 	# for vincm, vdiff_vec in vtest_dict.items():
-# 	# 	for vdiff in vdiff_vec:
-# 	# 		vinp, vinn = spani_globals.vdiff_conv(vincm, vdiff)
-# 	# 		vin_vec.append((vinp, vinn))
-
-# 	# Iterate through all input voltage vinp-vinn pairs
-# 	for vincm, vdiff_vec in vtest_dict.items():
-# 		high_rate_vec = []
-# 		for vdiff in vdiff_vec:
-# 			vinp, vinn = spani_globals.vdiff_conv(vincm, vdiff)
-# 			codep = int(round(vinp / vlsb))
-# 			coden = int(round(vinn / vlsb))
-			
-# 			# tdiff_arr[i][j] is for the ith iteration of the jth timer pair
-# 			# [
-# 			# [t1-t0, t2-t1, t3-t2], <- iteration 0
-# 			# [t1-t0, t2-t1, t3-t2], <- iteration 1
-# 			# ...]
-# 			# tdiff_arr = np.zeros((num_iterations, num_timers-1))
-# 			tdiff_arr = [list() for _ in range(num_iterations)]
-			
-# 			# Take data over many iterations for the same input voltage pair
-# 			for i in range(num_iterations):
-# 				print(f'--- P/N: ({vinp}, {vinn}) -> Iteration {i}')
-# 				# Reset and configure TDC connected to small signal chain
-# 				teensy_ser.write(b'tdcsmallreset\n')
-# 				print(teensy_ser.readline())
-
-# 				teensy_ser.write(b'tdcsmallconfig\n')
-# 				print(teensy_ser.readline())
-# 				teensy_ser.write(int_command2.to_bytes(1, 'big'))
-# 				teensy_ser.write(int_wdata2.to_bytes(1, 'big'))
-# 				for _ in range(6):
-# 					print(teensy_ser.readline())
-
-# 				teensy_ser.write(b'tdcsmallconfig\n')
-# 				print(teensy_ser.readline())
-# 				teensy_ser.write(int_command1.to_bytes(1, 'big'))
-# 				teensy_ser.write(int_wdata1.to_bytes(1, 'big'))
-# 				for _ in range(6):
-# 					print(teensy_ser.readline())
-
-# 				# Set ZCD input voltages TODO check that integers parse correctly
-# 				aux_ser.write(b'zcdcomppsmall\n')
-# 				aux_ser.write(codep)
-# 				aux_ser.write(b'zcdcompnsmall\n')
-# 				aux_ser.write(coden)
-
-# 				# Give the TDC a start pulse
-# 				teensy_ser.write(b'tdcsmallstart\n')
-
-# 				# Reading ALL the data
-# 				teensy_ser.write(b'tdcsmallread\n')
-# 				for _ in range(2):
-# 					print(teensy_ser.readline())
-
-# 				# ...for each timer output
-# 				time_vec = [0]*6
-# 				for timer_num, _ in enumerate(time_vec):
-# 					# 1 byte (x3) at a time for the TIME registers
-# 					val_time = 0
-# 					for byte_num in range(3):
-# 						time_bytes = teensy_ser.readline().strip()
-# 						time_int = int.from_bytes(time_bytes, 
-# 												byteorder='big',
-# 												signed=False)
-# 						val_time = val_time + (time_int << (byte_num*8))
-# 					# Getting rid of parity bits, etc.
-# 					time_vec[timer_num] = val_time % (1<<23) 
-
-# 				# ...for each clock count
-# 				clk_count_vec = [0]*5
-# 				for clk_count_num, _ in enumerate(clk_count_vec):
-# 					# 1 byte (x3) at a time for the CLOCK_COUNT registers
-# 					val_count = 0
-# 					for byte_num in range(3):
-# 						count_bytes = teensy_ser.readline().strip()
-# 						count_int = int.from_bytes(count_bytes,
-# 												byteorder='big',
-# 												signed=False)
-# 						val_count = val_count + (count_int << (byte_num*8))
-# 					# Getting rid of parity bits, etc.
-# 					clk_count_vec[clk_count_num] = val_count % (1<<16)
-
-# 				# ...for each calibration value
-# 				cal_vec = [0]*2
-# 				for cal_num, _ in enumerate(cal_vec):
-# 					# 1 byte (x3) at a time for the CALIBRATION registers
-# 					val_cal = 0
-# 					for byte_num in range(3):
-# 						cal_bytes = teensy_ser.readline().strip()
-# 						cal_int = int.from_bytes(cal_bytes,
-# 												byteorder='big',
-# 												signed=False)
-# 						val_cal = val_cal + (cal_int << (byte_num*8))
-# 					# Getting rid of parity bits, etc.
-# 					cal_vec[cal_num] = val_cal % (1<<23)
-
-# 				# Final message from Teensy
-# 				print(teensy_ser.readline())
-				
-# 				# Print statements for visibility
-# 				print(f'Time: {time_vec}\n Cal: {cal_vec}\n Count: {clk_count_vec}')
-
-# 				# Calculate the times of flight between each detected STOP pulse and
-# 				# the START pulse
-# 				tof_vec = []
-# 				assert cal_vec[0] != cal_vec[1], f'Calibration data incorrect'
-
-# 				time_x_vec = time_vec[:-1] if wdata1_dict['meas_mode'] == 0 else time_vec[1:]
-# 				for j, time_x in enumerate(time_x_vec):
-# 					tof_vec.append(tdc.calc_tof(cal1=cal_vec[0],
-# 						cal2=cal_vec[1],
-# 						cal2_periods=tdc.code_cal2_map[wdata2_dict['calibration2_periods']],
-# 						time_1=time_vec[0],
-# 						time_x=time_x,
-# 						count_n=clk_count_vec[j],
-# 						tper=tref_clk,
-# 						mode=wdata1_dict['meas_mode']))
-
-# 				# TODO change for efficiency - currently just throwing out 
-# 				# irrelevant data, e.g. unused TIMEx data
-# 				tof_vec = tof_vec[:num_timers]
-# 				tdiff_vec = np.array(tof_vec[1:]) - np.array(tof_vec[:-1])
-
-# 				# Throwing out overflow values
-# 				# tdiff_vec = [tdiff for tdiff in tdiff_vec if tdiff > 0]
-# 				tdiff_arr[i] = tdiff_vec
-
-# 			# Find the average time between comparator noise-induced STOP triggers
-# 			tdiff_avg = float(np.mean(tdiff_arr))
-# 			high_rate_vec.append(0 if tdiff_avg == 0 else 1/tdiff_avg)
-# 		high_rate_dict[float(vincm)] = dict(vdiff_vec=[float(vdiff) for vdiff in vdiff_vec],
-# 											rate_vec=list(high_rate_vec))
-# 	return high_rate_dict
-
 
 def test_pk_static(teensy_port, aux_port, num_iterations, vtest_vec, vfsr=3.3, 
 	precision=16, t_wait=0.01):

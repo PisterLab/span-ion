@@ -1,47 +1,6 @@
 import pyvisa, serial
 from warnings import warn
 
-Z_INF = 'INF'
-Z_FIFTY = '50OHM'
-
-SMU_A = 'a'
-SMU_B = 'b'
-
-def rsrc_open(rm):
-	'''
-	Inputs:
-		rm: PyVISA Resource manager.
-	Returns:
-		rsrc: Visa Resource object. The device to be opened.
-	'''
-	is_correct = False
-	while not is_correct:
-		# List resources for user selection by index
-		num_rsrc = len(rm.list_resources())
-		print('Index: Resource ID')
-		for i, x in enumerate(rm.list_resources()):
-			print(f'{i}: {x}')
-
-		while True:
-			idx_str = input('Choose Device Index: ')
-			try:
-				rsrc = rm.open_resource(rm.list_resources()[int(idx_str)])
-				break
-			except Exception as e:
-				print(e)
-
-
-		# Sanity checking that it's the correct device
-		print(rsrc.query("*IDN?"))
-		is_correct_raw = input('Is this the correct device? (y/n): ').lower()
-		is_correct = (is_correct_raw == 'y')
-
-		# If not correct, close the connection and prompt again
-		if not is_correct:
-			rsrc.close()
-
-	return rsrc
-
 class LabInstrument(object):
 	'''
 	General lab instrument. Intended as a superclass for devices which are meant
@@ -90,14 +49,11 @@ class LabInstrument(object):
 	def get_rm(self):
 		return self.rm
 
-	def setup(self):
-		raise NotImplementedError
-
 	def write(self, msg):
 		if self.is_open:
 			self.rsrc.write(msg)
 		else:
-			warn('Attempting to write to closed resource')
+			warn('Attempting to write to a closed resource')
 
 	def close(self):
 		if self.is_open:
@@ -107,39 +63,54 @@ class LabInstrument(object):
 		else:
 			warn(f'Resource {self.rsrc} not open')
 
+	def __str__(self):
+		return f"{type(self).__name__} : {self.rsrc}"
+
 
 class KeysightE3631A(LabInstrument):
-	def setup(self):
+	def __init__(self, rm):
+		super().__init__(rm)
 		self.rsrc.write('DISP ON') 		# Enable the display
-		self.rsrc.write(f'OUTP OFF') 	# Turn off all outputs
+		self.rsrc.write(f'OUTP OFF') 	# Turn off all outputs to start
 
 	def close(self):
 		self.rsrc.write(f'OUTP OFF')	# Turn off all outputs
 		super().close()
 
 class Keysight33500B(LabInstrument):
+	def __init__(self, rm):
+		super().__init__(rm)
+		# Ensure outputs are off to begin
+		self.rsrc.write("OUTPUT1 OFF")
+		self.rsrc.write("OUTPUT2 OFF")
+
 	def close(self):
 		# Turn off outputs
 		self.rsrc.write("OUTPUT1 OFF")
 		self.rsrc.write("OUTPUT2 OFF")
-
 		super().close()
 
+
 class DG535(LabInstrument):
-	def __init__(self, rm):
+	def __init__(self, rm, gpib_addr):
 		super().__init__(rm)
-		# What is this????? Is this the ethernet -> GPIB thing?
-		self.rsrc.write("++mode 1")
+		# Prologix commands
+		self.rsrc.write("++mode 1")				# Prologix control
 		self.rsrc.write_termination = '\r\n'
 		self.rsrc.read_termination = '\r\n'
-		self.rsrc.write("++addr 15") 			# GPIB address 15
+		self.rsrc.write(f"++addr {gpib_addr}") 	# GPIB address
 		self.rsrc.write("++auto 1") 			# Automatic read after write for query
 		self.rsrc.write("++read_tmo_ms 500") 	# Extend read timeout time
 		self.rsrc.write("++eos 3") 				# No additional termination character
 		self.rsrc.write("++eoi 1") 				# Assert EOI after last byte
 		self.rsrc.write("++eot_enable 0") 		# No EOT character on EOI
 
-	def setup(self):
+		# Querying DG535 status
+		self.rsrc.write("CL") # Clear DG535
+		print(f"Instrument Status:\t{self.rsrc.query('IS')}")
+		print(f"Error Status:\t{self.rsrc.query("ES")}")
+
+		# DG535 initialization
 		cmd_vec = [
 			"DT 2,1,0",		# Delay A=T+1 (default 800ns pulse)
 			"TZ 2,0",		# 50Ohm output termination for OPT-04B BNC falltime modifier
@@ -154,7 +125,7 @@ class DG535(LabInstrument):
 
 	def close(self):
 		# Clear instrument
-		self.rsrc.write('')
+		self.rsrc.write('CL')
 
 		super().close()
 
