@@ -6,7 +6,8 @@ import spani_globals, scan, temp_chamber, tdc
 from pprint import pprint
 
 def test_tdiff_small(teensy_port, num_iterations, twait=0, 
-		ip_addr='192.168.4.1', gpib_addr=15, vin_amp=1):
+		ip_addr='192.168.4.1', gpib_addr=15, vin_bias=0.7, vin_amp=0.6,
+		f_atten=0.5, tref_clk=1/15e6):
 	'''
 	Measures the time between the input DG535 pulse and the output pulse.
 	Inputs:
@@ -20,6 +21,10 @@ def test_tdiff_small(teensy_port, num_iterations, twait=0,
 		ip_addr: String. The IP address of the Prologix hooked up
 			to the DG535.
 		gpib_addr: Integer. The GPIB address associated with the DG535.
+		vin_bias: Float. Input bias in V for the input pulse.
+		vin_amp: Float. Pulse amplitude in V for the signal shaping.
+		f_atten: Float. Attenuation fraction for signal shaping.
+		tref_clk: Float. Period in seconds of the TDC reference clock.
 	Returns:
 		tdiff_vec: Collection of floats. The time difference (in seconds) 
 			between the input DG535 pulse and output pulse.
@@ -41,14 +46,14 @@ def test_tdiff_small(teensy_port, num_iterations, twait=0,
 	dg535.write(f"Error Status: {dg535.query('ES')}")
 	dg535.write(f"Instrument Status: {dg535.query('IS')}")
 
-	# Set up TDC for measurement
+	# TDC settings for measurement
 	wdata1 = tdc.construct_wdata1(
 		force_cal=1,	# Get calibration
 		parity_en=1,	# Enable parity bit in measurements
 		trigg_edge=0, 	# Rising edge
 		stop_edge=0, 	# Rising edge
 		start_edge=0,	# Rising edge
-		meas_mode=1,	# Somewhat deceptively assigned to Mode 2...
+		meas_mode=0,	# Somewhat deceptively assigned to Mode 2...
 		start_meas=1)	# Arm TDC for measurement
 
 	cmd_cfg1, _ = tdc.construct_config(is_read=False, 
@@ -64,13 +69,111 @@ def test_tdiff_small(teensy_port, num_iterations, twait=0,
 		addr=int(reg_addr_map['CONFIG2'], 16),
 		wdata=wdata2)
 
-	# Set up DG535 for measurement
+	# DG535 settings for measurement
 	cmd_lst = [
-		
+		"DT 2,1,250e-9", 			# Set delay A=T0+250ns
+		"DT 3,2,5e-9",				# Set delay B=A+5ns
+		"TZ 2,1",					# A termination HiZ
+		"TZ 3,1",					# B termintaion HiZ
+		"OM 2,3",					# A output VARiable
+		"OM 3,3",					# B output VARiable
+		f"OA 2,{vin_amp}",			# A channel amplitude
+		f"OA 3,{vin_amp*f_atten}",	# B channel amplitude
+		f"OO 2,{vin_bias}",			# A channel offset
+		f"OO 3,{vin_bias}",			# B channel offset
+		"TM 1",						# External trigger
 	]
 
+	# Chip settings for measurement
+	asc_params = dict(
+		# MSB -> LSB
+		preamp_res 		= [0, 0],
+		delay_res 		= [0, 0],
+		watchdog_res 	= [0, 0, 0, 0],
+		attenuator_sel	= [0, 0, 0],
+		dac_sel 		= [0, 0, 0, 0, 0, 0, 0, 0],
+		az_main_gain 	= [0, 0, 0],
+		az_aux_gain 	= [0, 0, 0],
+		oneshot_res 	= [0, 0],
+		vref_preamp 	= [0, 0, 0, 0, 0, 0, 0, 0],
+		vdd_aon			= [0, 0, 0, 0, 0],
+		vdd_signal		= [0, 0, 0, 0, 0],
+		en_main			= [0],
+		en_small		= [1])
+	
+	# Program the chip
+	asc = scan.construct_ASC(**asc_params)
+	scan.program_scan(ser=teensy_ser, ASC=asc)
 
-	pass
+	# Control the DG535
+	for cmd in cmd_lst:
+		dg535.write(cmd)
+
+	tdiff_vec = []
+
+	for _ in range(num_iterations):
+		# Reset the TDC
+		print('Resetting TDC')
+		teensy_ser.write(b'tdcsmallreset\n')
+
+		# Configure the TDC
+		print('--- Configuring CONFIG1')
+		teensy_ser.write(b'tdcsmallconfig\n')
+		teensy_ser.write(cmd_cfg1.to_bytes(1, 'big'))
+		teensy_ser.write(wdata1.to_bytes(1, 'big'))
+		for _ in range(5);
+			print(teensy_ser.readline())
+
+		print('--- Configuring CONFIG2')
+		teensy_ser.write(b'tdcsmallconfig\n')
+		teensy_ser.write(cmd_cfg2.to_bytes(1, 'big'))
+		teensy_ser.write(wdata2.to_bytes(1, 'big'))
+		for _ in range(5):
+			print(teensy_ser.readline())
+
+		# Feed in the start pulse to get things going
+		teensy_ser.write(b'tdcsmallstart\n')
+
+		# Wait until measurement done
+		has_finished = False
+		while not has_finished:
+			val_int_status = tdc.tdc_read(teensy_ser=teensy_ser,
+				reg="INT_STATUS", chain="small")
+			has_started = tdc.is_started(val_int_status)
+			has_finished = tdc.is_done(val_int_status)
+			has_ovfl_clk = tdc.is_overflow_clk(val_int_status)
+			has_ovfl_coarse = tdc.is_overflow_coarse(val_int_status)
+
+			# Sanity checking with some visibility
+			print(f'\t Measurement Started: {has_started}')
+			print(f'\t Measurement Done: {has_finished}')
+			print(f'\t Clock Overflow: {has_ovfl_clk}')
+			print(f'\t Coarse Overflow: {has_ovfl_coarse}')
+
+		# Read from relevant data registers
+		num_timers = tdc.code_numstop_map[wdata2_dict['num_stop']]
+		reg_lst = ['CALIBRATION1', 'CALIBRATION2']
+		reg_lst = reg_lst + [f'TIME{f}' for i in range(1,num_timers+1)]
+		reg_lst = reg_lst + [f'CLOCK_COUNT{f}' for i in range(1,num_timers+1)]
+
+		reg_data_dict = dict()
+		for reg in reg_lst:
+			reg_data_dict[reg] = tdc.tdc_read(teensy_ser=teensy_ser,
+				reg=reg, chain="small")
+
+		# From registers, calculate the time between the START and STOP triggers
+		tdiff = tdc.calc_tof(cal1=reg_data_dict['CALIBRATION1'],
+			cal2=reg_data_dict['CALIBRATION2'],
+			cal2_periods=tdc.code_cal2_map[wdata2_dict['calibration2_periods']],
+			time_1=reg_data_dict['TIME1'],
+			time_x=reg_data_dict['TIME1'],
+			count_n=reg_data_dict['CLOCK_COUNT1'],
+			tper=tref_clk,
+			mode=wdata1_dict['meas_mode'])
+
+		tdiff_vec.append(tdiff)
+
+	return tdiff_vec
 
 def test_offset_small(teensy_port, aux_port, num_iterations, vtest_dict, vdd=1.8,
 		vfsr=3.3, precision=16, tref_clk=1/15e6):

@@ -226,34 +226,28 @@ def is_started(int_status):
 	int_bit_shifte = int_status & (1<<3)
 	return int_bit_shifte != 0
 
-def config_tdc(teensy_ser, int_command, int_wdata, is_read=False):
+def tdc_read(teensy_ser, reg, chain='small') -> int:
 	'''
-	Inputs:
-		teensy_ser:
-		int_command: Integer < 2^8. Going MSB->LSB:
-			1b auto-increment 
-			1b read/write
-			6b address
-		int_wdata: Integer < 2^8. Going MSB->LSB:
-			8b write data (if relevant)
-	Returns:
-		Read data, if applicable.
-	Notes:
-	'''
-	rdata = None
 	
-	# Send command byte
-	teensy_ser.write(int_command.to_bytes(1, 'big'))
+	'''
+	int_cmd, _ = tdc.construct_config(is_read=True,
+		addr=int(tdc.reg_addr_map[reg], 16))
+	print(f'--- Reading {reg}')
+	teensy_msg = b'tdcsmallread\n' if chain=='small' else b'tdcmainread\n'
+	teensy_ser.write(teensy_msg)
+	teensy_ser.write(int_cmd.to_bytes(1, 'big'))
+	for _ in range(4):
+		print(teensy_ser.readline())
 
-	# Send write data info or receive read data byte
-	addr = get_addr(int_command)
-	if not is_read:
-		teensy_ser.write(int_wdata.to_bytes(1, 'big'))
-	else:
-		# TODO get read data from Teensy
-		rdata = teensy_ser.readline()
+	val_reg = 0
+	num_bytes = tdc.reg_size_map[reg]//8
+	for i in range(num_bytes):
+		val_bytes = teensy_ser.readline().strip()
+		val_int = int.from_bytes(val_bytes, byteorder='big',
+			signed=False)
+		val_reg = (val_reg << 8) + val_int
 
-	return rdata
+	return val_reg
 
 def calc_tof(cal1, cal2, cal2_periods, time_1, time_x, count_n, tper, mode=2):
 	'''
