@@ -5,7 +5,8 @@ from gpib import *
 import spani_globals, scan, temp_chamber, tdc
 from pprint import pprint
 
-def test_tdiff_small(teensy_port, num_iterations, twait=0, gpib_addr=15):
+def test_tdiff_small(teensy_port, num_iterations, twait=0, 
+		ip_addr='192.168.4.1', gpib_addr=15, vin_amp=1):
 	'''
 	Measures the time between the input DG535 pulse and the output pulse.
 	Inputs:
@@ -16,6 +17,8 @@ def test_tdiff_small(teensy_port, num_iterations, twait=0, gpib_addr=15):
 		twait: Float. Time in seconds between measurement start and actual 
 			DG535 trigger. e.g. twait = 1e-9 means the DG535 triggers 1ns after
 			the measurement actually starts.
+		ip_addr: String. The IP address of the Prologix hooked up
+			to the DG535.
 		gpib_addr: Integer. The GPIB address associated with the DG535.
 	Returns:
 		tdiff_vec: Collection of floats. The time difference (in seconds) 
@@ -30,10 +33,42 @@ def test_tdiff_small(teensy_port, num_iterations, twait=0, gpib_addr=15):
                     timeout=5)
 
 	rm = pyvisa.ResourceManager()
-	dg535 = DG535(rm, gpib_addr)
-	dg535.open()
+	dg535 = DG535(rm)
+	dg535.open_prologix(ip_addr=ip_addr, gpib_addr=gpib_addr)
 
+	# Sanity checking DG535 status
+	dg535.write("CL")
+	dg535.write(f"Error Status: {dg535.query('ES')}")
+	dg535.write(f"Instrument Status: {dg535.query('IS')}")
+
+	# Set up TDC for measurement
+	wdata1 = tdc.construct_wdata1(
+		force_cal=1,	# Get calibration
+		parity_en=1,	# Enable parity bit in measurements
+		trigg_edge=0, 	# Rising edge
+		stop_edge=0, 	# Rising edge
+		start_edge=0,	# Rising edge
+		meas_mode=1,	# Somewhat deceptively assigned to Mode 2...
+		start_meas=1)	# Arm TDC for measurement
+
+	cmd_cfg1, _ = tdc.construct_config(is_read=False, 
+		addr=int(reg_addr_map['CONFIG1'], 16),
+		wdata=wdata1)
 	
+	wdata2 = tdc.construct_wdata2(
+		calibration_periods=1,	# -> 10 cycles wrt reference
+		avg_cycles=0,			# No averaging
+		num_stop=0)				# Single timer measurement
+
+	cmd_cfg2, _ = tdc.construct_config(is_read=False,
+		addr=int(reg_addr_map['CONFIG2'], 16),
+		wdata=wdata2)
+
+	# Set up DG535 for measurement
+	cmd_lst = [
+		
+	]
+
 
 	pass
 
