@@ -5,8 +5,9 @@ from gpib import *
 import spani_globals, scan, temp_chamber, tdc
 from pprint import pprint
 
-def test_tdiff_small(teensy_port, num_iterations, twait=0, 
-		ip_addr='192.168.4.1', gpib_addr=15, vin_bias=0.7, vin_amp=0.6,
+def test_tdiff_small(teensy_port, num_iterations, twait=250e-9,
+		tdelay=5e-9, ip_addr='192.168.4.1', gpib_addr=15, 
+		vin_bias=0.7, vin_amp=0.6,
 		f_atten=0.5, tref_clk=1/15e6):
 	'''
 	Measures the time between the input DG535 pulse and the output pulse.
@@ -18,6 +19,7 @@ def test_tdiff_small(teensy_port, num_iterations, twait=0,
 		twait: Float. Time in seconds between measurement start and actual 
 			DG535 trigger. e.g. twait = 1e-9 means the DG535 triggers 1ns after
 			the measurement actually starts.
+		tdelay: Float. Time in seconds to delay the input pulse.
 		ip_addr: String. The IP address of the Prologix hooked up
 			to the DG535.
 		gpib_addr: Integer. The GPIB address associated with the DG535.
@@ -71,8 +73,8 @@ def test_tdiff_small(teensy_port, num_iterations, twait=0,
 
 	# DG535 settings for measurement
 	cmd_lst = [
-		"DT 2,1,250e-9", 			# Set delay A=T0+250ns
-		"DT 3,2,5e-9",				# Set delay B=A+5ns
+		f"DT 2,1,{twait}", 			# Set delay A=T0+twait
+		f"DT 3,2,{tdelay}",			# Set delay B=A+tdelay
 		"TZ 2,1",					# A termination HiZ
 		"TZ 3,1",					# B termintaion HiZ
 		"OM 2,3",					# A output VARiable

@@ -135,7 +135,7 @@ def run_main():
 	####################################
 	### Small Chain ZCD Slow Testing ###
 	####################################
-	if True:
+	if False:
 		teensy_port = 'COM5'
 		
 		asc_params = dict(
@@ -181,6 +181,28 @@ def run_main():
 
 		with open(file_out, 'w') as outfile:
 			yaml.dump(overflow_dict, outfile, default_flow_style=False)
+
+	####################################
+	### Small Chain ZCD Fast Testing ###
+	####################################
+	if False:
+		test_tdiff_small_params = dict(
+			teensy_port='COM3',
+			num_iterations=10,
+			twait=250e-9,
+			tdelay=5e-9,
+			ip_addr='192.168.4.1',
+			gpib_addr=15,
+			vin_bias=0.7,
+			vin_amp=0.6,
+			f_atten=0.5,
+			tref_clk=1/3.75e6)
+
+		tdiff_vec = testing.test_tdiff_small(**test_tdiff_small_params)
+		tdiff_vec = [float(tdiff) for tdiff in tdiff_vec]
+
+		with open(file_out, 'w') as outfile:
+			yaml.dump(tdiff_vec, outfile, default_flow_style=False)
 
 	########################################
 	### Scratch: R/W Values from the TDC ###
