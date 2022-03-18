@@ -212,19 +212,19 @@ def get_addr(int_command):
 
 def is_overflow_clk(int_status):
 	int_bit_shifted = int_status & (1<<2)
-	return int_bit_shifte != 0
+	return int_bit_shifted != 0
 
 def is_overflow_coarse(int_status):
 	int_bit_shifted = int_status & (1<<1)
-	return int_bit_shifte != 0
+	return int_bit_shifted != 0
 
 def is_done(int_status):
 	int_bit_shifted = int_status & (1<<4)
-	return int_bit_shifte != 0
+	return int_bit_shifted != 0
 
 def is_started(int_status):
 	int_bit_shifted = int_status & (1<<3)
-	return int_bit_shifte != 0
+	return int_bit_shifted != 0
 
 def tdc_read(teensy_ser, reg, chain='small') -> int:
 	'''
@@ -250,14 +250,10 @@ def tdc_read(teensy_ser, reg, chain='small') -> int:
 		print(teensy_ser.readline())
 
 	val_reg = 0
-	num_bytes = reg_size_map[reg]//8
-	for i in range(num_bytes):
-		val_bytes = teensy_ser.readline().strip()
-		val_int = int.from_bytes(val_bytes, byteorder='big',
-			signed=False)
-		val_reg = (val_reg << 8) + val_int
+	val_bytes = teensy_ser.readline().strip()
+	print(val_bytes)
 
-	return val_reg
+	return int(val_bytes)
 
 def calc_tof(cal1, cal2, cal2_periods, time_1, time_x, count_n, tper, mode=2):
 	'''
@@ -282,6 +278,10 @@ def calc_tof(cal1, cal2, cal2_periods, time_1, time_x, count_n, tper, mode=2):
 		"Calculating Time-of-Flight"
 	'''
 	cal_count = (cal2 - cal1)/(cal2_periods-1)
+
+	if cal_count == 0:
+		return float('nan')
+	
 	norm_lsb = tper/cal_count
 	if mode == 0:
 		return time_x * norm_lsb

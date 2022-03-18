@@ -77,17 +77,20 @@ def test_tdiff_small(teensy_port, num_iterations, twait=250e-9,
 	# Channel A = attenuate
 	# Channel B = delay
 	cmd_lst = [
+		"TM 1",						# External trigger
+		"TS 1",						# Rising edge trigger
+		"TL 1.65",					# Edge trigger 1.65V
+		"TZ 0,1",					# Trigger is high impedance
 		f"DT 2,1,{twait}", 			# Set delay A=T0+twait
 		f"DT 3,2,{tdelay}",			# Set delay B=A+tdelay
 		"TZ 2,1",					# A termination HiZ
 		"TZ 3,1",					# B termintaion HiZ
 		"OM 2,3",					# A output VARiable
 		"OM 3,3",					# B output VARiable
-		f"OA 2,{vin_amp*f_atten}",	# A channel amplitude
+		f"OA 2,{vin_amp}",			# A channel amplitude
 		f"OA 3,{vin_amp}",			# B channel amplitude
 		f"OO 2,{vin_bias}",			# A channel offset
 		f"OO 3,{vin_bias}",			# B channel offset
-		"TM 1",						# External trigger
 	]
 
 	# Chip settings for measurement
@@ -97,7 +100,7 @@ def test_tdiff_small(teensy_port, num_iterations, twait=250e-9,
 		delay_res 		= [0, 0],
 		watchdog_res 	= [0, 0, 0, 0],
 		attenuator_sel	= [0, 0, 0],
-		dac_sel 		= [0, 0, 0, 0, 0, 0, 0, 0],
+		dac_sel 		= [1, 1, 1, 1, 1, 1, 1, 1],
 		az_main_gain 	= [0, 0, 0],
 		az_aux_gain 	= [0, 0, 0],
 		oneshot_res 	= [0, 0],
@@ -121,6 +124,23 @@ def test_tdiff_small(teensy_port, num_iterations, twait=250e-9,
 		# Reset the TDC
 		print('Resetting TDC')
 		teensy_ser.write(b'tdcsmallreset\n')
+		print(teensy_ser.readline())
+
+		val_int_status = tdc.tdc_read(teensy_ser=teensy_ser,
+			reg="INT_STATUS", chain="small")
+		has_started = tdc.is_started(val_int_status)
+		has_finished = tdc.is_done(val_int_status)
+		has_ovfl_clk = tdc.is_overflow_clk(val_int_status)
+		has_ovfl_coarse = tdc.is_overflow_coarse(val_int_status)
+
+		# Sanity checking with some visibility
+		print(f'\t Measurement Started: {has_started}')
+		print(f'\t Measurement Done: {has_finished}')
+		print(f'\t Clock Overflow: {has_ovfl_clk}')
+		print(f'\t Coarse Overflow: {has_ovfl_coarse}')
+		print(f'-> {val_int_status}')
+
+		assert not has_started, "Measurement shouldn't have started yet"
 
 		# Configure the TDC
 		print('--- Configuring CONFIG1')
@@ -138,7 +158,9 @@ def test_tdiff_small(teensy_port, num_iterations, twait=250e-9,
 			print(teensy_ser.readline())
 
 		# Feed in the start pulse to get things going
+		print('--- Feeding START')
 		teensy_ser.write(b'tdcsmallstart\n')
+		print(teensy_ser.readline())
 
 		# Wait until measurement done
 		has_finished = False
@@ -155,6 +177,9 @@ def test_tdiff_small(teensy_port, num_iterations, twait=250e-9,
 			print(f'\t Measurement Done: {has_finished}')
 			print(f'\t Clock Overflow: {has_ovfl_clk}')
 			print(f'\t Coarse Overflow: {has_ovfl_coarse}')
+			print(f'-> {val_int_status}')
+
+			assert has_started, "Measurement not properly initialized"
 
 		# Read from relevant data registers
 		num_timers = tdc.code_numstop_map[wdata2_dict['num_stop']]
@@ -169,15 +194,17 @@ def test_tdiff_small(teensy_port, num_iterations, twait=250e-9,
 			print(f'-> {reg_data_dict[reg]}')
 
 		# From registers, calculate the time between the START and STOP triggers
-		tdiff = tdc.calc_tof(cal1=reg_data_dict['CALIBRATION1'],
-			cal2=reg_data_dict['CALIBRATION2'],
+		tdiff = tdc.calc_tof(
+			cal1=reg_data_dict['CALIBRATION1'] % (1<<23),
+			cal2=reg_data_dict['CALIBRATION2'] % (1<<23),
 			cal2_periods=tdc.code_cal2_map[wdata2_dict['calibration2_periods']],
-			time_1=reg_data_dict['TIME1'],
-			time_x=reg_data_dict['TIME1'],
-			count_n=reg_data_dict['CLOCK_COUNT1'],
+			time_1=reg_data_dict['TIME1'] % (1<<23),
+			time_x=reg_data_dict['TIME1'] % (1<<23),
+			count_n=reg_data_dict['CLOCK_COUNT1'] % (1<<16),
 			tper=tref_clk,
 			mode=wdata1_dict['meas_mode'])
 
+		print(f'\t\t {tdiff}')
 		tdiff_vec.append(tdiff)
 
 	# Close connections

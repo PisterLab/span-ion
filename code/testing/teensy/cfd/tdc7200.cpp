@@ -203,8 +203,8 @@ void tdc_write(char cmd, char din, int pin_spi_csb, int pin_tdc_en, int pin_spi_
     + String(get_addr(cmd), HEX));
 } // end tdc_write()
 
-void tdc_read(char cmd, int pin_spi_csb, int pin_tdc_en, int pin_spi_din, 
-              int pin_spi_dout, int pin_spi_clk, char* dout, int num_bytes) {
+int tdc_read(char cmd, int pin_spi_csb, int pin_tdc_en, int pin_spi_din, 
+              int pin_spi_dout, int pin_spi_clk, int num_bytes) {
 /*
  * Inputs:
  *  cmd: 1 byte intended as the first byte when communicating with the 
@@ -218,10 +218,9 @@ void tdc_read(char cmd, int pin_spi_csb, int pin_tdc_en, int pin_spi_din,
  *  pin_spi_clk: Integer. The Teensy pin associated with the TDC's SPI clock
  *    (sometimes referred to as sclk). Note that this is _NOT_ the same thing
  *    as the TDC's reference clock used for calibration.
- *  dout: Pointer to array of bytes which will be populated.
  *  num_bytes: Integer. Number of bytes expected of data to be read.
  * Returns:
- *  None.
+ *  Integer. Output data in integer form.
  * Notes:
  *  Receives the command (to forward to the TDC) via serial from the computer,
  *    enforcing that it's a read with no auto-incrementing.
@@ -229,6 +228,7 @@ void tdc_read(char cmd, int pin_spi_csb, int pin_tdc_en, int pin_spi_din,
  *  Reads out the output data from the TDC (the return value).
  *  dout is a pointer and will be used to retrieve the data.
 */
+  int dout = 0;
   Serial.println("Executing TDC read " + String(cmd, BIN));
 
   // Warn the user if it isn't a read
@@ -247,11 +247,13 @@ void tdc_read(char cmd, int pin_spi_csb, int pin_tdc_en, int pin_spi_din,
 
   // Bit-bang over SPI from the TDC, MSB-first
   for (int j=0; j<num_bytes; j++) {
-    dout[j] = bitbang_byte_out(pin_spi_dout, pin_spi_clk);
+    dout = (dout << 8) + bitbang_byte_out(pin_spi_dout, pin_spi_clk);
   }
   digitalWrite(pin_spi_csb, HIGH);
   
   Serial.println("Accessed register at address 0x" + String(cmd & 0x3F, HEX));
+
+  return dout;
 } // end tdc_read()
 
 /* ---------------------------- */
@@ -269,11 +271,11 @@ void tdc_reset(int pin_tdc_en) {
  *    reset the TDC's register values.
 */
   digitalWrite(pin_tdc_en, LOW);
-  delayMicroseconds(10);
+  delayMicroseconds(100);
   digitalWrite(pin_tdc_en, HIGH);
   
   // Allow TDC to initialize
-  delayMicroseconds(30);
+  delayMicroseconds(100);
   
   Serial.println("TDC disabled and enabled");
 } // end tdc_reset()
@@ -300,6 +302,7 @@ void tdc_start(int pin_start, int pin_latch_rstb) {
   digitalWrite(pin_start, HIGH);
   delayMicroseconds(100);
   digitalWrite(pin_start, LOW);
+  delayMicroseconds(100);
 
   Serial.println("Start sent to TDC");
 } // end tdc_start()
@@ -383,12 +386,12 @@ void tdc_read_print(int pin_spi_csb, int pin_tdc_en,
   }
 
   // Read out data
-  char dout[num_bytes];
-  tdc_read(cmd, pin_spi_csb, pin_tdc_en, pin_spi_din, 
-          pin_spi_dout, pin_spi_clk, dout, num_bytes);
+  int dout = tdc_read(cmd, pin_spi_csb, pin_tdc_en, pin_spi_din, 
+          pin_spi_dout, pin_spi_clk, num_bytes);
 
-  // Print out the read-out data over serial, MSB first
-  for (int i=0; i<num_bytes; i++) {
-    Serial.println(dout[i]);
-  }
+  // Print out the read-out data over serial
+  Serial.println(dout);
+//  for (int i=0; i<num_bytes; i++) {
+//    Serial.println(dout[i]);
+//  }
 } // end tdc_read_print()

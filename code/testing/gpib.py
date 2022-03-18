@@ -86,7 +86,7 @@ class LabInstrument(object):
 			warn('Attempting to query a closed resource')
 		return self.rsrc.query(msg)
 
-	def close_prologix():
+	def close_prologix(self):
 		if self.is_open and self.rsrc != None:
 			self.rsrc.write("++mode 0") # Back to device control
 		self.close()

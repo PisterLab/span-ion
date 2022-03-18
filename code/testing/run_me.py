@@ -193,8 +193,8 @@ def run_main():
 			tdelay=5e-9,
 			ip_addr='192.168.1.4',
 			gpib_addr=15,
-			vin_bias=0.7,
-			vin_amp=0.6,
+			vin_bias=0.0,
+			vin_amp=1.0,
 			f_atten=0.5,
 			tref_clk=1/3.75e6)
 
@@ -216,14 +216,14 @@ def run_main():
 		tdiff_dict = dict()
 		for fname in file_in_vec:
 			with open(fname, 'r') as file_in:
-				tdiff_vec = yaml.safe_load(file_in)
+				data_raw = yaml.safe_load(file_in)
+				tdiff_vec = data_raw['data']
 				tdiff_avg = np.mean(tdiff_vec)
 				tdiff_dict[fname] = tdiff_avg
 
 		# Print out worst-case timing walk
 		twalk = max(tdiff_dict.values()) - min(tdiff_dict.values())
 		print(f'Worst-Case Timing Walk:\t{twalk} s')
-
 
 	########################################
 	### Scratch: R/W Values from the TDC ###

@@ -126,13 +126,21 @@ void loop() {
   }
 
   // --- Writing to and Reading out from Registers ---
-  if (true) {
+  if (false) {
       tdc_rw_reg(CHAIN_SMALL);
   }
 
   // --- Arm the TDC for Measurement ---
   if (false) {
     tdc_arm(CHAIN_SMALL);
+  }
+
+  // --- Toggle Pin Up and Down ---
+  if (false) {
+    digitalWrite(pin_tdc_small_start, HIGH);
+    delayMicroseconds(100);
+    digitalWrite(pin_tdc_small_start, LOW);
+    delayMicroseconds(100);
   }
 }
 
