@@ -211,27 +211,37 @@ def get_addr(int_command):
 	return hex(int_addr)
 
 def is_overflow_clk(int_status):
-	int_bit_shifte = int_status & (1<<2)
+	int_bit_shifted = int_status & (1<<2)
 	return int_bit_shifte != 0
 
 def is_overflow_coarse(int_status):
-	int_bit_shifte = int_status & (1<<1)
+	int_bit_shifted = int_status & (1<<1)
 	return int_bit_shifte != 0
 
 def is_done(int_status):
-	int_bit_shifte = int_status & (1<<4)
+	int_bit_shifted = int_status & (1<<4)
 	return int_bit_shifte != 0
 
 def is_started(int_status):
-	int_bit_shifte = int_status & (1<<3)
+	int_bit_shifted = int_status & (1<<3)
 	return int_bit_shifte != 0
 
 def tdc_read(teensy_ser, reg, chain='small') -> int:
 	'''
-	
+	Inputs:
+		teensy_ser: serial.Serial. Open COM port to the Teensy.
+		reg: String. The name of the register to be read,
+			as per the TDC7200 documentation (e.g. CONFIG1, TIME2).
+			You can also refer to reg_size_map keys to see the register
+			names.
+		chain: String "small" or "full". Which TDC to read from.
+	Returns:
+		
+	Notes:
+
 	'''
-	int_cmd, _ = tdc.construct_config(is_read=True,
-		addr=int(tdc.reg_addr_map[reg], 16))
+	int_cmd, _ = construct_config(is_read=True,
+		addr=int(reg_addr_map[reg], 16))
 	print(f'--- Reading {reg}')
 	teensy_msg = b'tdcsmallread\n' if chain=='small' else b'tdcmainread\n'
 	teensy_ser.write(teensy_msg)
@@ -240,7 +250,7 @@ def tdc_read(teensy_ser, reg, chain='small') -> int:
 		print(teensy_ser.readline())
 
 	val_reg = 0
-	num_bytes = tdc.reg_size_map[reg]//8
+	num_bytes = reg_size_map[reg]//8
 	for i in range(num_bytes):
 		val_bytes = teensy_ser.readline().strip()
 		val_int = int.from_bytes(val_bytes, byteorder='big',

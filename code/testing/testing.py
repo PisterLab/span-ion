@@ -45,11 +45,11 @@ def test_tdiff_small(teensy_port, num_iterations, twait=250e-9,
 
 	# Sanity checking DG535 status
 	dg535.write("CL")
-	dg535.write(f"Error Status: {dg535.query('ES')}")
-	dg535.write(f"Instrument Status: {dg535.query('IS')}")
+	print(f"Error Status: {dg535.query('ES')}")
+	print(f"Instrument Status: {dg535.query('IS')}")
 
 	# TDC settings for measurement
-	wdata1 = tdc.construct_wdata1(
+	wdata1_dict = dict(
 		force_cal=1,	# Get calibration
 		parity_en=1,	# Enable parity bit in measurements
 		trigg_edge=0, 	# Rising edge
@@ -57,21 +57,25 @@ def test_tdiff_small(teensy_port, num_iterations, twait=250e-9,
 		start_edge=0,	# Rising edge
 		meas_mode=0,	# Somewhat deceptively assigned to Mode 2...
 		start_meas=1)	# Arm TDC for measurement
+	wdata1 = tdc.construct_wdata1(**wdata1_dict)
 
 	cmd_cfg1, _ = tdc.construct_config(is_read=False, 
-		addr=int(reg_addr_map['CONFIG1'], 16),
+		addr=int(tdc.reg_addr_map['CONFIG1'], 16),
 		wdata=wdata1)
 	
-	wdata2 = tdc.construct_wdata2(
-		calibration_periods=1,	# -> 10 cycles wrt reference
+	wdata2_dict = dict(
+		calibration2_periods=1,	# -> 10 cycles wrt reference
 		avg_cycles=0,			# No averaging
 		num_stop=0)				# Single timer measurement
+	wdata2 = tdc.construct_wdata2(**wdata2_dict)
 
 	cmd_cfg2, _ = tdc.construct_config(is_read=False,
-		addr=int(reg_addr_map['CONFIG2'], 16),
+		addr=int(tdc.reg_addr_map['CONFIG2'], 16),
 		wdata=wdata2)
 
 	# DG535 settings for measurement
+	# Channel A = attenuate
+	# Channel B = delay
 	cmd_lst = [
 		f"DT 2,1,{twait}", 			# Set delay A=T0+twait
 		f"DT 3,2,{tdelay}",			# Set delay B=A+tdelay
@@ -79,8 +83,8 @@ def test_tdiff_small(teensy_port, num_iterations, twait=250e-9,
 		"TZ 3,1",					# B termintaion HiZ
 		"OM 2,3",					# A output VARiable
 		"OM 3,3",					# B output VARiable
-		f"OA 2,{vin_amp}",			# A channel amplitude
-		f"OA 3,{vin_amp*f_atten}",	# B channel amplitude
+		f"OA 2,{vin_amp*f_atten}",	# A channel amplitude
+		f"OA 3,{vin_amp}",			# B channel amplitude
 		f"OO 2,{vin_bias}",			# A channel offset
 		f"OO 3,{vin_bias}",			# B channel offset
 		"TM 1",						# External trigger
@@ -123,7 +127,7 @@ def test_tdiff_small(teensy_port, num_iterations, twait=250e-9,
 		teensy_ser.write(b'tdcsmallconfig\n')
 		teensy_ser.write(cmd_cfg1.to_bytes(1, 'big'))
 		teensy_ser.write(wdata1.to_bytes(1, 'big'))
-		for _ in range(5);
+		for _ in range(5):
 			print(teensy_ser.readline())
 
 		print('--- Configuring CONFIG2')
@@ -155,13 +159,14 @@ def test_tdiff_small(teensy_port, num_iterations, twait=250e-9,
 		# Read from relevant data registers
 		num_timers = tdc.code_numstop_map[wdata2_dict['num_stop']]
 		reg_lst = ['CALIBRATION1', 'CALIBRATION2']
-		reg_lst = reg_lst + [f'TIME{f}' for i in range(1,num_timers+1)]
-		reg_lst = reg_lst + [f'CLOCK_COUNT{f}' for i in range(1,num_timers+1)]
+		reg_lst = reg_lst + [f'TIME{i}' for i in range(1,num_timers+1)]
+		reg_lst = reg_lst + [f'CLOCK_COUNT{i}' for i in range(1,num_timers+1)]
 
 		reg_data_dict = dict()
 		for reg in reg_lst:
 			reg_data_dict[reg] = tdc.tdc_read(teensy_ser=teensy_ser,
 				reg=reg, chain="small")
+			print(f'-> {reg_data_dict[reg]}')
 
 		# From registers, calculate the time between the START and STOP triggers
 		tdiff = tdc.calc_tof(cal1=reg_data_dict['CALIBRATION1'],
@@ -174,6 +179,10 @@ def test_tdiff_small(teensy_port, num_iterations, twait=250e-9,
 			mode=wdata1_dict['meas_mode'])
 
 		tdiff_vec.append(tdiff)
+
+	# Close connections
+	teensy_ser.close()
+	dg535.close_prologix()
 
 	return tdiff_vec
 

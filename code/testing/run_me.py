@@ -185,24 +185,45 @@ def run_main():
 	####################################
 	### Small Chain ZCD Fast Testing ###
 	####################################
-	if False:
+	if True:
 		test_tdiff_small_params = dict(
-			teensy_port='COM3',
+			teensy_port='COM5',
 			num_iterations=10,
 			twait=250e-9,
 			tdelay=5e-9,
-			ip_addr='192.168.4.1',
+			ip_addr='192.168.1.4',
 			gpib_addr=15,
 			vin_bias=0.7,
 			vin_amp=0.6,
 			f_atten=0.5,
 			tref_clk=1/3.75e6)
 
+		file_out = f'../../data/testing/{timestamp_str}_zcdSmall.yaml'
+
 		tdiff_vec = testing.test_tdiff_small(**test_tdiff_small_params)
 		tdiff_vec = [float(tdiff) for tdiff in tdiff_vec]
 
+		dump_data = dict(config=test_tdiff_small_params,
+			data=tdiff_vec)
 		with open(file_out, 'w') as outfile:
-			yaml.dump(tdiff_vec, outfile, default_flow_style=False)
+			yaml.dump(dump_data, outfile, default_flow_style=False)
+
+	##################################################
+	### Small Chain ZCD Fast Testing Data Handling ###
+	##################################################
+	if False:
+		file_in_vec = []
+		tdiff_dict = dict()
+		for fname in file_in_vec:
+			with open(fname, 'r') as file_in:
+				tdiff_vec = yaml.safe_load(file_in)
+				tdiff_avg = np.mean(tdiff_vec)
+				tdiff_dict[fname] = tdiff_avg
+
+		# Print out worst-case timing walk
+		twalk = max(tdiff_dict.values()) - in(tdiff_dict.values())
+		print(f'Worst-Case Timing Walk:\t{twalk} s')
+
 
 	########################################
 	### Scratch: R/W Values from the TDC ###
@@ -214,7 +235,7 @@ def run_main():
 		tdc_arm()
 	"""
 	if False:
-		teensy_port = 'COM6'
+		teensy_port = 'COM5'
 		teensy_ser = serial.Serial(port=teensy_port,
 			baudrate=19200,
 			parity=serial.PARITY_NONE,
