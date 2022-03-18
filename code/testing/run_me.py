@@ -221,7 +221,7 @@ def run_main():
 				tdiff_dict[fname] = tdiff_avg
 
 		# Print out worst-case timing walk
-		twalk = max(tdiff_dict.values()) - in(tdiff_dict.values())
+		twalk = max(tdiff_dict.values()) - min(tdiff_dict.values())
 		print(f'Worst-Case Timing Walk:\t{twalk} s')
 
 
