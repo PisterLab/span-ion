@@ -95,14 +95,14 @@ def test_tdiff_small(teensy_port, num_iterations, twait=250e-9,
 
 	# Chip settings for measurement
 	asc_params = dict(
-		# MSB -> LSB
+		# MSB -> LSB TODO check that autozero gain...
 		preamp_res 		= [0, 0],
 		delay_res 		= [0, 0],
 		watchdog_res 	= [0, 0, 0, 0],
 		attenuator_sel	= [0, 0, 0],
 		dac_sel 		= [1, 1, 1, 1, 1, 1, 1, 1],
-		az_main_gain 	= [0, 0, 0],
-		az_aux_gain 	= [0, 0, 0],
+		az_main_gain 	= [1, 1, 1],
+		az_aux_gain 	= [1, 1, 1],
 		oneshot_res 	= [0, 0],
 		vref_preamp 	= [0, 0, 0, 0, 0, 0, 0, 0],
 		vdd_aon			= [0, 0, 0, 0, 0],
