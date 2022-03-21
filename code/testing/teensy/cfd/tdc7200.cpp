@@ -251,7 +251,7 @@ int tdc_read(char cmd, int pin_spi_csb, int pin_tdc_en, int pin_spi_din,
   }
   digitalWrite(pin_spi_csb, HIGH);
   
-  Serial.println("Accessed register at address 0x" + String(cmd & 0x3F, HEX));
+  Serial.println("Accessed register at address 0x" + String(cmd & 0x3F, HEX) + " with " + String(num_bytes, DEC) + " bytes");
 
   return dout;
 } // end tdc_read()
@@ -370,13 +370,14 @@ void tdc_read_print(int pin_spi_csb, int pin_tdc_en,
  *    the MSB first.
 */
   char cmd;
-  char addr = 0;
+  char addr;
   int num_bytes;
   // Read byte over serial to send to the TDC
   while (!Serial.available());
   cmd = Serial.read();
 
   bitbang_byte_in(cmd, pin_spi_din, pin_spi_clk);
+  addr = get_addr(cmd);
 
   // Figure out number of bytes required to read
   if (addr < 0x10) {
