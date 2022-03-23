@@ -236,9 +236,8 @@ def tdc_read(teensy_ser, reg, chain='small') -> int:
 			names.
 		chain: String "small" or "full". Which TDC to read from.
 	Returns:
-		
+		Integer. The value read out from the TDC register.
 	Notes:
-
 	'''
 	int_cmd, _ = construct_config(is_read=True,
 		addr=int(reg_addr_map[reg], 16))

@@ -186,27 +186,29 @@ def run_main():
 	### Small Chain ZCD Fast Testing ###
 	####################################
 	if True:
-		test_tdiff_small_params = dict(
-			teensy_port='COM5',
-			num_iterations=10,
-			twait=250e-9,
-			tdelay=5e-9,
-			ip_addr='192.168.1.4',
-			gpib_addr=15,
-			vin_bias=0.0,
-			vin_amp=1.0,
-			f_atten=0.5,
-			tref_clk=1/3.75e6)
+		vin_amp_vec = np.arange(0.7, 1.3, 10e-3)
+		for vin_amp in vin_amp_vec:
+			test_tdiff_small_params = dict(
+				teensy_port='COM5',
+				num_iterations=1000,
+				twait=250e-9,
+				tdelay=5e-9,
+				ip_addr='192.168.1.4',
+				gpib_addr=15,
+				vin_bias=0.0,
+				vin_amp=float(vin_amp),
+				f_atten=0.5,
+				tref_clk=1/3.75e6)
 
-		file_out = f'../../data/testing/{timestamp_str}_zcdSmall.yaml'
+			file_out = f'../../data/testing/{timestamp_str}_vin{round(vin_amp, 2)}V_zcdSmall_azZeros.yaml' 
 
-		tdiff_vec = testing.test_tdiff_small(**test_tdiff_small_params)
-		tdiff_vec = [float(tdiff) for tdiff in tdiff_vec]
+			tdiff_vec = testing.test_tdiff_small(**test_tdiff_small_params)
+			tdiff_vec = [float(tdiff) for tdiff in tdiff_vec]
 
-		dump_data = dict(config=test_tdiff_small_params,
-			data=tdiff_vec)
-		with open(file_out, 'w') as outfile:
-			yaml.dump(dump_data, outfile, default_flow_style=False)
+			dump_data = dict(config=test_tdiff_small_params,
+				data=tdiff_vec)
+			with open(file_out, 'w') as outfile:
+				yaml.dump(dump_data, outfile, default_flow_style=False)
 
 	##################################################
 	### Small Chain ZCD Fast Testing Data Handling ###
