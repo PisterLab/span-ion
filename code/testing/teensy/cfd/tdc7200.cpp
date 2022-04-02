@@ -297,6 +297,7 @@ void tdc_start(int pin_start, int pin_latch_rstb) {
   digitalWrite(pin_latch_rstb, LOW);
   delayMicroseconds(10);
   digitalWrite(pin_latch_rstb, HIGH);
+  delayMicroseconds(20);
   
   // Toggle the start pin high then low
   digitalWrite(pin_start, HIGH);
