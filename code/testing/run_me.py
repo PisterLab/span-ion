@@ -187,20 +187,39 @@ def run_main():
 	### Small Chain ZCD Fast Testing ###
 	####################################
 	if False:
-		vin_amp_vec = np.arange(0.7, 1.3, 50e-3)
-		for vin_amp in vin_amp_vec:
-			test_tdiff_small_params = dict(
-				teensy_port='COM5',
-				num_iterations=1000,
-				twait=100e-12,
-				tdelay=2e-12,
-				ip_addr='192.168.1.4',
-				gpib_addr=15,
-				vin_bias=0.0,
-				vin_amp=float(vin_amp),
-				tref_clk=1/3.75e6)
+		asc_params = dict(
+			# MSB -> LSB TODO check that autozero gain...
+			preamp_res 		= [0, 0],
+			delay_res 		= [0, 0],
+			watchdog_res 	= [0, 0, 0, 0],
+			attenuator_sel	= [0, 0, 0],
+			dac_sel 		= [1, 1, 1, 1, 1, 1, 1, 1],
+			az_main_gain 	= [0]*3,
+			az_aux_gain 	= [0]*3,
+			oneshot_res 	= [0, 0],
+			vref_preamp 	= [0, 0, 0, 0, 0, 0, 0, 0],
+			vdd_aon			= [0, 0, 0, 0, 0],
+			vdd_signal		= [0, 0, 0, 0, 0],
+			en_main			= [0],
+			en_small		= [1])
 
-			file_out = f'../../data/testing/{timestamp_str}_vin{round(vin_amp, 2)}V_zcdSmall_azZeros.yaml' 
+		vin_amp_vec = np.arange(0.7, 1.3, 50e-3)
+		test_diff_tdiff_small_params = dict(
+			teensy_port='COM5',
+			num_iterations=1000,
+			twait=100e-12,
+			tdelay=2e-12,
+			ip_addr='192.168.1.4',
+			gpib_addr=15,
+			vin_bias=0.0,
+			tref_clk=1/3.75e6)
+
+		for vin_amp in vin_amp_vec:
+			timestamp = datetime.now()
+			timestamp_str = timestamp.strftime("%Y%m%d_%H%M%S")
+			file_out = f'../../data/testing/{timestamp_str}_vin{round(vin_amp, 2)}V_zcdSmall.yaml' 
+			
+			test_tdiff_small_params['vin_amp'] = float(vin_amp)
 			tdiff_vec = testing.test_tdiff_small(**test_tdiff_small_params)
 			tdiff_vec = [float(tdiff) for tdiff in tdiff_vec]
 

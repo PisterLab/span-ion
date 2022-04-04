@@ -206,7 +206,7 @@ def test_fflvl_jitter(teensy_port, num_iterations, twait=250e-9,
 	return tdiff_vec
 
 
-def test_tdiff_small(teensy_port, num_iterations, twait=250e-9,
+def test_tdiff_small(teensy_port, num_iterations, asc_params, twait=250e-9,
 		tdelay=5e-9, ip_addr='192.168.4.1', gpib_addr=15, 
 		vin_bias=0.7, vin_amp=0.6, tref_clk=1/15e6):
 	'''
@@ -216,6 +216,8 @@ def test_tdiff_small(teensy_port, num_iterations, twait=250e-9,
 			connected to.
 		num_iterations: Integer. Number of times to measure for a single
 			amplitude.
+		asc_params: Dictionary of collections of integers, used in
+			programming the scan chain. See scan.construct_asc.
 		twait: Float. Time in seconds between measurement start and actual 
 			DG535 trigger. e.g. twait = 1e-9 means the DG535 triggers 1ns after
 			the measurement actually starts.
@@ -295,23 +297,6 @@ def test_tdiff_small(teensy_port, num_iterations, twait=250e-9,
 		f"OO 3,{vin_bias}",			# B channel offset
 	]
 
-	# Chip settings for measurement
-	asc_params = dict(
-		# MSB -> LSB TODO check that autozero gain...
-		preamp_res 		= [0, 0],
-		delay_res 		= [0, 0],
-		watchdog_res 	= [0, 0, 0, 0],
-		attenuator_sel	= [0, 0, 0],
-		dac_sel 		= [1, 1, 1, 1, 1, 1, 1, 1],
-		az_main_gain 	= [0]*3,
-		az_aux_gain 	= [0]*3,
-		oneshot_res 	= [0, 0],
-		vref_preamp 	= [0, 0, 0, 0, 0, 0, 0, 0],
-		vdd_aon			= [0, 0, 0, 0, 0],
-		vdd_signal		= [0, 0, 0, 0, 0],
-		en_main			= [0],
-		en_small		= [1])
-	
 	# Program the chip
 	asc = scan.construct_ASC(**asc_params)
 	scan.program_scan(ser=teensy_ser, ASC=asc)
