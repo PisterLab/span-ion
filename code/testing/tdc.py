@@ -241,16 +241,17 @@ def tdc_read(teensy_ser, reg, chain='small') -> int:
 	'''
 	int_cmd, _ = construct_config(is_read=True,
 		addr=int(reg_addr_map[reg], 16))
-	print(f'--- Reading {reg}')
+	# print(f'--- Reading {reg}')
 	teensy_msg = b'tdcsmallread\n' if chain=='small' else b'tdcmainread\n'
 	teensy_ser.write(teensy_msg)
 	teensy_ser.write(int_cmd.to_bytes(1, 'big'))
 	for _ in range(4):
-		print(teensy_ser.readline())
+		teensy_ser.readline()
+		# print(teensy_ser.readline())
 
 	val_reg = 0
 	val_bytes = teensy_ser.readline().strip()
-	print(val_bytes)
+	# print(val_bytes)
 
 	return int(val_bytes)
 

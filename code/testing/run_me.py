@@ -186,7 +186,7 @@ def run_main():
 	####################################
 	### Small Chain ZCD Fast Testing ###
 	####################################
-	if False:
+	if True:
 		asc_params = dict(
 			# MSB -> LSB TODO check that autozero gain...
 			preamp_res 		= [0, 0],
@@ -204,11 +204,10 @@ def run_main():
 			en_small		= [1])
 
 		vin_amp_vec = np.arange(0.7, 1.3, 50e-3)
-		test_diff_tdiff_small_params = dict(
+		test_tdiff_small_params = dict(
 			teensy_port='COM5',
-			num_iterations=1000,
-			twait=100e-12,
-			tdelay=2e-12,
+			num_iterations=500,
+			asc_params=asc_params,
 			ip_addr='192.168.1.4',
 			gpib_addr=15,
 			vin_bias=0.0,
@@ -217,7 +216,7 @@ def run_main():
 		for vin_amp in vin_amp_vec:
 			timestamp = datetime.now()
 			timestamp_str = timestamp.strftime("%Y%m%d_%H%M%S")
-			file_out = f'../../data/testing/{timestamp_str}_vin{round(vin_amp, 2)}V_zcdSmall.yaml' 
+			file_out = f'../../data/testing/{timestamp_str}_vin{round(vin_amp, 2)}V_{test_tdiff_small_params["num_iterations"]}x_zcdSmall.yaml' 
 			
 			test_tdiff_small_params['vin_amp'] = float(vin_amp)
 			tdiff_vec = testing.test_tdiff_small(**test_tdiff_small_params)
@@ -252,7 +251,7 @@ def run_main():
 	################################
 	### Get the DG535 to Respond ###
 	################################
-	if True:
+	if False:
 		teensy_ser = serial.Serial(port='COM3',
                     baudrate=19200,
                     parity=serial.PARITY_NONE,
@@ -292,6 +291,39 @@ def run_main():
 				print(teensy_ser.readline())
 
 				# See the oscilloscope while probing the output T0
+
+	########################################
+	### Scratch: Measure Long Coax Delay ###
+	########################################
+	'''
+	The output sources solely from T0.
+	T0 - splitter 
+		-> long coax
+		-> shorter coax
+	View on oscilloscope.
+	'''
+	if False:
+		rm = pyvisa.ResourceManager()
+		dg535 = DG535(rm)
+		dg535.open_prologix(ip_addr='192.168.1.4', 
+			gpib_addr=15)
+		
+		dg535.write("CL")
+		print(f"Error Status: {dg535.query('ES')}")
+		print(f"Instrument Status: {dg535.query('IS')}")
+
+		cmd_lst = [
+			"TZ 0,1",					# Trigger is high impedance
+			"TZ 1,0",					# T0 termination 50ohm (OPT-04B)
+			"OM 1,3",					# T0 output VARiable
+			f"OA 1,3.3",				# T0 channel amplitude
+			f"OO,1,0",					# T0 channel offset
+			"TM 0",						# Internal trigger
+			"TR 0,10000",				# 10kHz trigger rate
+		]
+
+		for cmd in cmd_lst:
+			dg535.write(cmd)
 
 	########################################
 	### Scratch: R/W Values from the TDC ###

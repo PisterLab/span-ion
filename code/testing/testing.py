@@ -206,8 +206,8 @@ def test_fflvl_jitter(teensy_port, num_iterations, twait=250e-9,
 	return tdiff_vec
 
 
-def test_tdiff_small(teensy_port, num_iterations, asc_params, twait=250e-9,
-		tdelay=5e-9, ip_addr='192.168.4.1', gpib_addr=15, 
+def test_tdiff_small(teensy_port, num_iterations, asc_params,
+	 	ip_addr='192.168.4.1', gpib_addr=15, 
 		vin_bias=0.7, vin_amp=0.6, tref_clk=1/15e6):
 	'''
 	Measures the time between the input DG535 pulse and the output pulse.
@@ -233,7 +233,6 @@ def test_tdiff_small(teensy_port, num_iterations, asc_params, twait=250e-9,
 			between the input DG535 pulse and output pulse.
 	Notes:
 		See <overleaf link> to figure out how things are meant to be wired up.
-
 	'''
 	# Open connections to Teensy and DG535
 	teensy_ser = serial.Serial(port=teensy_port,
@@ -278,23 +277,18 @@ def test_tdiff_small(teensy_port, num_iterations, asc_params, twait=250e-9,
 		wdata=wdata2)
 
 	# DG535 settings for measurement
-	# Channel A = main signal, also passes through attenuator
-	# Channel B = delay
+	# - Channel T0 comes roughly 85ns after TRIG is received
+	# - It branches 3 ways--unaltered, delayed, and attenuated
 	cmd_lst = [
 		"TM 1",						# External trigger
 		"TS 1",						# Rising edge trigger
-		"TL 1.65",					# Edge trigger 1.65V
+		"TL 1.00",					# Edge trigger level
 		"TZ 0,1",					# Trigger is high impedance
-		f"DT 2,1,{twait}", 			# Set delay A=T0+twait
-		f"DT 3,2,{tdelay}",			# Set delay B=A+tdelay
-		"TZ 2,1",					# A termination HiZ
-		"TZ 3,1",					# B termintaion HiZ
-		"OM 2,3",					# A output VARiable
-		"OM 3,3",					# B output VARiable
-		f"OA 2,{vin_amp}",			# A channel amplitude
-		f"OA 3,{vin_amp}",			# B channel amplitude
-		f"OO 2,{vin_bias}",			# A channel offset
-		f"OO 3,{vin_bias}",			# B channel offset
+		# "TZ 1,1",					# T0 termination HiZ
+		"TZ 1,0",					# T0 termination 50Ohm
+		"OM 1,3",					# T0 output VARiable
+		f"OA 1,{vin_amp}",			# T0 channel amplitude
+		f"OO 1,{vin_bias}",			# T0 channel offset
 	]
 
 	# Program the chip
@@ -309,9 +303,10 @@ def test_tdiff_small(teensy_port, num_iterations, asc_params, twait=250e-9,
 
 	for _ in range(num_iterations):
 		# Reset the TDC
-		print('Resetting TDC')
+		# print('Resetting TDC')
 		teensy_ser.write(b'tdcsmallreset\n')
-		print(teensy_ser.readline())
+		# print(teensy_ser.readline())
+		teensy_ser.readline()
 
 		val_int_status = tdc.tdc_read(teensy_ser=teensy_ser,
 			reg="INT_STATUS", chain="small")
@@ -321,33 +316,36 @@ def test_tdiff_small(teensy_port, num_iterations, asc_params, twait=250e-9,
 		has_ovfl_coarse = tdc.is_overflow_coarse(val_int_status)
 
 		# Sanity checking with some visibility
-		print(f'\t Measurement Started: {has_started}')
-		print(f'\t Measurement Done: {has_finished}')
-		print(f'\t Clock Overflow: {has_ovfl_clk}')
-		print(f'\t Coarse Overflow: {has_ovfl_coarse}')
-		print(f'-> {val_int_status}')
+		# print(f'\t Measurement Started: {has_started}')
+		# print(f'\t Measurement Done: {has_finished}')
+		# print(f'\t Clock Overflow: {has_ovfl_clk}')
+		# print(f'\t Coarse Overflow: {has_ovfl_coarse}')
+		# print(f'-> {val_int_status}')
 
 		assert not has_started, "Measurement shouldn't have started yet"
 
 		# Configure the TDC
-		print('--- Configuring CONFIG1')
+		# print('--- Configuring CONFIG1')
 		teensy_ser.write(b'tdcsmallconfig\n')
 		teensy_ser.write(cmd_cfg1.to_bytes(1, 'big'))
 		teensy_ser.write(wdata1.to_bytes(1, 'big'))
 		for _ in range(5):
-			print(teensy_ser.readline())
+			# print(teensy_ser.readline())
+			teensy_ser.readline()
 
-		print('--- Configuring CONFIG2')
+		# print('--- Configuring CONFIG2')
 		teensy_ser.write(b'tdcsmallconfig\n')
 		teensy_ser.write(cmd_cfg2.to_bytes(1, 'big'))
 		teensy_ser.write(wdata2.to_bytes(1, 'big'))
 		for _ in range(5):
-			print(teensy_ser.readline())
+			teensy_ser.readline()
+			# print(teensy_ser.readline())
 
 		# Feed in the start pulse to get things going
-		print('--- Feeding START')
+		# print('--- Feeding START')
 		teensy_ser.write(b'tdcsmallstart\n')
-		print(teensy_ser.readline())
+		# print(teensy_ser.readline())
+		teensy_ser.readline()
 
 		# Wait until measurement done
 		has_finished = False
@@ -360,11 +358,11 @@ def test_tdiff_small(teensy_port, num_iterations, asc_params, twait=250e-9,
 			has_ovfl_coarse = tdc.is_overflow_coarse(val_int_status)
 
 			# Sanity checking with some visibility
-			print(f'\t Measurement Started: {has_started}')
-			print(f'\t Measurement Done: {has_finished}')
-			print(f'\t Clock Overflow: {has_ovfl_clk}')
-			print(f'\t Coarse Overflow: {has_ovfl_coarse}')
-			print(f'-> {val_int_status}')
+			# print(f'\t Measurement Started: {has_started}')
+			# print(f'\t Measurement Done: {has_finished}')
+			# print(f'\t Clock Overflow: {has_ovfl_clk}')
+			# print(f'\t Coarse Overflow: {has_ovfl_coarse}')
+			# print(f'-> {val_int_status}')
 
 			assert has_started, "Measurement not properly initialized"
 
@@ -378,7 +376,7 @@ def test_tdiff_small(teensy_port, num_iterations, asc_params, twait=250e-9,
 		for reg in reg_lst:
 			reg_data_dict[reg] = tdc.tdc_read(teensy_ser=teensy_ser,
 				reg=reg, chain="small")
-			print(f'-> {reg_data_dict[reg]}')
+			# print(f'-> {reg_data_dict[reg]}')
 
 		# From registers, calculate the time between the START and STOP triggers
 		tdiff = tdc.calc_tof(
