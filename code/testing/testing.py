@@ -258,7 +258,7 @@ def test_tdiff_small(teensy_port, num_iterations, asc_params,
 		trigg_edge=0, 	# Rising edge
 		stop_edge=0, 	# Rising edge
 		start_edge=0,	# Rising edge
-		meas_mode=0,	# Somewhat deceptively assigned to Mode 2...
+		meas_mode=1,	# Somewhat deceptively assigned to Mode 2...
 		start_meas=1)	# Arm TDC for measurement
 	wdata1 = tdc.construct_wdata1(**wdata1_dict)
 
@@ -269,7 +269,7 @@ def test_tdiff_small(teensy_port, num_iterations, asc_params,
 	wdata2_dict = dict(
 		calibration2_periods=1,	# -> 10 cycles wrt reference
 		avg_cycles=0,			# No averaging
-		num_stop=0)				# Single timer measurement
+		num_stop=0 if wdata1_dict['meas_mode']==0 else 1)	# Single timer measurement
 	wdata2 = tdc.construct_wdata2(**wdata2_dict)
 
 	cmd_cfg2, _ = tdc.construct_config(is_read=False,
@@ -284,8 +284,8 @@ def test_tdiff_small(teensy_port, num_iterations, asc_params,
 		"TS 1",						# Rising edge trigger
 		"TL 1.00",					# Edge trigger level
 		"TZ 0,1",					# Trigger is high impedance
-		# "TZ 1,1",					# T0 termination HiZ
-		"TZ 1,0",					# T0 termination 50Ohm
+		"TZ 1,1",					# T0 termination HiZ
+		# "TZ 1,0",					# T0 termination 50Ohm
 		"OM 1,3",					# T0 output VARiable
 		f"OA 1,{vin_amp}",			# T0 channel amplitude
 		f"OO 1,{vin_bias}",			# T0 channel offset
@@ -379,12 +379,14 @@ def test_tdiff_small(teensy_port, num_iterations, asc_params,
 			# print(f'-> {reg_data_dict[reg]}')
 
 		# From registers, calculate the time between the START and STOP triggers
+		time_x_reg = 'TIME1' if wdata1_dict['meas_mode'] == 0 else 'TIME2'
+
 		tdiff = tdc.calc_tof(
 			cal1=reg_data_dict['CALIBRATION1'] % (1<<23),
 			cal2=reg_data_dict['CALIBRATION2'] % (1<<23),
 			cal2_periods=tdc.code_cal2_map[wdata2_dict['calibration2_periods']],
 			time_1=reg_data_dict['TIME1'] % (1<<23),
-			time_x=reg_data_dict['TIME1'] % (1<<23),
+			time_x=reg_data_dict[time_x_reg] % (1<<23),
 			count_n=reg_data_dict['CLOCK_COUNT1'] % (1<<16),
 			tper=tref_clk,
 			mode=wdata1_dict['meas_mode'])

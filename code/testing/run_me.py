@@ -187,7 +187,7 @@ def run_main():
 	### Small Chain Fast Testing ###
 	####################################
 	if True:
-		f_atten = -20 # dB; CHANGE THIS WITH HARDWARE
+		f_atten = -10 # dB; CHANGE THIS WITH HARDWARE
 
 		asc_params = dict(
 			# MSB -> LSB TODO check that autozero gain...
@@ -195,7 +195,7 @@ def run_main():
 			delay_res 		= [0, 0],
 			watchdog_res 	= [0, 0, 0, 0],
 			attenuator_sel	= [0, 0, 0],
-			dac_sel 		= [1, 0, 0, 0, 0, 0, 0, 0],
+			dac_sel 		= [1, 1, 1, 1, 1, 1, 1, 1],
 			az_main_gain 	= [0]*3,
 			az_aux_gain 	= [0]*3,
 			oneshot_res 	= [0, 0],
@@ -206,7 +206,7 @@ def run_main():
 			en_small		= [0])
 
 		# vin_amp_vec = np.arange(0.7, 1.3, 50e-3)
-		vin_amp_vec = [1.3] #[0.7, 1.3]
+		vin_amp_vec = [0.7]
 		test_tdiff_small_params = dict(
 			teensy_port='COM5',
 			num_iterations=500,
@@ -224,7 +224,7 @@ def run_main():
 				f'vin{round(vin_amp, 2)}V',
 				f'{test_tdiff_small_params["num_iterations"]}x',
 				f'vb{test_tdiff_small_params["vin_bias"]}V',
-				'zcdSwitched']
+				'longerCoax']
 			
 			file_out = f'../../data/testing/{"_".join(file_constr_lst)}.yaml'
 			test_tdiff_small_params['vin_amp'] = float(vin_amp)
