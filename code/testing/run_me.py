@@ -187,7 +187,7 @@ def run_main():
 	### Small Chain Fast Testing ###
 	####################################
 	if True:
-		f_atten = -10 # dB; CHANGE THIS WITH HARDWARE
+		f_atten = -20 # dB; CHANGE THIS WITH HARDWARE
 
 		asc_params = dict(
 			# MSB -> LSB TODO check that autozero gain...
@@ -195,9 +195,9 @@ def run_main():
 			delay_res 		= [0, 0],
 			watchdog_res 	= [0, 0, 0, 0],
 			attenuator_sel	= [0, 0, 0],
-			dac_sel 		= [1, 1, 1, 1, 1, 1, 1, 1],
-			az_main_gain 	= [1]*3,
-			az_aux_gain 	= [1]*3,
+			dac_sel 		= [1, 0, 0, 0, 0, 0, 0, 0],
+			az_main_gain 	= [0]*3,
+			az_aux_gain 	= [0]*3,
 			oneshot_res 	= [0, 0],
 			vref_preamp 	= [0, 0, 0, 0, 0, 0, 0, 0],
 			vdd_aon			= [0, 0, 0, 0, 0],
@@ -205,21 +205,28 @@ def run_main():
 			en_main			= [0],
 			en_small		= [0])
 
-		vin_amp_vec = np.arange(0.7, 1.3, 50e-3)
-		# vin_amp_vec = [0.7, 1.3]
+		# vin_amp_vec = np.arange(0.7, 1.3, 50e-3)
+		vin_amp_vec = [1.3] #[0.7, 1.3]
 		test_tdiff_small_params = dict(
 			teensy_port='COM5',
 			num_iterations=500,
 			asc_params=asc_params,
 			ip_addr='192.168.1.4',
 			gpib_addr=15,
-			vin_bias=0,
+			vin_bias=0.0,
 			tref_clk=1/3.75e6)
 
 		for vin_amp in vin_amp_vec:
 			timestamp = datetime.now()
 			timestamp_str = timestamp.strftime("%Y%m%d_%H%M%S")
-			file_out = f'../../data/testing/{timestamp_str}_vin{round(vin_amp, 2)}V_{test_tdiff_small_params["num_iterations"]}x_vb{test_tdiff_small_params["vin_bias"]}V_zcdOnly.yaml'
+
+			file_constr_lst = [timestamp_str,
+				f'vin{round(vin_amp, 2)}V',
+				f'{test_tdiff_small_params["num_iterations"]}x',
+				f'vb{test_tdiff_small_params["vin_bias"]}V',
+				'zcdSwitched']
+			
+			file_out = f'../../data/testing/{"_".join(file_constr_lst)}.yaml'
 			test_tdiff_small_params['vin_amp'] = float(vin_amp)
 			tdiff_vec = testing.test_tdiff_small(**test_tdiff_small_params)
 			tdiff_vec = [float(tdiff) for tdiff in tdiff_vec]
