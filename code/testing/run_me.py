@@ -42,12 +42,12 @@ def run_main():
 	############
 	### DACs ###
 	############
-	if False:
+	if True:
 		which_dac = spani_globals.OUT_REF_PREAMP
 		test_dac_params = dict(
 			com_port='COM5',
-			num_iterations=1000,
-			code_vec=range(int(2**spani_globals.N_BITS_MAP[which_dac])),
+			num_iterations=100,
+			code_vec=range(0, int(2**spani_globals.N_BITS_MAP[which_dac]), 10),
 			dac_name=which_dac,
 			vfsr=3.3,
 			precision=16,
@@ -186,8 +186,8 @@ def run_main():
 	####################################
 	### Small Chain Fast Testing ###
 	####################################
-	if True:
-		f_atten = -10 # dB; CHANGE THIS WITH HARDWARE
+	if False:
+		f_atten = -20 # dB; CHANGE THIS WITH HARDWARE
 
 		asc_params = dict(
 			# MSB -> LSB TODO check that autozero gain...
@@ -203,17 +203,17 @@ def run_main():
 			vdd_aon			= [0, 0, 0, 0, 0],
 			vdd_signal		= [0, 0, 0, 0, 0],
 			en_main			= [0],
-			en_small		= [0])
+			en_small		= [1])
 
-		# vin_amp_vec = np.arange(0.7, 1.3, 50e-3)
-		vin_amp_vec = [0.7]
+		vin_amp_vec = np.arange(0.7, 1.3, 100e-3)
+		# vin_amp_vec = 
 		test_tdiff_small_params = dict(
 			teensy_port='COM5',
-			num_iterations=500,
+			num_iterations=100,
 			asc_params=asc_params,
 			ip_addr='192.168.1.4',
 			gpib_addr=15,
-			vin_bias=0.0,
+			vin_bias=0.23,
 			tref_clk=1/3.75e6)
 
 		for vin_amp in vin_amp_vec:
@@ -223,8 +223,7 @@ def run_main():
 			file_constr_lst = [timestamp_str,
 				f'vin{round(vin_amp, 2)}V',
 				f'{test_tdiff_small_params["num_iterations"]}x',
-				f'vb{test_tdiff_small_params["vin_bias"]}V',
-				'longerCoax']
+				f'vb{test_tdiff_small_params["vin_bias"]}V']
 			
 			file_out = f'../../data/testing/{"_".join(file_constr_lst)}.yaml'
 			test_tdiff_small_params['vin_amp'] = float(vin_amp)

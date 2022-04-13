@@ -16,7 +16,7 @@ const int pin_dac_small 		= A20; 	// Resistive DAC for small chain
 const int pin_dac_main 			= A7;	  // Resistive DAC for main chain
 const int pin_bandgap			  = A9;	  // Test structure bandgap voltage source
 const int pin_pk_out 			  = A8; 	// Peak detector output voltage
-const int pin_preamp_vref   = 21;   // Preamp reference voltage
+const int pin_preamp_vref   = A21;   // Preamp reference voltage
 
 // On-chip supply voltages
 const int pin_vddaon 			= A6;	  // Always-on LDO output
