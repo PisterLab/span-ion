@@ -5,6 +5,8 @@ from gpib import *
 import spani_globals, scan, temp_chamber, tdc
 from pprint import pprint
 
+
+
 def test_tdiff_main(teensy_port, num_iterations, asc_params,
 	 	ip_addr='192.168.4.1', gpib_addr=15, 
 		vin_bias=0.8, vin_amp=0.2, tref_clk=1/15e6):
@@ -845,7 +847,7 @@ def test_dac(com_port, num_iterations, code_vec, dac_name, vfsr=3.3,
 		num_iterations: Integer. Number of times to measure a single code.
 		code_vec: Collection of integers. Codes to measure.
 		num_bits: Collection of bits.
-		dac_name: Indicates which DAC is being tested, e.g. OUT_DAC_MAIN,
+		dac_name: Indicates which DAC is being tested, e.g. spani_globals.OUT_DAC_MAIN,
 			OUT_DAC_SMALL, OUT_VDD_MAIN, OUT_VDD_AON
 		vfsr: Float. Voltage full scale range of the Teensy analogRead.
 		precision: Integer. Number of bits used by Teensy in analogRead. Note
@@ -874,19 +876,6 @@ def test_dac(com_port, num_iterations, code_vec, dac_name, vfsr=3.3,
 	code_max = 1 << num_bits
 	assert max(code_vec) < code_max, f'Code {max(code_vec)} exceeds allowable' \
 		+ f'max {code_max}'
-
-	# Connect to voltmeter
-	# rm = pyvisa.ResourceManager()
-	# vm = rsrc_open(rm)
-
-	# Configure voltmeter
-	# smu_raw = ''
-	# while smu_raw.lower() not in ('a', 'b'):
-	# 	smu_raw = input('Choose channel (a/b): ')
-	# 	smu_raw = smu_raw.lower()
-	# smu_sel = gpib.SMU_A if smu_raw=='a' else gpib.SMU_B
-	# smu_str = f'smu{smu_sel}'
-	# voltmeter_Keithley2634B_config(sm=vm, smu=smu_sel, autorange=True)
 
 	# Open Teensy serial connection
 	teensy_ser = serial.Serial(port=com_port,
@@ -967,6 +956,122 @@ def test_dac(com_port, num_iterations, code_vec, dac_name, vfsr=3.3,
 	# vm.close()
 	teensy_ser.close()
 	return code_data_dict
+
+def get_dac_code(com_port, num_iterations, vdac_target, dac_name, vfsr=3.3,
+	precision=16) -> int:
+	'''
+	Inputs:
+		com_port: String. Name of the COM port to connect to.
+		num_iterations: Integer. Number of times to measure a single code.
+		vdac_target: Float. The target voltage for the DAC.
+		num_bits: Collection of bits.
+		dac_name: Indicates which DAC is being tested, e.g. spani_globals.OUT_DAC_MAIN,
+			OUT_DAC_SMALL, OUT_VDD_MAIN, OUT_VDD_AON
+		vfsr: Float. Voltage full scale range of the Teensy analogRead.
+		precision: Integer. Number of bits used by Teensy in analogRead. Note
+			that this is set in the Teensy code, so this should be adjusted 
+			in the Python to match.
+	Returns:
+		result: The code most closely associated with the target voltage.
+	Raises:
+		AssertionError: If a code in the collection of codes exceeds the
+			number of bits permitted.
+	Notes:
+		Performs a linear search of DAC code to find which one most 
+			closely matches the target voltage. This does not assume
+			that the DAC is monotonic.
+		analogRead precision is set in the Teensy code, so the value of
+			"precision" should be adjusted here to match whatever the
+			Teensy has.
+	'''
+	code_data_dict = {code:[] for code in code_vec}
+
+	num_bits = spani_globals.N_BITS_MAP[dac_name]
+
+	code_max = 1 << num_bits
+	assert max(code_vec) < code_max, f'Code {max(code_vec)} exceeds allowable' \
+		+ f'max {code_max}'
+
+	# Open Teensy serial connection
+	teensy_ser = serial.Serial(port=com_port,
+                    baudrate=19200,
+                    parity=serial.PARITY_NONE,
+                    stopbits=serial.STOPBITS_ONE,
+                    bytesize=serial.EIGHTBITS,
+                    timeout=1)
+
+	scan_arg_map = {
+		spani_globals.OUT_DAC_MAIN 		: 'dac_sel',
+		spani_globals.OUT_DAC_SMALL 	: 'dac_sel',
+		spani_globals.OUT_REF_PREAMP	: 'vref_preamp',
+		spani_globals.OUT_VDD_MAIN 		: 'vdd_signal',
+		spani_globals.OUT_VDD_SMALL 	: 'vdd_signal',
+		spani_globals.OUT_VDD_AON 		: 'vdd_aon'}
+
+	teensy_arg_map = {
+		spani_globals.OUT_DAC_MAIN		: b'dacreadmain\n',
+		spani_globals.OUT_DAC_SMALL		: b'dacreadsmall\n',
+		spani_globals.OUT_REF_PREAMP	: b'dacreadpreamp\n',
+		spani_globals.OUT_VDD_MAIN		: b'dacreadvddmain\n',
+		spani_globals.OUT_VDD_SMALL		: b'dacreadvddsmall\n',
+		spani_globals.OUT_VDD_AON		: b'dacreadvddaon\n'}
+
+	# Take measurements, one step at a time
+	for code in code_vec:
+		# Convert code to binary for scan programming
+		code_binary = [int(i) for i in list('{0:0b}'.format(code))] # MSB->LSB
+		extra_zeros = [0]*(num_bits-len(code_binary)) # Zero padding as needed
+		code_binary = extra_zeros + code_binary
+
+		# Set scan bits
+		en_main = 1 if dac_name in (spani_globals.OUT_DAC_MAIN, 
+			spani_globals.OUT_VDD_MAIN, 
+			spani_globals.OUT_REF_PREAMP) \
+			else 0 
+		en_small = 1 if dac_name in (spani_globals.OUT_DAC_SMALL, 
+			spani_globals.OUT_VDD_SMALL) else 0
+
+		construct_scan_params = {
+			scan_arg_map[dac_name]: code_binary,
+			'en_main' : [en_main],
+			'en_small': [en_small]}
+		
+		# Program scan and temporarily suppress print statements
+		# NB: zeroes everything but intended bits in scan
+		try:
+			spani_globals.block_print()
+			scan_bits = scan.construct_ASC(**construct_scan_params)
+			scan.program_scan(ser=teensy_ser, ASC=scan_bits)
+			spani_globals.enable_print()
+		except Exception as e:
+			spani_globals.enable_print()
+			raise e
+
+		# Random blank prints that show up--not sure why
+		for _ in range(2):
+			teensy_ser.readline()
+
+		# Take N=num_iterations measurements TODO
+		for i in range(num_iterations):
+			teensy_ser.write(teensy_arg_map[dac_name])
+			try:
+				cout = int(teensy_ser.readline())
+				vout = vfsr * cout / (2**precision)
+			except Exception as e:
+				print(e)
+				vout = float('nan')
+			code_data_dict[code].append(vout)
+			print(f'Code/No. {code}/{i} -> {vout}')
+
+	# Close connection
+	teensy_ser.close()
+
+	code_vec = code_data_dict.keys()
+	avg_vec = [np.mean(code_data_dict[code]) for code in code_vec]
+	diff_vec = [abs(vout-vdac_target) for vout in avg_vec]
+
+	idx_closest = np.argmin(diff_vec)
+	return code_vec[idx_closest]
 
 def test_program_scan(com_port, ASC) -> None:
 	'''
@@ -1088,32 +1193,3 @@ def temp_meas(tmp_port="", chamber_port="",
 			chamber_ser.serial.close()
 
 	return teensy_vec, tmp_vec, chamber_vec
-
-def test_main(num_iterations, scan_dict, teensy_port,):
-	'''
-	Prompts the main signal chain with the same input periodically repeated.
-	Inputs:
-		num_iterations: Integer. Number of measurements to take.
-		scan_dict: Dictionary to program the scan chain, with key:value
-			of (argument):value. For example,
-			{'preamp_res' : [1, 0],
-			 'en_main' : [1]}
-		teensy_port: String. Name of the COM port associated with Teensy.
-	Returns:
-		delay_vec: Collection of delays (in seconds) from the initial
-			input trigger pulse and rising edge of the output pulse.
-	'''
-	# Program scan
-	asc = construct_scan(**scan_dict)
-	scan.program_scan(com_port=teensy_port, ASC=asc)
-
-	# Connect to function generator
-	rm = pyvisa.ResourceManager()
-	arb = rsrc_open(rm)
-
-	# TODO Configure the function generator
-
-	# TODO Turn on the output of the function generator
-
-	# Turn off outputs and disconnect from function generator
-	arb_close(arb)
