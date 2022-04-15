@@ -107,12 +107,12 @@ def test_tdiff_main(teensy_port, num_iterations, asc_params,
 	for _ in range(num_iterations):
 		# Reset the TDC
 		# print('Resetting TDC')
-		teensy_ser.write(b'tdcsmallreset\n')
+		teensy_ser.write(b'tdcmainreset\n')
 		# print(teensy_ser.readline())
 		teensy_ser.readline()
 
 		val_int_status = tdc.tdc_read(teensy_ser=teensy_ser,
-			reg="INT_STATUS", chain="small")
+			reg="INT_STATUS", chain="main")
 		has_started = tdc.is_started(val_int_status)
 		has_finished = tdc.is_done(val_int_status)
 		has_ovfl_clk = tdc.is_overflow_clk(val_int_status)
@@ -129,7 +129,7 @@ def test_tdiff_main(teensy_port, num_iterations, asc_params,
 
 		# Configure the TDC
 		# print('--- Configuring CONFIG1')
-		teensy_ser.write(b'tdcsmallconfig\n')
+		teensy_ser.write(b'tdcmainconfig\n')
 		teensy_ser.write(cmd_cfg1.to_bytes(1, 'big'))
 		teensy_ser.write(wdata1.to_bytes(1, 'big'))
 		for _ in range(5):
@@ -137,7 +137,7 @@ def test_tdiff_main(teensy_port, num_iterations, asc_params,
 			teensy_ser.readline()
 
 		# print('--- Configuring CONFIG2')
-		teensy_ser.write(b'tdcsmallconfig\n')
+		teensy_ser.write(b'tdcmainconfig\n')
 		teensy_ser.write(cmd_cfg2.to_bytes(1, 'big'))
 		teensy_ser.write(wdata2.to_bytes(1, 'big'))
 		for _ in range(5):
@@ -146,7 +146,7 @@ def test_tdiff_main(teensy_port, num_iterations, asc_params,
 
 		# Feed in the start pulse to get things going
 		# print('--- Feeding START')
-		teensy_ser.write(b'tdcsmallstart\n')
+		teensy_ser.write(b'tdcmainstart\n')
 		# print(teensy_ser.readline())
 		teensy_ser.readline()
 
@@ -154,7 +154,7 @@ def test_tdiff_main(teensy_port, num_iterations, asc_params,
 		has_finished = False
 		while not has_finished:
 			val_int_status = tdc.tdc_read(teensy_ser=teensy_ser,
-				reg="INT_STATUS", chain="small")
+				reg="INT_STATUS", chain="main")
 			has_started = tdc.is_started(val_int_status)
 			has_finished = tdc.is_done(val_int_status)
 			has_ovfl_clk = tdc.is_overflow_clk(val_int_status)
@@ -178,7 +178,7 @@ def test_tdiff_main(teensy_port, num_iterations, asc_params,
 		reg_data_dict = dict()
 		for reg in reg_lst:
 			reg_data_dict[reg] = tdc.tdc_read(teensy_ser=teensy_ser,
-				reg=reg, chain="small")
+				reg=reg, chain="main")
 			# print(f'-> {reg_data_dict[reg]}')
 
 		# From registers, calculate the time between the START and STOP triggers
