@@ -321,7 +321,7 @@ def run_main():
 			vin_bias=0.8,
 			tref_clk=1/3.75e6)
 
-		vin_amp_vec = np.arange(0.7, 1.3, 100e-3)
+		vin_amp_vec = np.arange(0.1, 1.0, 100e-3)
 
 		for vin_amp in vin_amp_vec:
 			timestamp = datetime.now()
