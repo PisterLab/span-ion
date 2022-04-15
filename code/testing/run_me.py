@@ -340,7 +340,8 @@ def run_main():
 			tdiff_vec = [float(tdiff) for tdiff in tdiff_vec]
 
 			dump_data = dict(config=test_tdiff_main_params,
-				data=tdiff_vec)
+				data=tdiff_vec,
+				notes="Changed measurement mode to 2")
 			with open(file_out, 'w') as outfile:
 				yaml.dump(dump_data, outfile, default_flow_style=False)
 
