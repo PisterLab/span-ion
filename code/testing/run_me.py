@@ -247,14 +247,14 @@ def run_main():
 			delay_res 		= [0, 0],
 			watchdog_res 	= [0, 0, 0, 0],
 			attenuator_sel	= [0, 0, 0],
-			dac_sel 		= [1, 1, 1, 1, 1, 1, 1, 1],
+			dac_sel 		= [0, 0, 1, 1, 1, 1, 1, 1],
 			az_main_gain 	= [0]*3,
 			az_aux_gain 	= [0]*3,
 			oneshot_res 	= [0, 0],
-			vref_preamp 	= [1, 0, 0, 0, 0, 0, 0, 0],
+			vref_preamp 	= [0, 1, 1, 1, 1, 1, 1, 1],
 			vdd_aon			= [0, 0, 0, 0, 0],
 			vdd_signal		= [0, 0, 0, 0, 0],
-			en_main			= [1],
+			en_main			= [0],
 			en_small		= [0])
 
 		get_vref_target_params = dict(
@@ -287,41 +287,42 @@ def run_main():
                     bytesize=serial.EIGHTBITS,
                     timeout=1)
 
-		for b in code_binary:
-			teensy_ser.write(b'attenwrite\n')
-			teensy_ser.write(code_str.encode())
-			print(teensy_ser.readline())
+		# teensy_ser.write(b'attenwrite\n')
+		# for b in code_binary:
+		# 	teensy_ser.write(code_str.encode())
+		# print(teensy_ser.readline())
 
 	###############################
 	### Main Chain Fast Testing ###
 	###############################
 	if True:
 		asc_params = dict(
-			# MSB -> LSB TODO check that autozero gain...
+			# MSB -> LSB
 			preamp_res 		= [0, 0],
-			delay_res 		= [0, 0],
-			watchdog_res 	= [0, 0, 0, 0],
-			attenuator_sel	= [0, 0, 0],
-			dac_sel 		= [1, 1, 1, 1, 1, 1, 1, 1],
+			delay_res 		= [1]*2, # [0, 0],
+			watchdog_res 	= [1]*4, # [0, 0, 0, 0],
+			attenuator_sel	= [1, 0, 0],
+			dac_sel 		= [1, 0, 0, 0, 0, 0, 1, 1], # [1] + [0]*7,
 			az_main_gain 	= [0]*3,
 			az_aux_gain 	= [0]*3,
 			oneshot_res 	= [0, 0],
-			vref_preamp 	= [0, 0, 0, 0, 0, 0, 0, 0],
+			vref_preamp 	= [0, 1, 1, 1, 1, 1, 1, 1],
 			vdd_aon			= [0, 0, 0, 0, 0],
 			vdd_signal		= [0, 0, 0, 0, 0],
 			en_main			= [0],
-			en_small		= [1])
+			en_small		= [0])
 
 		test_tdiff_main_params = dict(
 			teensy_port='COM5',
-			num_iterations=10,
+			num_iterations=500,
 			asc_params=asc_params,
 			ip_addr='192.168.1.4',
 			gpib_addr=15,
-			vin_bias=0.8,
+			vin_bias=0.9,
 			tref_clk=1/3.75e6)
 
-		vin_amp_vec = np.arange(0.1, 1.0, 100e-3)
+		# vin_amp_vec = np.arange(0.1, 1.0, 100e-3)
+		vin_amp_vec = [2.0]
 
 		for vin_amp in vin_amp_vec:
 			timestamp = datetime.now()

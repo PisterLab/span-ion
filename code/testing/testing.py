@@ -62,7 +62,7 @@ def test_tdiff_main(teensy_port, num_iterations, asc_params,
 		trigg_edge=0, 	# Rising edge
 		stop_edge=0, 	# Rising edge
 		start_edge=0,	# Rising edge
-		meas_mode=0,	# 0/1 somewhat deceptively assigned to Mode 1/2...
+		meas_mode=1,	# 0/1 somewhat deceptively assigned to Mode 1/2...
 		start_meas=1)	# Arm TDC for measurement
 	wdata1 = tdc.construct_wdata1(**wdata1_dict)
 
