@@ -6,7 +6,6 @@ import spani_globals, scan, temp_chamber, tdc
 from pprint import pprint
 
 
-
 def test_tdiff_main(teensy_port, num_iterations, asc_params,
 	 	ip_addr='192.168.4.1', gpib_addr=15, 
 		vin_bias=0.8, vin_amp=0.2, tref_clk=1/15e6):
@@ -840,7 +839,7 @@ def test_pk_static(teensy_port, aux_port, num_iterations, vtest_vec, vfsr=3.3,
 	return vtest_real_dict, vtest_vout_dict
 
 def test_dac(com_port, num_iterations, code_vec, dac_name, vfsr=3.3, 
-	precision=16, t_wait=.001):
+	precision=16):
 	'''
 	Inputs:
 		com_port: String. Name of the COM port to connect to.
@@ -853,8 +852,6 @@ def test_dac(com_port, num_iterations, code_vec, dac_name, vfsr=3.3,
 		precision: Integer. Number of bits used by Teensy in analogRead. Note
 			that this is set in the Teensy code, so this should be adjusted 
 			in the Python to match.
-		t_wait: Float. Time in seconds to pause between each measurement
-			from the voltmeter.
 	Returns:
 		code_data_dict: Mapping with key:value of digital code:collection of 
 			analog measurements taken for that code. For example
@@ -939,23 +936,64 @@ def test_dac(com_port, num_iterations, code_vec, dac_name, vfsr=3.3,
 		# Take N=num_iterations measurements TODO
 		for i in range(num_iterations):
 			teensy_ser.write(teensy_arg_map[dac_name])
-			# vm.write(f'print({smu_str}.measure.v())')
 			try:
 				cout = int(teensy_ser.readline())
 				vout = vfsr * cout / (2**precision)
-				# vout_str = vm.read()
-				# vout = float(vout_str)
 			except Exception as e:
 				print(e)
 				vout = float('nan')
 			code_data_dict[code].append(vout)
 			print(f'Code/No. {code}/{i} -> {vout}')
-			time.sleep(t_wait)
 
 	# Close connection
-	# vm.close()
 	teensy_ser.close()
 	return code_data_dict
+
+def get_vref_atten_target(com_port, num_iterations, vfsr=3.3, precision=16):
+	'''
+	Reads the voltage on the VREF_ATTEN pin num_iterations times and spits
+		out the voltage in volts.
+	Inputs:
+		com_port: String. Name of the COM port to connect to.
+		num_iterations: Integer. Number of times to measure a single code.
+		precision: Integer. Number of bits used by Teensy in analogRead. Note
+			that this is set in the Teensy code, so this should be adjusted 
+			in the Python to match.
+	Returns:
+		vout: Float. The target voltage for the attenuator, measured from the unloaded
+			pin.
+		code: Integer. The code associated with the output voltage.
+	Notes:
+		This assumes that your scan chain has been set appropriately already.
+	'''
+	# Open serial connection to Teensy
+	teensy_ser = serial.Serial(port=com_port,
+                    baudrate=19200,
+                    parity=serial.PARITY_NONE,
+                    stopbits=serial.STOPBITS_ONE,
+                    bytesize=serial.EIGHTBITS,
+                    timeout=1)
+
+	# Multiple readings to deal with noise
+	vout_vec = []
+	cout_vec = []
+	for _ in range(num_iterations):
+		# Read the voltage in LSB and convert to voltage
+		teensy_ser.write(b'attenread\n')
+		try:
+			cout = int(teensy_ser.readline())
+			vout = vfsr * cout / (2**precision)
+		except Exception as e:
+			print(e)
+			vout = float('nan')
+
+		cout_vec.append(cout)
+		vout_vec.append(vout)
+
+	# Close connections
+	teensy_ser.close()
+
+	return np.mean(vout_vec), int(round(np.mean(cout_vec)))
 
 def get_dac_code(com_port, num_iterations, vdac_target, dac_name, vfsr=3.3,
 	precision=16) -> int:
@@ -984,88 +1022,18 @@ def get_dac_code(com_port, num_iterations, vdac_target, dac_name, vfsr=3.3,
 			"precision" should be adjusted here to match whatever the
 			Teensy has.
 	'''
-	code_data_dict = {code:[] for code in code_vec}
-
+	# Sweep through the DAC codes (doesn't assume monotonicity)
 	num_bits = spani_globals.N_BITS_MAP[dac_name]
-
 	code_max = 1 << num_bits
-	assert max(code_vec) < code_max, f'Code {max(code_vec)} exceeds allowable' \
-		+ f'max {code_max}'
+	code_data_dict = test_dac(com_port=com_port, 
+		num_iterations=num_iterations,
+		code_vec=range(code_max),
+		dac_name=dac_name,
+		vfsr=vfsr,
+		precision=precision,
+		t_wait=0)
 
-	# Open Teensy serial connection
-	teensy_ser = serial.Serial(port=com_port,
-                    baudrate=19200,
-                    parity=serial.PARITY_NONE,
-                    stopbits=serial.STOPBITS_ONE,
-                    bytesize=serial.EIGHTBITS,
-                    timeout=1)
-
-	scan_arg_map = {
-		spani_globals.OUT_DAC_MAIN 		: 'dac_sel',
-		spani_globals.OUT_DAC_SMALL 	: 'dac_sel',
-		spani_globals.OUT_REF_PREAMP	: 'vref_preamp',
-		spani_globals.OUT_VDD_MAIN 		: 'vdd_signal',
-		spani_globals.OUT_VDD_SMALL 	: 'vdd_signal',
-		spani_globals.OUT_VDD_AON 		: 'vdd_aon'}
-
-	teensy_arg_map = {
-		spani_globals.OUT_DAC_MAIN		: b'dacreadmain\n',
-		spani_globals.OUT_DAC_SMALL		: b'dacreadsmall\n',
-		spani_globals.OUT_REF_PREAMP	: b'dacreadpreamp\n',
-		spani_globals.OUT_VDD_MAIN		: b'dacreadvddmain\n',
-		spani_globals.OUT_VDD_SMALL		: b'dacreadvddsmall\n',
-		spani_globals.OUT_VDD_AON		: b'dacreadvddaon\n'}
-
-	# Take measurements, one step at a time
-	for code in code_vec:
-		# Convert code to binary for scan programming
-		code_binary = [int(i) for i in list('{0:0b}'.format(code))] # MSB->LSB
-		extra_zeros = [0]*(num_bits-len(code_binary)) # Zero padding as needed
-		code_binary = extra_zeros + code_binary
-
-		# Set scan bits
-		en_main = 1 if dac_name in (spani_globals.OUT_DAC_MAIN, 
-			spani_globals.OUT_VDD_MAIN, 
-			spani_globals.OUT_REF_PREAMP) \
-			else 0 
-		en_small = 1 if dac_name in (spani_globals.OUT_DAC_SMALL, 
-			spani_globals.OUT_VDD_SMALL) else 0
-
-		construct_scan_params = {
-			scan_arg_map[dac_name]: code_binary,
-			'en_main' : [en_main],
-			'en_small': [en_small]}
-		
-		# Program scan and temporarily suppress print statements
-		# NB: zeroes everything but intended bits in scan
-		try:
-			spani_globals.block_print()
-			scan_bits = scan.construct_ASC(**construct_scan_params)
-			scan.program_scan(ser=teensy_ser, ASC=scan_bits)
-			spani_globals.enable_print()
-		except Exception as e:
-			spani_globals.enable_print()
-			raise e
-
-		# Random blank prints that show up--not sure why
-		for _ in range(2):
-			teensy_ser.readline()
-
-		# Take N=num_iterations measurements TODO
-		for i in range(num_iterations):
-			teensy_ser.write(teensy_arg_map[dac_name])
-			try:
-				cout = int(teensy_ser.readline())
-				vout = vfsr * cout / (2**precision)
-			except Exception as e:
-				print(e)
-				vout = float('nan')
-			code_data_dict[code].append(vout)
-			print(f'Code/No. {code}/{i} -> {vout}')
-
-	# Close connection
-	teensy_ser.close()
-
+	# Find the code which gets the closest match in voltage
 	code_vec = code_data_dict.keys()
 	avg_vec = [np.mean(code_data_dict[code]) for code in code_vec]
 	diff_vec = [abs(vout-vdac_target) for vout in avg_vec]

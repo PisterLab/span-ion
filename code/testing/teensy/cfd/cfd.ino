@@ -16,7 +16,8 @@ const int pin_dac_small 		= A20; 	// Resistive DAC for small chain
 const int pin_dac_main 			= A7;	  // Resistive DAC for main chain
 const int pin_bandgap			  = A9;	  // Test structure bandgap voltage source
 const int pin_pk_out 			  = A8; 	// Peak detector output voltage
-const int pin_preamp_vref   = A21;   // Preamp reference voltage
+const int pin_preamp_vref   = A21;  // Preamp reference voltage
+const int pin_vref_atten    = A22;  // Attenuator reference voltage
 
 // On-chip supply voltages
 const int pin_vddaon 			= A6;	  // Always-on LDO output
@@ -49,7 +50,7 @@ const int pin_tdc_small_start   = 30;   // For triggering the TDC's start pulse
 const int pin_tdc_clk           = A0;   // TDC reference clock
 
 // Constants
-const int B_ADC 				    = 16;	  // Number of bits (precision) for Teensy analogRead
+const int B_ADC 				        = 16;	  // Number of bits (precision) for Teensy analogRead
 
 /* ----------------------------- */
 /* --- Runs once at power-on --- */
@@ -87,6 +88,7 @@ void setup() {
   pinMode(pin_bandgap, 			INPUT);
   pinMode(pin_pk_out, 			INPUT);
   pinMode(pin_preamp_vref,  INPUT);
+  pinMode(pin_vref_atten,   INPUT);
 
   // - On-Chip Supply Voltages
   pinMode(pin_vddaon, 			INPUT);
@@ -216,6 +218,12 @@ void loop() {
     else if (inputString == "dacreadpreamp\n") {
       dac_read(pin_preamp_vref);
     }
+    else if (inputString == "attenread\n") {
+      vref_read_safe(pin_vref_atten);
+    }
+    else if (inputString == "attenwrite\n") {
+      vref_write_safe(pin_vref_atten);
+    }
 
 		// Reset to listen for a new '\n' terminated string over serial
 		inputString = "";
@@ -239,6 +247,77 @@ void dac_read(int pin) {
   Serial.println(analogRead(pin));
 }
 
+/* ------------------------- */
+/* --- Main Signal Chain --- */
+/* ------------------------- */
+void vref_rw_safe(int pin_vref) {
+  // Set the pin to an input
+  pinMode(pin_vref, INPUT);
+
+  // Read the voltage
+  int code = analogRead(pin_vref);
+
+  // Set the pin to an output
+  pinMode(pin_vref, OUTPUT);
+
+  // Write the voltage to the pin
+  analogWrite(pin_vref, code);
+}
+
+void vref_read_safe(int pin_vref) {
+/*
+ * Inputs:
+ * Returns:
+ *  None.
+ * Notes:
+ *  Sets the pin to an input.
+ *  Prints analogRead result in LSB over serial.
+ *  Considered safe because it sets the pin to an input
+ *  first.
+*/
+    // Set the pin to an input
+    pinMode(pin_vref, INPUT);
+
+    // Read the voltage and print over serial in LSB
+    Serial.println(analogRead(pin_vref));
+}
+
+void vref_write_safe(int pin_vref) {
+/*
+ * Inputs:
+ * Returns:
+ *  None.
+ * Notes:
+ *  Sets the pin to an output.
+ *  Writes the analog value.
+*/
+  // Read the target code over serial one bit at a time, MSB first
+  int count = 0;
+  int code = 0;
+  char readbits[B_ADC];
+
+  while (count != B_ADC) {
+    if (Serial.available()) {
+      readbits[count] = Serial.read();
+      count ++;
+    }
+  }
+
+  // Get the code into integer form
+  for (int x=0; x<B_ADC; x++) {
+    code = code << 1;
+    if (readbits[x] == '1') {
+      code += 1;
+    }
+  }
+  
+  // Set the pin to an output
+  pinMode(pin_vref, OUTPUT);
+
+  // Write the value to the pin
+  analogWrite(pin_vref, code);
+  Serial.println(code);
+}
 
 /* ------------- */
 /* --- Other --- */

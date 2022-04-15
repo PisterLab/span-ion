@@ -42,7 +42,7 @@ def run_main():
 	############
 	### DACs ###
 	############
-	if True:
+	if False:
 		which_dac = spani_globals.OUT_REF_PREAMP
 		test_dac_params = dict(
 			com_port='COM5',
@@ -183,9 +183,9 @@ def run_main():
 		with open(file_out, 'w') as outfile:
 			yaml.dump(overflow_dict, outfile, default_flow_style=False)
 
-	####################################
+	################################
 	### Small Chain Fast Testing ###
-	####################################
+	################################
 	if False:
 		f_atten = -20 # dB; CHANGE THIS WITH HARDWARE
 
@@ -199,7 +199,7 @@ def run_main():
 			az_main_gain 	= [0]*3,
 			az_aux_gain 	= [0]*3,
 			oneshot_res 	= [0, 0],
-			vref_preamp 	= [0, 0, 0, 0, 0, 0, 0, 0],
+			vref_preamp 	= [0, 0, 0, 0, 0, 0, 0, 0], # TODO measure this bad boy
 			vdd_aon			= [0, 0, 0, 0, 0],
 			vdd_signal		= [0, 0, 0, 0, 0],
 			en_main			= [0],
@@ -232,6 +232,113 @@ def run_main():
 
 			dump_data = dict(config=test_tdiff_small_params,
 				f_atten=f_atten,
+				data=tdiff_vec)
+			with open(file_out, 'w') as outfile:
+				yaml.dump(dump_data, outfile, default_flow_style=False)
+
+
+	###############################
+	### VREF_ATTEN Code-Getting ###
+	###############################
+	if False:
+		asc_params = dict(
+			# MSB -> LSB TODO check that autozero gain...
+			preamp_res 		= [0, 0],
+			delay_res 		= [0, 0],
+			watchdog_res 	= [0, 0, 0, 0],
+			attenuator_sel	= [0, 0, 0],
+			dac_sel 		= [1, 1, 1, 1, 1, 1, 1, 1],
+			az_main_gain 	= [0]*3,
+			az_aux_gain 	= [0]*3,
+			oneshot_res 	= [0, 0],
+			vref_preamp 	= [1, 0, 0, 0, 0, 0, 0, 0],
+			vdd_aon			= [0, 0, 0, 0, 0],
+			vdd_signal		= [0, 0, 0, 0, 0],
+			en_main			= [1],
+			en_small		= [0])
+
+		get_vref_target_params = dict(
+			com_port='COM5',
+			num_iterations=100,
+			vfsr=3.3,
+			precision=16)
+
+		# Program scan
+		print("Constructing scan chain...")
+		asc = scan.construct_ASC(**asc_params)
+		print(f"Programming scan...{asc}")
+		testing.test_program_scan(com_port=get_vref_target_params['com_port'], ASC=asc)
+
+		# Find the target voltage
+		vref_target, code = testing.get_vref_atten_target(**get_vref_target_params)
+
+		# Determine what code on the Teensy matches
+		code_binary = [int(i) for i in list('{0:0b}'.format(code))] # MSB->LSB
+		extra_zeros = [0]*(get_vref_target_params['precision']-len(code_binary)) # Zero padding as needed
+		code_binary = extra_zeros + code_binary
+		code_str = ''.join([str(c) for c in code_binary])
+		print(f'Target: {vref_target} V -> {code_binary}')
+
+		# Have the Teensy match
+		teensy_ser = serial.Serial(port=get_vref_target_params['com_port'],
+                    baudrate=19200,
+                    parity=serial.PARITY_NONE,
+                    stopbits=serial.STOPBITS_ONE,
+                    bytesize=serial.EIGHTBITS,
+                    timeout=1)
+
+		for b in code_binary:
+			teensy_ser.write(b'attenwrite\n')
+			teensy_ser.write(code_str.encode())
+			print(teensy_ser.readline())
+
+	###############################
+	### Main Chain Fast Testing ###
+	###############################
+	if True:
+		asc_params = dict(
+			# MSB -> LSB TODO check that autozero gain...
+			preamp_res 		= [0, 0],
+			delay_res 		= [0, 0],
+			watchdog_res 	= [0, 0, 0, 0],
+			attenuator_sel	= [0, 0, 0],
+			dac_sel 		= [1, 1, 1, 1, 1, 1, 1, 1],
+			az_main_gain 	= [0]*3,
+			az_aux_gain 	= [0]*3,
+			oneshot_res 	= [0, 0],
+			vref_preamp 	= [0, 0, 0, 0, 0, 0, 0, 0],
+			vdd_aon			= [0, 0, 0, 0, 0],
+			vdd_signal		= [0, 0, 0, 0, 0],
+			en_main			= [0],
+			en_small		= [1])
+
+		test_tdiff_main_params = dict(
+			teensy_port='COM5',
+			num_iterations=10,
+			asc_params=asc_params,
+			ip_addr='192.168.1.4',
+			gpib_addr=15,
+			vin_bias=0.8,
+			tref_clk=1/3.75e6)
+
+		vin_amp_vec = np.arange(0.7, 1.3, 100e-3)
+
+		for vin_amp in vin_amp_vec:
+			timestamp = datetime.now()
+			timestamp_str = timestamp.strftime("%Y%m%d_%H%M%S")
+
+			file_constr_lst = [timestamp_str,
+				f'vin{round(vin_amp, 2)}V',
+				f'{test_tdiff_main_params["num_iterations"]}x',
+				f'vb{test_tdiff_main_params["vin_bias"]}V',
+				'main']
+			
+			file_out = f'../../data/testing/{"_".join(file_constr_lst)}.yaml'
+			test_tdiff_main_params['vin_amp'] = float(vin_amp)
+			tdiff_vec = testing.test_tdiff_main(**test_tdiff_main_params)
+			tdiff_vec = [float(tdiff) for tdiff in tdiff_vec]
+
+			dump_data = dict(config=test_tdiff_main_params,
 				data=tdiff_vec)
 			with open(file_out, 'w') as outfile:
 				yaml.dump(dump_data, outfile, default_flow_style=False)
@@ -300,6 +407,7 @@ def run_main():
 				print(teensy_ser.readline())
 
 				# See the oscilloscope while probing the output T0
+
 
 	########################################
 	### Scratch: Measure Long Coax Delay ###
