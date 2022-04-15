@@ -8,6 +8,9 @@ f_atten     = 0.1;                  % Attenuator reduction (V/V)
 t_rise      = 100e-12;              % Input pulse rise time
 v_threshold = (1.8/(2^9)) * 71;     % Leading edge detector DAC voltage
 v_high      = 0.9;                  % Voltage which constitutes digital high
+voff_led    = 0.0;                  % LED comparator input-referred offset (+)
+voff_zcd    = 0.0;                  % ZCD comparator input-referred offset (+)
+tau         = 50e-9;                % First pass estimate of a single amp's tau
 mdl         = 'shape_delay_atten_noComp';
 
 A_in_vec    = [0.75, 0.8, 0.8500000000000001, 0.9000000000000001, 0.9500000000000002, 1.0000000000000002, 1.0500000000000003, 1.1000000000000003, 1.1500000000000004, 1.2000000000000004, 1.2500000000000004, 1.3000000000000005];
@@ -16,7 +19,6 @@ tcross_real_vec = tcross_raw_vec - 85e-9; % Correcting DG535 delay
 
 num_plots = 4;
 
-tau_start = 50e-9;      % First pass estimate of a single amp's time constant
 A0_stage = 2;           % Gain of a single amp stage
 num_LED = 6;
 num_ZCD = 5;
@@ -58,43 +60,7 @@ for i = 1:numel(A_in_vec)
     vin = A_in/t_rise * t_vec;
     vin(vin>A_in) = A_in;
     
-    % Pass through Simulink model of DG535 + coax
-    simOut = sim(mdl, ...
-            'StartTime', sprintf('%g', min(t_vec)), ...
-            'StopTime', sprintf('%g', max(t_vec)), ...
-            'FixedStep', sprintf('%g', dt), ...
-            'SaveTime', 'on', ...
-            'Solver', 'FixedStepDiscrete', ...
-            'LoadExternalInput', 'on', ...
-            'ExternalInput', '[t_vec, vin]');
-    
-    y_out       = simOut.get('yout');
-    t_out       = simOut.get('tout');
-    
-    v_zcdN = y_out.get(1).Values.Data;
-    v_zcdP = y_out.get(2).Values.Data;
-    v_zcdIn = y_out.get(3).Values.Data;
-    v_ledIn = y_out.get(4).Values.Data;
-    
-    % Plot inputs
-    subplot(plt_zcdIn);
-    plot(t_out, v_zcdIn);
-    xlabel("Time (s)");
-    ylabel("ZCD Input (V)");
-    ylim([min(v_zcdIn), max(v_zcdIn)*1.1]);
-    xlim([min(t_out), max(t_out)]);
-    
-    subplot(plt_ledIn);
-    subplot(num_plots, 1, 2);
-    plot(t_out, v_ledIn);
-    xlabel("Time (s)");
-    ylabel("LED Input (V)");
-    ylim([min(v_ledIn), max(v_ledIn)*1.1]);
-    xlim([min(t_out), max(t_out)]);
-    
-    % Pass outputs of emulated DG535 + coax into comparators
-    tau = tau_start;
-    
+    % Begin with starting guess of time constant
     val_low = 0;
     val_high = tau * 2;
 
@@ -103,30 +69,43 @@ for i = 1:numel(A_in_vec)
     
     t_transp = t_out';
     v_high_vec = ones(size(t_transp))*v_high;
-    
+
     while ~done
-        cla(plt_vLED);
-        cla(plt_vZCD);
+        % Printing for sanity checking
         fprintf('\n\t%e -> %e -> %e', val_low, tau, val_high);
 
         % Estimate the comparators' transfer functions
         omega0 = -2*pi/tau; % Mind the sign!
         [b_LED, a_LED] = zp2tf([], ones(num_LED,1)*omega0, 1);
         [b_ZCD, a_ZCD] = zp2tf([], ones(num_ZCD,1)*omega0, 1);
-    
+
         scale_LED = a_LED(numel(a_LED)) * A0_stage^num_LED;
         scale_ZCD = a_ZCD(numel(a_ZCD)) * A0_stage^num_ZCD;
-    
-        H_LED = tf(b_LED*scale_LED, a_LED);
-        H_ZCD = tf(b_ZCD*scale_LED, a_ZCD);
+
+        % Pass through Simulink model of DG535 + coax
+        simOut = sim(mdl, ...
+                'StartTime', sprintf('%g', min(t_vec)), ...
+                'StopTime', sprintf('%g', max(t_vec)), ...
+                'FixedStep', sprintf('%g', dt), ...
+                'SaveTime', 'on', ...
+                'Solver', 'FixedStepDiscrete', ...
+                'LoadExternalInput', 'on', ...
+                'ExternalInput', '[t_vec, vin]');
         
-        % Pass the inputs through the nonideal comparators
-        v_LED = lsim(H_LED, v_ledIn, t_out);
-        v_ZCD = lsim(H_ZCD, v_zcdIn, t_out);
-    
+        y_out       = simOut.get('yout');
+        t_out       = simOut.get('tout');
+        
+        v_zcdN = y_out.get(1).Values.Data;
+        v_zcdP = y_out.get(2).Values.Data;
+        v_zcdIn = y_out.get(3).Values.Data;
+        v_ledIn = y_out.get(4).Values.Data;
+        v_zcdOut = y_out.get(5).Values.Data;
+        v_ledOut = y_out.get(6).Values.Data;
+
         % Get the simulated crossing time
-        cross_LED = InterX([t_transp;v_LED'],[t_transp;v_high_vec]);
-        cross_ZCD = InterX([t_transp;v_ZCD'],[t_transp;v_high_vec]);
+        cross_LED = InterX([t_transp;v_ledOut'],[t_transp;v_high_vec]);
+        cross_ZCD = InterX([t_transp;v_zcdOut'],[t_transp;v_high_vec]);
+    
         if isempty(cross_LED)
             tcross_LED = [];
         else
@@ -138,32 +117,14 @@ for i = 1:numel(A_in_vec)
             tcross_ZCD = cross_ZCD(1);
         end
 
+        % If there's no crossing point, assume that the cross is much later
         if isempty(tcross_LED) || isempty(tcross_ZCD)
             tcross_sim = [];
         else
             tcross_sim = max([tcross_LED, tcross_ZCD]);
         end
         fprintf('\n\t%e vs. %e', tcross_sim, tcross_real);
-        
-        % Plotting
-        subplot(plt_vLED);
-        plot(t_out, v_LED);
-        hold on;
-        plot(t_out, ones(size(t_vec))*v_high);
-        xlabel("Time (s)");
-        ylabel("LED Output (V)");
-        ylim([min(v_LED), max(v_LED)*1.1]);
-        xlim([min(t_out), max(t_out)]);
-        
-        subplot(plt_vZCD);
-        plot(t_out, v_ZCD);
-        hold on;
-        plot(t_out, ones(size(t_vec))*v_high);
-        xlabel("Time (s)");
-        ylabel("ZCD Output (V)");
-        ylim([min(v_ZCD), max(v_ZCD)*1.1]);
-        xlim([min(t_out), max(t_out)]);
-    
+
         % Keep increasing tau until it's too slow; once we've overshot, binary search
         if is_increasing
             if ~isempty(tcross_sim) && tcross_sim < tcross_real
@@ -192,6 +153,47 @@ for i = 1:numel(A_in_vec)
             end
         end
     end
+    
+%     % Plot inputs
+%     subplot(plt_zcdIn);
+%     plot(t_out, v_zcdIn);
+%     xlabel("Time (s)");
+%     ylabel("ZCD Input (V)");
+%     ylim([min(v_zcdIn), max(v_zcdIn)*1.1]);
+%     xlim([min(t_out), max(t_out)]);
+%     
+%     subplot(plt_ledIn);
+%     subplot(num_plots, 1, 2);
+%     plot(t_out, v_ledIn);
+%     xlabel("Time (s)");
+%     ylabel("LED Input (V)");
+%     ylim([min(v_ledIn), max(v_ledIn)*1.1]);
+%     xlim([min(t_out), max(t_out)]);
+    
+%     while ~done
+%         cla(plt_vLED);
+%         cla(plt_vZCD);
+        
+        
+%         % Plotting
+%         subplot(plt_vLED);
+%         plot(t_out, v_LED);
+%         hold on;
+%         plot(t_out, ones(size(t_vec))*v_high);
+%         xlabel("Time (s)");
+%         ylabel("LED Output (V)");
+%         ylim([min(v_LED), max(v_LED)*1.1]);
+%         xlim([min(t_out), max(t_out)]);
+%         
+%         subplot(plt_vZCD);
+%         plot(t_out, v_ZCD);
+%         hold on;
+%         plot(t_out, ones(size(t_vec))*v_high);
+%         xlabel("Time (s)");
+%         ylabel("ZCD Output (V)");
+%         ylim([min(v_ZCD), max(v_ZCD)*1.1]);
+%         xlim([min(t_out), max(t_out)]);
+    
     tau_vec(i) = tau;
     tcross_sim_vec(i) = tcross_sim;
     disp(tau);
