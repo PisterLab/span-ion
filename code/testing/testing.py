@@ -6,6 +6,156 @@ import spani_globals, scan, temp_chamber, tdc
 from pprint import pprint
 
 
+def debug_tdiff_main(teensy_port, num_iterations, asc_params,
+		vin_bias=0.8, vin_amp=0.2, tref_clk=1/15e6):
+	'''
+	Inputs:
+	Returns:
+	Notes:
+	'''
+	# Open connection to Teensy and Keysight 33500B
+	teensy_ser = serial.Serial(port=tenesy_port,
+			baudrate=19200,
+			parity=serial.PARITY_NONE,
+			stopbits=serial.STOPBITS_ONE,
+			bytesize=serial.EIGHTBITS,
+			timeout=5)
+
+	rm = pyvisa.ResourceManager()
+	arb = Keysight33500B(rm)
+	arb.open_gpib()
+
+	# TDC settings for measurement
+	wdata1_dict = dict(
+		force_cal=1,	# Get calibration
+		parity_en=1,	# Enable parity bit in measurements
+		trigg_edge=0, 	# Rising edge
+		stop_edge=0, 	# Rising edge
+		start_edge=0,	# Rising edge
+		meas_mode=1,	# 0/1 somewhat deceptively assigned to Mode 1/2...
+		start_meas=1)	# Arm TDC for measurement
+	wdata1 = tdc.construct_wdata1(**wdata1_dict)
+
+	cmd_cfg1, _ = tdc.construct_config(is_read=False, 
+		addr=int(tdc.reg_addr_map['CONFIG1'], 16),
+		wdata=wdata1)
+	
+	wdata2_dict = dict(
+		calibration2_periods=1,	# -> 10 cycles wrt reference
+		avg_cycles=0,			# No averaging
+		num_stop=0 if wdata1_dict['meas_mode']==0 else 1)	# Single timer measurement
+	wdata2 = tdc.construct_wdata2(**wdata2_dict)
+
+	cmd_cfg2, _ = tdc.construct_config(is_read=False,
+		addr=int(tdc.reg_addr_map['CONFIG2'], 16),
+		wdata=wdata2)
+
+	# Arb settings for measurement TODO
+	cmd_lst = [
+		"TRIG:SOUR:EXT",		# External trigger source
+		"TRIG:SLOP POS",		# Trigger slope rising edge
+		"TRIG:TIM:1E-5",		# 1us delay between trigger and output pulse
+		"OUTP:SYNC:SOUR CH2",	# Set the sync output to channel 2
+		""
+		# "SOUR:2:FUNC:PULS",		# Switch Source 2 to pulse output
+		]
+
+	# Program the chip
+	asc = scan.construct_ASC(**asc_params)
+	scan.program_scan(ser=teensy_ser, ASC=asc)
+
+	# Control the DG535
+	for cmd in cmd_lst:
+		arb.write(cmd)
+
+	tdiff_vec = []
+
+	for _ in range(num_iterations):
+		# Reset the TDC
+		# print('Resetting TDC')
+		teensy_ser.write(b'tdcmainreset\n')
+		# print(teensy_ser.readline())
+		teensy_ser.readline()
+
+		val_int_status = tdc.tdc_read(teensy_ser=teensy_ser,
+			reg="INT_STATUS", chain="main")
+		has_started = tdc.is_started(val_int_status)
+		has_finished = tdc.is_done(val_int_status)
+		has_ovfl_clk = tdc.is_overflow_clk(val_int_status)
+		has_ovfl_coarse = tdc.is_overflow_coarse(val_int_status)
+
+		assert not has_started, "Measurement shouldn't have started yet"
+
+		# Configure the TDC
+		# print('--- Configuring CONFIG1')
+		teensy_ser.write(b'tdcmainconfig\n')
+		teensy_ser.write(cmd_cfg1.to_bytes(1, 'big'))
+		teensy_ser.write(wdata1.to_bytes(1, 'big'))
+		for _ in range(5):
+			# print(teensy_ser.readline())
+			teensy_ser.readline()
+
+		# print('--- Configuring CONFIG2')
+		teensy_ser.write(b'tdcmainconfig\n')
+		teensy_ser.write(cmd_cfg2.to_bytes(1, 'big'))
+		teensy_ser.write(wdata2.to_bytes(1, 'big'))
+		for _ in range(5):
+			teensy_ser.readline()
+			# print(teensy_ser.readline())
+
+		# Feed in the start pulse to get things going
+		# print('--- Feeding START')
+		teensy_ser.write(b'tdcmainstart\n')
+		# print(teensy_ser.readline())
+		teensy_ser.readline()
+
+		# Wait until measurement done
+		has_finished = False
+		while not has_finished:
+			val_int_status = tdc.tdc_read(teensy_ser=teensy_ser,
+				reg="INT_STATUS", chain="main")
+			has_started = tdc.is_started(val_int_status)
+			has_finished = tdc.is_done(val_int_status)
+			has_ovfl_clk = tdc.is_overflow_clk(val_int_status)
+			has_ovfl_coarse = tdc.is_overflow_coarse(val_int_status)
+
+			assert has_started, "Measurement not properly initialized"
+
+		# Read from relevant data registers
+		num_timers = tdc.code_numstop_map[wdata2_dict['num_stop']]
+		reg_lst = ['CALIBRATION1', 'CALIBRATION2']
+		reg_lst = reg_lst + [f'TIME{i}' for i in range(1,num_timers+1)]
+		reg_lst = reg_lst + [f'CLOCK_COUNT{i}' for i in range(1,num_timers+1)]
+
+		reg_data_dict = dict()
+		for reg in reg_lst:
+			reg_data_dict[reg] = tdc.tdc_read(teensy_ser=teensy_ser,
+				reg=reg, chain="main")
+			# print(f'-> {reg_data_dict[reg]}')
+
+		# From registers, calculate the time between the START and STOP triggers
+		time_x_reg = 'TIME1' if wdata1_dict['meas_mode'] == 0 else 'TIME2'
+
+		tdiff = tdc.calc_tof(
+			cal1=reg_data_dict['CALIBRATION1'] % (1<<23),
+			cal2=reg_data_dict['CALIBRATION2'] % (1<<23),
+			cal2_periods=tdc.code_cal2_map[wdata2_dict['calibration2_periods']],
+			time_1=reg_data_dict['TIME1'] % (1<<23),
+			time_x=reg_data_dict[time_x_reg] % (1<<23),
+			count_n=reg_data_dict['CLOCK_COUNT1'] % (1<<16),
+			tper=tref_clk,
+			mode=wdata1_dict['meas_mode'])
+
+		print(f'\t\t {tdiff}')
+		tdiff_vec.append(tdiff)
+
+	# Close connections
+	teensy_ser.close()
+	arb.close()
+
+	return tdiff_vec
+
+
 def test_tdiff_main(teensy_port, num_iterations, asc_params,
 	 	ip_addr='192.168.4.1', gpib_addr=15, 
 		vin_bias=0.8, vin_amp=0.2, tref_clk=1/15e6):

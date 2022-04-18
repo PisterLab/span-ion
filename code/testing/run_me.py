@@ -295,7 +295,7 @@ def run_main():
 	###############################
 	### Main Chain Fast Testing ###
 	###############################
-	if True:
+	if False:
 		asc_params = dict(
 			# MSB -> LSB
 			preamp_res 		= [0, 0],
@@ -365,6 +365,46 @@ def run_main():
 			data=tdiff_vec)
 		with open(file_out, 'w') as outfile:
 			yaml.dump(dump_data, outfile, default_flow_style=False)
+
+	#########################################
+	### Get the Keysight33500B to Respond ###
+	#########################################
+	if True:
+		teensy_ser = serial.Serial(port='COM5',
+            baudrate=19200,
+            parity=serial.PARITY_NONE,
+            stopbits=serial.STOPBITS_ONE,
+            bytesize=serial.EIGHTBITS,
+            timeout=5)
+
+		rm = pyvisa.ResourceManager()
+		arb = Keysight33500B(rm)
+		arb.open_gpib()
+
+		cmd_lst = [
+			"*RST; *CLS",			# Reset device
+			"OUTP1:LOAD 50",		# CH1 driving 50Ohm load
+			"TRIG1:SOUR EXT",		# External trigger source
+			"TRIG1:SLOP POS",		# Input trigger rising edge
+			# "TRIG:LEV 1.65",		# Input and output trigger level
+			"TRIG1:DEL 1E-5",		# 1us delay between trigger and output pulse
+			"OUTP:TRIG:SOUR CH1",	# Set the sync output to channel 1
+			"OUTP:TRIG:SLOP POS"	# Output pulse rising edge
+			"OUTP:TRIG ON",			# Turn on rear panel external trigger
+		]
+
+		for cmd in cmd_lst:
+			arb.write(cmd)
+
+		cont = input('Continue? (y/n)').lower()
+		if cont == 'y':
+			while True:
+				# Repeatedly send the START pulse
+				print('--- Feeding START')
+				teensy_ser.write(b'tdcmainstart\n')
+				print(teensy_ser.readline())
+
+				# See the oscilloscope while probing the output CH1
 
 	################################
 	### Get the DG535 to Respond ###

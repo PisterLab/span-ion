@@ -110,9 +110,8 @@ class KeysightE3631A(LabInstrument):
 
 class Keysight33500B(LabInstrument):
 	def close(self):
-		# Turn off outputs
-		self.rsrc.write("OUTPUT1 OFF")
-		self.rsrc.write("OUTPUT2 OFF")
+		# Clear before closing connection
+		self.rsrc.write("*RST")
 		super().close()
 
 
