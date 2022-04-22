@@ -292,6 +292,48 @@ def run_main():
 		# 	teensy_ser.write(code_str.encode())
 		# print(teensy_ser.readline())
 
+	#######################################
+	### One-Shot Pulse Detector Outputs ###
+	#######################################
+	if False:
+		asc_params = dict(
+			# MSB -> LSB
+			preamp_res 		= [0, 0],
+			delay_res 		= [1]*2, # [0, 0],
+			watchdog_res 	= [1]*4, # [0, 0, 0, 0],
+			attenuator_sel	= [1, 0, 0],
+			dac_sel 		= [1, 0, 0, 0, 0, 0, 1, 1], # [1] + [0]*7,
+			az_main_gain 	= [1]*3,
+			az_aux_gain 	= [1]*3,
+			# oneshot_res 	= [0, 0],
+			vref_preamp 	= [0, 1, 1, 1, 1, 1, 1, 1],
+			vdd_aon			= [0, 0, 0, 0, 0],
+			vdd_signal		= [0, 0, 0, 0, 0],
+			en_main			= [0],
+			en_small		= [0])
+
+		scratch_oneshot_params = dict(
+			teensy_port='COM5',
+			num_iterations=10000,
+			# asc_params=asc_params,
+			ip_addr='192.168.1.108',
+			gpib_addr=15,
+			vin_bias=0.23,
+			tref_clk=1/3.75e6,
+			vin_amp=1.1)
+
+		oneshot_res_vec = [[1,1]]
+		# oneshot_res_vec = [[a,b] for a in range(2) for b in range(2)]
+		for oneshot_res in oneshot_res_vec:
+			asc_params['oneshot_res'] = oneshot_res
+			scratch_oneshot_params['asc_params'] = asc_params
+
+			misc = input(f'Oneshot Setting: {oneshot_res}. Run? (y/n)').lower()
+			if misc == 'y':
+				tdiff_vec = testing.test_tdiff_small(**scratch_oneshot_params)
+				# tdiff_vec = [float(tdiff) for tdiff in tdiff_vec]
+
+
 	###############################
 	### Main Chain Fast Testing ###
 	###############################
@@ -303,8 +345,8 @@ def run_main():
 			watchdog_res 	= [1]*4, # [0, 0, 0, 0],
 			attenuator_sel	= [1, 0, 0],
 			dac_sel 		= [1, 0, 0, 0, 0, 0, 1, 1], # [1] + [0]*7,
-			az_main_gain 	= [0]*3,
-			az_aux_gain 	= [0]*3,
+			az_main_gain 	= [1]*3,
+			az_aux_gain 	= [1]*3,
 			oneshot_res 	= [0, 0],
 			vref_preamp 	= [0, 1, 1, 1, 1, 1, 1, 1],
 			vdd_aon			= [0, 0, 0, 0, 0],
@@ -314,36 +356,39 @@ def run_main():
 
 		test_tdiff_main_params = dict(
 			teensy_port='COM5',
-			num_iterations=500,
+			num_iterations=200,
 			asc_params=asc_params,
-			ip_addr='192.168.1.4',
+			ip_addr='192.168.1.108',
 			gpib_addr=15,
-			vin_bias=0.9,
 			tref_clk=1/3.75e6)
 
-		# vin_amp_vec = np.arange(0.1, 1.0, 100e-3)
-		vin_amp_vec = [2.0]
+		vin_bias_vec = np.arange(0.8, 1.0, 100e-3)
+		# vin_amp_vec = np.arange(1.0, 2.0, 100e-3)
+		vin_amp_vec = np.arange(0.5, 0.8, 100e-3)
 
-		for vin_amp in vin_amp_vec:
-			timestamp = datetime.now()
-			timestamp_str = timestamp.strftime("%Y%m%d_%H%M%S")
+		for vin_bias in vin_bias_vec:
+			for vin_amp in vin_amp_vec:
+				test_tdiff_main_params['vin_amp'] = float(vin_amp)
+				test_tdiff_main_params['vin_bias'] = float(vin_bias)
 
-			file_constr_lst = [timestamp_str,
-				f'vin{round(vin_amp, 2)}V',
-				f'{test_tdiff_main_params["num_iterations"]}x',
-				f'vb{test_tdiff_main_params["vin_bias"]}V',
-				'main']
-			
-			file_out = f'../../data/testing/{"_".join(file_constr_lst)}.yaml'
-			test_tdiff_main_params['vin_amp'] = float(vin_amp)
-			tdiff_vec = testing.test_tdiff_main(**test_tdiff_main_params)
-			tdiff_vec = [float(tdiff) for tdiff in tdiff_vec]
+				timestamp = datetime.now()
+				timestamp_str = timestamp.strftime("%Y%m%d_%H%M%S")
 
-			dump_data = dict(config=test_tdiff_main_params,
-				data=tdiff_vec,
-				notes="Changed measurement mode to 2")
-			with open(file_out, 'w') as outfile:
-				yaml.dump(dump_data, outfile, default_flow_style=False)
+				file_constr_lst = [timestamp_str,
+					f'vin{round(vin_amp, 2)}V',
+					f'{test_tdiff_main_params["num_iterations"]}x',
+					f'vb{test_tdiff_main_params["vin_bias"]}V',
+					'main']
+				
+				file_out = f'../../data/testing/{"_".join(file_constr_lst)}.yaml'
+				tdiff_vec = testing.test_tdiff_main(**test_tdiff_main_params)
+				tdiff_vec = [float(tdiff) for tdiff in tdiff_vec]
+
+				dump_data = dict(config=test_tdiff_main_params,
+					data=tdiff_vec,
+					notes="Changed measurement mode to 2")
+				with open(file_out, 'w') as outfile:
+					yaml.dump(dump_data, outfile, default_flow_style=False)
 
 	###########################################
 	### Board-Level Jitter from Small Chain ###
@@ -369,7 +414,7 @@ def run_main():
 	#########################################
 	### Get the Keysight33500B to Respond ###
 	#########################################
-	if True:
+	if False:
 		teensy_ser = serial.Serial(port='COM5',
             baudrate=19200,
             parity=serial.PARITY_NONE,
@@ -386,9 +431,9 @@ def run_main():
 			"OUTP1:LOAD 50",		# CH1 driving 50Ohm load
 			"TRIG1:SOUR EXT",		# External trigger source
 			"TRIG1:SLOP POS",		# Input trigger rising edge
-			# "TRIG:LEV 1.65",		# Input and output trigger level
+			# "TRIG:LEV 1.8",		# Input and output trigger level - only 33600 can do this
 			"TRIG1:DEL 1E-5",		# 1us delay between trigger and output pulse
-			"OUTP:TRIG:SOUR CH1",	# Set the sync output to channel 1
+			"OUTP:TRIG:SOUR CH1",	# Set the trigger output to channel 1
 			"OUTP:TRIG:SLOP POS"	# Output pulse rising edge
 			"OUTP:TRIG ON",			# Turn on rear panel external trigger
 		]
