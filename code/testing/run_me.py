@@ -337,11 +337,11 @@ def run_main():
 	###############################
 	### Main Chain Fast Testing ###
 	###############################
-	if False:
+	if True:
 		asc_params = dict(
 			# MSB -> LSB
 			preamp_res 		= [0, 0],
-			delay_res 		= [1]*2, # [0, 0],
+			delay_res 		= [0]*2, # [0, 0],
 			watchdog_res 	= [1]*4, # [0, 0, 0, 0],
 			attenuator_sel	= [1, 0, 0],
 			dac_sel 		= [1, 0, 0, 0, 0, 0, 1, 1], # [1] + [0]*7,
@@ -356,7 +356,7 @@ def run_main():
 
 		test_tdiff_main_params = dict(
 			teensy_port='COM5',
-			num_iterations=200,
+			num_iterations=10000,
 			asc_params=asc_params,
 			ip_addr='192.168.1.108',
 			gpib_addr=15,
@@ -364,7 +364,8 @@ def run_main():
 
 		vin_bias_vec = np.arange(0.8, 1.0, 100e-3)
 		# vin_amp_vec = np.arange(1.0, 2.0, 100e-3)
-		vin_amp_vec = np.arange(0.5, 0.8, 100e-3)
+		# vin_amp_vec = np.arange(0.5, 0.8, 100e-3)
+		vin_amp_vec = [1.0]
 
 		for vin_bias in vin_bias_vec:
 			for vin_amp in vin_amp_vec:
@@ -386,7 +387,7 @@ def run_main():
 
 				dump_data = dict(config=test_tdiff_main_params,
 					data=tdiff_vec,
-					notes="Changed measurement mode to 2")
+					notes="")
 				with open(file_out, 'w') as outfile:
 					yaml.dump(dump_data, outfile, default_flow_style=False)
 
