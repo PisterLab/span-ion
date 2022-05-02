@@ -342,9 +342,9 @@ def run_main():
 			# MSB -> LSB
 			preamp_res 		= [0, 0],
 			delay_res 		= [0]*2, # [0, 0],
-			watchdog_res 	= [1]*4, # [0, 0, 0, 0],
+			watchdog_res 	= [0]*4, # [0, 0, 0, 0],
 			attenuator_sel	= [1, 0, 0],
-			dac_sel 		= [1, 0, 0, 0, 0, 0, 1, 1], # [1] + [0]*7,
+			dac_sel 		= [0, 1, 1, 1, 1, 1, 1, 0], # [1] + [0]*7,
 			az_main_gain 	= [1]*3,
 			az_aux_gain 	= [1]*3,
 			oneshot_res 	= [0, 0],
@@ -362,10 +362,12 @@ def run_main():
 			gpib_addr=15,
 			tref_clk=1/3.75e6)
 
-		vin_bias_vec = np.arange(0.8, 1.0, 100e-3)
+		vin_bias_vec = [0]
+
 		# vin_amp_vec = np.arange(1.0, 2.0, 100e-3)
 		# vin_amp_vec = np.arange(0.5, 0.8, 100e-3)
-		vin_amp_vec = [1.0]
+		# vin_amp_vec = np.arange(0.8, 0.1, -0.1)
+		vin_amp_vec = [0.8]
 
 		for vin_bias in vin_bias_vec:
 			for vin_amp in vin_amp_vec:
@@ -411,6 +413,74 @@ def run_main():
 			data=tdiff_vec)
 		with open(file_out, 'w') as outfile:
 			yaml.dump(dump_data, outfile, default_flow_style=False)
+
+	##############################################
+	### Scratch: Check Biasing of On-Board OTA ###
+	##############################################
+	if False:
+		rm = pyvisa.ResourceManager()
+		dg535 = DG535(rm)
+		dg535.open_prologix(ip_addr='192.168.1.108', gpib_addr=15)
+
+		# Sanity checking DG535 status
+		dg535.write("CL")
+		print(f"Error Status: {dg535.query('ES')}")
+		print(f"Instrument Status: {dg535.query('IS')}")
+
+		cmd_lst = [
+			"TM 1",						# External trigger
+			"TS 1",						# Rising edge trigger
+			"TL 1.00",					# Edge trigger level
+			"TZ 0,1",					# Trigger is high impedance
+			"TZ 1,0",					# T0 termination 50Ohm
+			"OM 1,3",					# T0 output VARiable
+			# f"OO 1,0.8",				# T0 channel offset
+		]
+
+		for cmd in cmd_lst:
+			dg535.write(cmd)
+
+		cont = True
+		while cont:
+			vin_bias_str = input('Bias voltage: ')
+			try:
+				vin_bias = float(vin_bias_str)
+				dg535.write(f'OO 1,{vin_bias}') # T0 channel offset
+			except:
+				print(f'{vin_bias_str} not a float')
+
+			cont_prompt = input('Continue? y/n').lower()
+			cont = cont_prompt == 'y'
+
+	################################################
+	### Main Chain: Detect Realistic MCP Pulses? ###
+	################################################
+	if False:
+		asc_params = dict(
+			# MSB -> LSB
+			preamp_res 		= [0, 0],
+			delay_res 		= [0]*2, # [0, 0],
+			watchdog_res 	= [0]*4, # [0, 0, 0, 0],
+			attenuator_sel	= [1, 1, 1],
+			dac_sel 		= [0, 1, 1, 1, 1, 1, 1, 0],
+			az_main_gain 	= [1]*3,
+			az_aux_gain 	= [1]*3,
+			oneshot_res 	= [0, 0],
+			vref_preamp 	= [0, 1, 1, 1, 1, 1, 1, 1],
+			vdd_aon			= [0, 0, 0, 0, 0],
+			vdd_signal		= [0, 0, 0, 0, 0],
+			en_main			= [0],
+			en_small		= [0])
+ 
+		mcp_detect_params = dict(teensy_port='COM5',
+			num_iterations=10000,
+			asc_params=asc_params)
+
+		cont = True
+		while cont:
+			testing.sanity_mcp_pulse(**mcp_detect_params)
+			cont_raw = input('Continue? y/n').lower()
+			cont = cont_raw=='y'
 
 	#########################################
 	### Get the Keysight33500B to Respond ###
