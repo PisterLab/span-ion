@@ -1,0 +1,8 @@
+don't have to go through 4pcb, maybe do 4 layers?
+routing, ground, ground, routing
+take a look at controlled impedance stackup
+same trace width
+maybe? probably not, mmcx, snap-in, no cables readily available
+leave more space
+output coax, series terminate on output, maybe 30ohm or something on the output
+Consider high speed probe tip, sticking a ground someplace where it's close to the chip
