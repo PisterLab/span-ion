@@ -1,7 +1,7 @@
 Protel Design System Design Rule Check
 PCB File : C:\Users\lydialee\Box Sync\Research\SSL\span-ion\board\span-ion-cfd\CFD_Chip_Test.PcbDoc
-Date     : 2022-05-17
-Time     : 16:31:21
+Date     : 2022-05-18
+Time     : 17:00:51
 
 Processing Rule : Clearance Constraint (Gap=60mil) (InNamedPolygon('vbus')),(All)
 Rule Violations :0
