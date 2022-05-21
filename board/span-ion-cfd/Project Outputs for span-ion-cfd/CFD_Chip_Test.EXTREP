@@ -1,25 +1,24 @@
 ------------------------------------------------------------------------------------------
-Gerber File Extension Report For: CFD_Chip_Test.GBR   2022-01-13  13:56:20
+Gerber File Extension Report For: CFD_Chip_Test.GBR   2022-05-20  21:55:03
 ------------------------------------------------------------------------------------------
 
 
 ------------------------------------------------------------------------------------------
 Layer Extension     Layer Description                      
 ------------------------------------------------------------------------------------------
-.gbr                Top Layer                               
-.gbr                Bottom Layer                            
-.gbr                Bottom Pad Master                       
-.gbr                Top Pad Master                          
-.gbr                Bottom Solder                           
-.gbr                Top Overlay                             
-.gbr                Top Solder                              
-.gbr                Mechanical 13                           
-.gbr                Top Courtyard                           
-.gbr                Top Component Center                    
-.gbr                Top Assembly                            
-.gbr                Top 3D Body                             
-.gbr                Mechanical 1                            
-.gbr                Mechanical 7                            
-.gbr                Mechanical 15                           
-.gbr                Profile                                 
+.GTO                Top Overlay                             
+.GTS                Top Solder                              
+.GTL                Top Layer                               
+.GBL                Bottom Layer                            
+.GBS                Bottom Solder                           
+.GM1                Mechanical 1                            
+.GM2                Top 3D Body                             
+.GM4                Top Courtyard                           
+.GM6                Top Assembly                            
+.GM7                Mechanical 7                            
+.GM9                Top Component Center                    
+.GM13               Mechanical 13                           
+.GM15               Mechanical 15                           
+.GPT                Top Pad Master                          
+.GPB                Bottom Pad Master                       
 ------------------------------------------------------------------------------------------

@@ -235,6 +235,23 @@ DItemRevisionGUID=
 GenerateClassCluster=0
 DocumentUniqueId=GRHFDUGO
 
+[Document12]
+DocumentPath=CAMtastic6.Cam
+AnnotationEnabled=1
+AnnotateStartValue=1
+AnnotationIndexControlEnabled=0
+AnnotateSuffix=
+AnnotateScope=All
+AnnotateOrder=-1
+DoLibraryUpdate=1
+DoDatabaseUpdate=1
+ClassGenCCAutoEnabled=1
+ClassGenCCAutoRoomEnabled=1
+ClassGenNCAutoScope=None
+DItemRevisionGUID=
+GenerateClassCluster=0
+DocumentUniqueId=
+
 [GeneratedDocument1]
 DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test.DRR
 DItemRevisionGUID=
@@ -244,86 +261,182 @@ DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test.EXTREP
 DItemRevisionGUID=
 
 [GeneratedDocument3]
-DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test.LDP
+DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test.GBL
 DItemRevisionGUID=
 
 [GeneratedDocument4]
-DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test.REP
+DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test.GBS
 DItemRevisionGUID=
 
 [GeneratedDocument5]
-DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test.RUL
+DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test.GM1
 DItemRevisionGUID=
 
 [GeneratedDocument6]
-DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test.TXT
+DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test.GM2
 DItemRevisionGUID=
 
 [GeneratedDocument7]
-DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test_Copper_Signal_Bot.gbr
+DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test.GM4
 DItemRevisionGUID=
 
 [GeneratedDocument8]
-DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test_Copper_Signal_Top.gbr
+DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test.GM6
 DItemRevisionGUID=
 
 [GeneratedDocument9]
-DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test_Legend_Top.gbr
+DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test.GM7
 DItemRevisionGUID=
 
 [GeneratedDocument10]
-DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test_Mechanical_1.gbr
+DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test.GM9
 DItemRevisionGUID=
 
 [GeneratedDocument11]
-DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test_Mechanical_2.gbr
+DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test.GM13
 DItemRevisionGUID=
 
 [GeneratedDocument12]
-DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test_Mechanical_4.gbr
+DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test.GM15
 DItemRevisionGUID=
 
 [GeneratedDocument13]
-DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test_Mechanical_6.gbr
+DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test.GPB
 DItemRevisionGUID=
 
 [GeneratedDocument14]
-DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test_Mechanical_7.gbr
+DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test.GPT
 DItemRevisionGUID=
 
 [GeneratedDocument15]
-DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test_Mechanical_9.gbr
+DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test.GTL
 DItemRevisionGUID=
 
 [GeneratedDocument16]
-DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test_Mechanical_13.gbr
+DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test.GTO
 DItemRevisionGUID=
 
 [GeneratedDocument17]
-DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test_Mechanical_15.gbr
+DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test.GTS
 DItemRevisionGUID=
 
 [GeneratedDocument18]
-DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test_Pads_Bot.gbr
+DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test.LDP
 DItemRevisionGUID=
 
 [GeneratedDocument19]
-DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test_Pads_Top.gbr
+DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test.REP
 DItemRevisionGUID=
 
 [GeneratedDocument20]
-DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test_Profile.gbr
+DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test.RUL
 DItemRevisionGUID=
 
 [GeneratedDocument21]
-DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test_Soldermask_Bot.gbr
+DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test.TXT
 DItemRevisionGUID=
 
 [GeneratedDocument22]
-DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test_Soldermask_Top.gbr
+DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test_Copper_Plane_1.gbr
 DItemRevisionGUID=
 
 [GeneratedDocument23]
+DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test_Copper_Plane_2.gbr
+DItemRevisionGUID=
+
+[GeneratedDocument24]
+DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test_Copper_Signal_Bot.gbr
+DItemRevisionGUID=
+
+[GeneratedDocument25]
+DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test_Copper_Signal_Top.gbr
+DItemRevisionGUID=
+
+[GeneratedDocument26]
+DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test_Drawing_1.gbr
+DItemRevisionGUID=
+
+[GeneratedDocument27]
+DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test_Drillmap_1.gbr
+DItemRevisionGUID=
+
+[GeneratedDocument28]
+DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test_Legend_Top.gbr
+DItemRevisionGUID=
+
+[GeneratedDocument29]
+DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test_Mechanical_1.gbr
+DItemRevisionGUID=
+
+[GeneratedDocument30]
+DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test_Mechanical_2.gbr
+DItemRevisionGUID=
+
+[GeneratedDocument31]
+DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test_Mechanical_4.gbr
+DItemRevisionGUID=
+
+[GeneratedDocument32]
+DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test_Mechanical_6.gbr
+DItemRevisionGUID=
+
+[GeneratedDocument33]
+DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test_Mechanical_7.gbr
+DItemRevisionGUID=
+
+[GeneratedDocument34]
+DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test_Mechanical_9.gbr
+DItemRevisionGUID=
+
+[GeneratedDocument35]
+DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test_Mechanical_13.gbr
+DItemRevisionGUID=
+
+[GeneratedDocument36]
+DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test_Mechanical_15.gbr
+DItemRevisionGUID=
+
+[GeneratedDocument37]
+DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test_Pads_Bot.gbr
+DItemRevisionGUID=
+
+[GeneratedDocument38]
+DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test_Pads_Top.gbr
+DItemRevisionGUID=
+
+[GeneratedDocument39]
+DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test_Profile.gbr
+DItemRevisionGUID=
+
+[GeneratedDocument40]
+DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test_PTH_Drill.gbr
+DItemRevisionGUID=
+
+[GeneratedDocument41]
+DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test_Soldermask_Bot.gbr
+DItemRevisionGUID=
+
+[GeneratedDocument42]
+DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test_Soldermask_Top.gbr
+DItemRevisionGUID=
+
+[GeneratedDocument43]
+DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test_Top_3D_Body.gbr
+DItemRevisionGUID=
+
+[GeneratedDocument44]
+DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test_Top_Assembly.gbr
+DItemRevisionGUID=
+
+[GeneratedDocument45]
+DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test_Top_Component_Center.gbr
+DItemRevisionGUID=
+
+[GeneratedDocument46]
+DocumentPath=Project Outputs for span-ion-cfd\CFD_Chip_Test_Top_Courtyard.gbr
+DItemRevisionGUID=
+
+[GeneratedDocument47]
 DocumentPath=Project Outputs for span-ion-cfd\Design Rule Check - CFD_Chip_Test.html
 DItemRevisionGUID=
 
@@ -679,7 +792,7 @@ OutputDefault10=0
 Configuration10_Name1=ForceUpdateSettings
 Configuration10_Item1=False
 Configuration10_Name2=OutputConfigurationParameter1
-Configuration10_Item2=FileComment= |FileSubject=Autodetect|GenerateDRCRulesFile=True|GenerateReports=True|GerberUnit=Imperial|MinusApertureTolerance=50|NumberOfDecimals=6|OptimizeChangeLocationCommands=True|PlotBackDrillingPairs=False|PlotBlindViasPairs=False|PlotBoardProfile=True|PlotCounterHolesPairs=True|PlotDrillDrawingPairs=False|PlotDrillGuidePairs=False|PlotMicroViasPairs=False|PlotNPTHPairs=False|PlotPTHPairs=False|PlotX2.Set=SerializeLayerHash.Version~2,ClassName~TPlotLayerStateArray,16777217~1,16973848~1,16908301~1,16908292~1,16908297~1,16973849~1,16908294~1,16908290~1,16973835~1,16973830~1,16842751~1,16908289~1,16973834~1,16908295~1,16908303~1|PlusApertureTolerance=50|Record=GerberX2View|Sorted=False|DocumentPath=C:\Users\lydialee\Box Sync\Research\SSL\span-ion\board\span-ion-cfd\CFD_Chip_Test.PcbDoc
+Configuration10_Item2=FileComment= |FileSubject=Autodetect|GenerateDRCRulesFile=True|GenerateReports=True|GerberUnit=Imperial|IncludeUnconnectedMidLayerPads=True|MinusApertureTolerance=50|NumberOfDecimals=6|OptimizeChangeLocationCommands=True|PlotBackDrillingPairs=False|PlotBlindViasPairs=False|PlotBoardProfile=True|PlotCounterHolesPairs=True|PlotDrillDrawingPair0_Backdrill=False|PlotDrillDrawingPair0_DrillType=Regular|PlotDrillDrawingPair0_HighLayer=Bottom Layer|PlotDrillDrawingPair0_LowLayer=Top Layer|PlotDrillDrawingPairs=False|PlotDrillGuidePair0_Backdrill=False|PlotDrillGuidePair0_DrillType=Regular|PlotDrillGuidePair0_HighLayer=Bottom Layer|PlotDrillGuidePair0_LowLayer=Top Layer|PlotDrillGuidePairs=False|PlotMicroViasPairs=False|PlotNPTHPairs=False|PlotPTHPair0_Backdrill=False|PlotPTHPair0_DrillType=Regular|PlotPTHPair0_HighLayer=Top Layer|PlotPTHPair0_LowLayer=Bottom Layer|PlotPTHPairs=False|PlotX2.Set=SerializeLayerHash.Version~2,ClassName~TPlotLayerStateArray,16777217~1,16973848~1,16908301~1,16908292~1,16908297~1,16973849~1,16908294~1,16908290~1,16973835~1,16973830~1,16842751~1,16908289~1,16973834~1,16908295~1,16908303~1,16842754~1,16842753~1|PlusApertureTolerance=50|Record=GerberX2View|Sorted=False|DocumentPath=C:\Users\lydialee\Box Sync\Research\SSL\span-ion\board\span-ion-cfd\CFD_Chip_Test.PcbDoc
 OutputType11=Final
 OutputName11=Final Artwork Prints
 OutputDocumentPath11=
@@ -694,7 +807,7 @@ OutputDefault12=0
 Configuration12_Name1=ForceUpdateSettings
 Configuration12_Item1=False
 Configuration12_Name2=OutputConfigurationParameter1
-Configuration12_Item2=AddToAllLayerClasses.Set= |AddToAllPlots.Set=SerializeLayerHash.Version~2,ClassName~TPlotLayerStateArray|CentrePlots=False|DrillDrawingSymbol=GraphicsSymbol|DrillDrawingSymbolSize=200000|EmbeddedApertures=True|FilmBorderSize=10000000|FilmXSize=200000000|FilmYSize=160000000|FlashAllFills=False|FlashPadShapes=True|G54OnApertureChange=False|GenerateDRCRulesFile=True|GenerateDRCRulesFile=True|GenerateReliefShapes=True|GerberUnit=Imperial|GerberUnit=Imperial|IncludeUnconnectedMidLayerPads=False|LayerClassesMirror.Set= |LayerClassesPlot.Set= |LeadingAndTrailingZeroesMode=SuppressLeadingZeroes|MaxApertureSize=2500000|MinusApertureTolerance=50|MinusApertureTolerance=50|Mirror.Set=SerializeLayerHash.Version~2,ClassName~TPlotLayerStateArray|MirrorDrillDrawingPlots=False|MirrorDrillGuidePlots=False|NoRegularPolygons=False|NumberOfDecimals=5|NumberOfDecimals=5|OptimizeChangeLocationCommands=True|OptimizeChangeLocationCommands=True|OriginPosition=Relative|Panelize=False|Plot.Set=SerializeLayerHash.Version~2,ClassName~TPlotLayerStateArray,16973830~1,16973834~1,16777217~1,16842751~1,16973835~1,16908289~1,16908290~1,16908292~1,16908294~1,16908295~1,16908297~1,16908301~1,16908303~1,16973848~1,16973849~1|PlotPositivePlaneLayers=False|PlotUsedDrillDrawingLayerPairs=False|PlotUsedDrillGuideLayerPairs=False|PlusApertureTolerance=50|PlusApertureTolerance=50|Record=GerberView|SoftwareArcs=False|Sorted=False|Sorted=False|DocumentPath=C:\Users\lydialee\Dropbox\School\Pister\SSL\span-ion\board\span-ion-cfd\CFD_Chip_Test.PcbDoc
+Configuration12_Item2=AddToAllLayerClasses.Set= |AddToAllPlots.Set=SerializeLayerHash.Version~2,ClassName~TPlotLayerStateArray|CentrePlots=False|DrillDrawingSymbol=GraphicsSymbol|DrillDrawingSymbolSize=200000|EmbeddedApertures=True|FilmBorderSize=10000000|FilmXSize=200000000|FilmYSize=160000000|FlashAllFills=False|FlashPadShapes=True|G54OnApertureChange=False|GenerateDRCRulesFile=True|GenerateDRCRulesFile=True|GenerateReliefShapes=True|GenerateReports=True|GerberUnit=Imperial|GerberUnit=Imperial|IncludeUnconnectedMidLayerPads=False|LayerClassesMirror.Set= |LayerClassesPlot.Set= |LeadingAndTrailingZeroesMode=SuppressLeadingZeroes|MaxApertureSize=2500000|MinusApertureTolerance=50|MinusApertureTolerance=50|Mirror.Set=SerializeLayerHash.Version~2,ClassName~TPlotLayerStateArray|MirrorDrillDrawingPlots=False|MirrorDrillGuidePlots=False|NoRegularPolygons=False|NumberOfDecimals=5|NumberOfDecimals=5|OptimizeChangeLocationCommands=True|OptimizeChangeLocationCommands=True|OriginPosition=Relative|Panelize=False|Plot.Set=SerializeLayerHash.Version~2,ClassName~TPlotLayerStateArray,16973830~1,16973834~1,16777217~1,16842751~1,16973835~1,16908289~1,16908290~1,16908292~1,16908294~1,16908295~1,16908297~1,16908301~1,16908303~1,16973848~1,16973849~1|PlotPositivePlaneLayers=False|PlotUsedDrillDrawingLayerPairs=False|PlotUsedDrillGuideLayerPairs=False|PlusApertureTolerance=50|PlusApertureTolerance=50|Record=GerberView|SoftwareArcs=False|Sorted=False|Sorted=False|DocumentPath=C:\Users\lydialee\Box Sync\Research\SSL\span-ion\board\span-ion-cfd\CFD_Chip_Test.PcbDoc
 
 [OutputGroup6]
 Name=Report Outputs
