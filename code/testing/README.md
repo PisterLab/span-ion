@@ -1,5 +1,7 @@
 # code/testing
 
+Code for testing the second iteration of the SPANI chip, taped out 2022/11/16.
+
 * `cfd.ino`: Code for the Teensy 3.6 microcontroller.
 * `dac.py`: Measurement and processing on-chip DAC voltages.
 * `gpib.py`: GPIB control functions for boxes in the lab.
