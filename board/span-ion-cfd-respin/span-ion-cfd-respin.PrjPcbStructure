@@ -1,0 +1,4 @@
+Record=TopLevelDocument|FileName=Channel_A.SchDoc|SheetNumber=4
+Record=NoMainPathDocument|SourceDocument=Channel_A.SchDoc|FileName=Mux_Demux.SchDoc|SheetNumber=3
+Record=NoMainPathDocument|SourceDocument=Channel_A.SchDoc|FileName=Power.SchDoc|SheetNumber=1
+Record=NoMainPathDocument|SourceDocument=Channel_A.SchDoc|FileName=Teensy_Interface.SchDoc|SheetNumber=2
