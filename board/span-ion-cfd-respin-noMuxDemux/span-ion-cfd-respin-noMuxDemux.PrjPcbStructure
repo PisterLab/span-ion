@@ -1,4 +1,3 @@
-Record=TopLevelDocument|FileName=Channel_A.SchDoc|SheetNumber=3
-Record=NoMainPathDocument|SourceDocument=Channel_A.SchDoc|FileName=Channel_B.SchDoc|SheetNumber=4
-Record=NoMainPathDocument|SourceDocument=Channel_A.SchDoc|FileName=Power.SchDoc|SheetNumber=2
-Record=NoMainPathDocument|SourceDocument=Channel_A.SchDoc|FileName=Shared.SchDoc|SheetNumber=1
+Record=TopLevelDocument|FileName=Shared.SchDoc|SheetNumber=1
+Record=SheetSymbol|SourceDocument=Shared.SchDoc|Designator=x0|SchDesignator=Repeat(x,0,1)|FileName=Channel.SchDoc|SheetNumber=2|SymbolType=Normal|RawFileName=Channel.SchDoc|DesignItemId= |SourceLibraryName= |ObjectKind=Sheet Symbol|RevisionGUID= |ItemGUID= |VaultGUID= 
+Record=SheetSymbol|SourceDocument=Shared.SchDoc|Designator=x1|SchDesignator=Repeat(x,0,1)|FileName=Channel.SchDoc|SheetNumber=2|SymbolType=Normal|RawFileName=Channel.SchDoc|DesignItemId= |SourceLibraryName= |ObjectKind=Sheet Symbol|RevisionGUID= |ItemGUID= |VaultGUID= 
