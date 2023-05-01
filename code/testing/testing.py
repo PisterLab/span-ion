@@ -5,6 +5,19 @@ from gpib import *
 import spani_globals, scan, temp_chamber, tdc
 from pprint import pprint
 
+def sanity_serial(uC_port, baudrate=115200, num_iterations=5):
+	''''''
+	# Open connection to microcontroller
+	uC_ser = serial.Serial(port=uC_port,
+		baudrate=baudrate,
+		parity=serial.PARITY_NONE,
+		stopbits=serial.STOPBITS_ONE,
+		bytesize=serial.EIGHTBITS,
+		timeout=2)
+	for _ in range(num_iterations):
+		print(uC_ser.readline())
+	uC_ser.close()
+
 def sanity_mcp_pulse(teensy_port, num_iterations, asc_params):
 	''''''
 	# Open connections to Teensy and DG535

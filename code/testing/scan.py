@@ -11,7 +11,7 @@ from typing import List, Mapping
 def program_scan(ser, ASC) -> None:
 	'''
 	Inputs:
-		ser: serial.Serial. Open COM port to the Teensy.
+		ser: serial.Serial. Open COM port to the microcontroller.
 		ASC: List of integers. Analog scan chain bits.
 	Returns:
 		None.

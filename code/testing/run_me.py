@@ -12,6 +12,14 @@ def run_main():
 	timestamp = datetime.now()
 	timestamp_str = timestamp.strftime("%Y%m%d_%H%M%S")
 
+	#########################
+	### Serial Connection ###
+	#########################
+	if True:
+		uC_port = 'COM5'
+		testing.sanity_serial(uC_port)
+
+
 	####################
 	### Program Scan ###
 	####################
@@ -337,7 +345,7 @@ def run_main():
 	###############################
 	### Main Chain Fast Testing ###
 	###############################
-	if True:
+	if False:
 		asc_params = dict(
 			# MSB -> LSB
 			preamp_res 		= [0, 0],
