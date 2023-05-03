@@ -219,5 +219,69 @@ void loop() {
     else if (inputString == "ascread1\n") {
       asc_read(pin_scan1_clk, pin_scan1_outb)
     }
+    else if (inputString == "peakreset\n") {
+			peak_reset(pin_pk_rst);
+		}
+    else if (inputString == "peakread0\n") {
+      peak_read(pin_pk_out0);
+    }
+    else if (inputString == "peakread1\n") {
+      peak_read(pin_pk_out1);
+    }
+		else if (inputString == "bandgaptest0\n") {
+		  bandgap_test(pin_bandgap0);
+		}
+    else if (inputString == "bandgaptest1\n") {
+		  bandgap_test(pin_bandgap1);
+		}
+    else if (inputString == "dacreadvddmeas0\n") {
+      dac_read(pin_vddmeas0);
+    }
+    else if (inputString == "dacreadvddmeas1\n") {
+      dac_read(pin_vddmeas1);
+    }
+    else if (inputString == "dacreadmain0\n") {
+      dac_read(pin_dac_main0);
+    }
+    else if (inputString == "dacreadmain1\n") {
+      dac_read(pin_dac_main1);
+    }
+    else if (inputString == "dacreadsmall0\n") {
+      dac_read(pin_dac_small0);
+    }
+    else if (inputString == "dacreadsmall1\n") {
+      dac_read(pin_dac_small1);
+    }
+    else if (inputString == "dacreadpreamp0\n") {
+      dac_read(pin_preamp_vref0);
+    }
+    else if (inputString == "dacreadpreamp1\n") {
+      dac_read(pin_preamp_vref1);
+    }
   }
 }
+
+/* ------------- */
+/* --- Other --- */
+/* ------------- */
+void serialEvent() {
+/* 
+ *  Inputs:
+ *    None
+ *  Returns:
+ *    None
+ *  Notes:
+ *    SerialEvent occurs whenever new data comes in the hardware serial RX. This
+ *    routine is run between each time loop() runs, so using delay inside loop
+ *    can delay response. Multiple bytes of data may be available.
+*/
+	if (Serial.available()) {
+		char inChar = (char)Serial.read();
+		inputString += inChar;
+
+		// String terminates with \n
+		if (inChar == '\n') {
+			stringComplete = true;
+		}
+	}
+} // end serialEvent()
