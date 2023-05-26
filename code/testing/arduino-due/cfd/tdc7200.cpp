@@ -3,6 +3,7 @@
  * https://www.ti.com/lit/ds/symlink/tdc7200.pdf
 */
 #include <Arduino.h>
+#include <elapsedMillis.h>
 
 // Register addresses
 const char ADDR_CONFIG1 = 0x00;

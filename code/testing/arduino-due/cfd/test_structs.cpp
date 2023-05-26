@@ -43,14 +43,9 @@ void bandgap_test(int pin_bandgap) {
  * Returns:
  *  None.
  * Notes:
- *  Prints the internal temperature (in Celsius) of the Teensy over 
- *  serial and measures (and prints over serial) the measured 
+ *  Measures (and prints over serial) the measured 
  *  bandgap voltage _in LSB_.
 */
-    // Temperature reading
-    InternalTemperature.begin(TEMPERATURE_NO_ADC_SETTING_CHANGES);
-    Serial.println(InternalTemperature.readTemperatureC());
-
     // Bandgap voltage reading (in LSB!!)
     Serial.println(analogRead(pin_bandgap));
 } // end bandgap_test()
@@ -82,15 +77,15 @@ void latch_reset(int pin_reset, bool active_low) {
  *  None.
 */
   if (active_low) {
-    digitalWrite(pin_pk_rst, HIGH);
+    digitalWrite(pin_reset, HIGH);
     delayMicroseconds(100);
-    digitalWrite(pin_pk_rst, LOW);
+    digitalWrite(pin_reset, LOW);
     delayMicroseconds(500);
   }
   else {
-    digitalWrite(pin_pk_rst, LOW);
+    digitalWrite(pin_reset, LOW);
     delayMicroseconds(100);
-    digitalWrite(pin_pk_rst, HIGH);
+    digitalWrite(pin_reset, HIGH);
     delayMicroseconds(500);
   }
 }

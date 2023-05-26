@@ -1,5 +1,6 @@
 #include "scan.h"
 #include "tdc7200.h"
+#include "test_structs.h"
 
 /* --------------------------------- */
 /* --- Pin Mappings (Arduino Due) --- */
@@ -91,6 +92,10 @@ const int CHAIN_SMALL       = 1;    // Used to indicate the small signal chain
 /* ----------------------------- */
 /* --- Runs once at power-on --- */
 /* ----------------------------- */
+// Variables for command interpreter
+String inputString = "";
+boolean stringComplete = false;
+
 void setup() {
   analogReadResolution(B_ADC); 
   analogWriteResolution(B_ADC);
@@ -202,10 +207,10 @@ void setup() {
 void loop() {
   if (stringComplete) {
     if (inputString == "ascwrite0\n") {
-      asc_write(pin_scan0_clk, pin_scan0_inb);
+      asc_write(pin_scan0_clk, pin_scan_inb);
     }
     else if (inputString == "ascwrite1\n") {
-      asc_write(pin_scan1_clk, pin_scan1_inb);
+      asc_write(pin_scan1_clk, pin_scan_inb);
     }
     else if (inputString == "ascload0\n") {
       asc_load(pin_scan0_loadb);
@@ -214,10 +219,10 @@ void loop() {
       asc_load(pin_scan1_loadb);
     }
     else if (inputString == "ascread0\n") {
-      asc_read(pin_scan0_clk, pin_scan0_outb)
+      asc_read(pin_scan0_clk, pin_scan0_outb);
     }
     else if (inputString == "ascread1\n") {
-      asc_read(pin_scan1_clk, pin_scan1_outb)
+      asc_read(pin_scan1_clk, pin_scan1_outb);
     }
     else if (inputString == "peakreset\n") {
 			peak_reset(pin_pk_rst);

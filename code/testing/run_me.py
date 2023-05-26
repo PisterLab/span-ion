@@ -24,28 +24,39 @@ def run_main():
 	### Program Scan ###
 	####################
 	if False:
-		teensy_port = 'COM5'
+		uC = 'COM5'
 		asc_params = dict(
 			# MSB -> LSB
-			preamp_res 		= [0, 0],
-			delay_res 		= [0, 0],
-			watchdog_res 	= [0, 0, 0, 0],
-			attenuator_sel	= [0, 0, 0],
-			dac_sel 		= [0, 0, 0, 0, 0, 0, 0, 0],
-			az_main_gain 	= [0, 0, 0],
-			az_aux_gain 	= [0, 0, 0],
-			oneshot_res 	= [0, 0],
-			vref_preamp 	= [0, 0, 0, 0, 0, 0, 0, 0],
-			vdd_aon			= [1, 1, 1, 1, 1],
-			vdd_signal		= [1, 1, 1, 1, 1],
-			en_main			= [1],
-			en_small		= [1])
+			preamp_res 			=[0]*2,
+			delay_res 			=[0]*2,
+			watchdog_res		=[0],
+			en_stuck 			=[0],
+			attenuator_sel 		=[0]*3,
+			dac_sel 			=[0]*8,
+			oneshot_res 		=[0]*2,
+			vref_preamp 		=[0]*8,
+			en_pullup_p_led 	=[0]*7,
+			en_pullup_n_led 	=[0]*7,
+			en_pullup_p_cfd 	=[0]*7,
+			en_pullup_n_cfd 	=[0]*7,
+			en_pulldown_p_led 	=[0]*7,
+			en_pulldown_n_led 	=[0]*7,
+			en_pulldown_p_cfd 	=[0]*7,
+			en_pulldown_n_cfd	=[0]*7,
+			ctrl_pullup_led 	=[0]*28,
+			ctrl_pulldown_led 	=[0]*28,
+			ctrl_pullup_cfd		=[0]*28,
+			ctrl_pulldown_cfd 	=[0]*28,
+			vdd_aon 			=[1]*5,
+			vdd_signal 			=[1]*5,
+			en_main 			=[1],
+			en_small			=[1])
 
 		print("Constructing scan chain...")
 		asc = scan.construct_ASC(**asc_params)
 		# asc = [1, 1] * 22
 		print(f"Programming scan...{asc}")
-		testing.test_program_scan(com_port=teensy_port, ASC=asc)
+		testing.test_program_scan(com_port=uC_port, ASC=asc)
 
 	############
 	### DACs ###
