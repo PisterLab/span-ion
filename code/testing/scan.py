@@ -7,7 +7,7 @@ import difflib
 
 from typing import List, Mapping
 
-def program_scan(ser, ASC, channel=0) -> None:
+def program_scan(ser, ASC, channel=0, num_filler=0) -> None:
 	'''
 	Inputs:
 		ser: serial.Serial. Open COM port to the microcontroller.
@@ -22,12 +22,18 @@ def program_scan(ser, ASC, channel=0) -> None:
 	# Convert array to string for UART
 	ASC_string = ''.join(map(str,ASC))
 
-	# Send string to Teensy to program into the chip
+	# Filler reads and writes to clear any buffer
+	for _ in range(num_filler):
+		ser.write(b'scratch\n')
+		ser.readline()
+
+	# Send string to uC to program into the chip
 	print("Writing...")
 	if channel == 0:
 		ser.write(b'ascwrite0\n')
 	else:
 		ser.write(b'ascwrite1\n')
+
 	ser.write(ASC_string.encode())
 	print(ser.readline())
 	print(ser.readline())
@@ -39,7 +45,7 @@ def program_scan(ser, ASC, channel=0) -> None:
 	else:
 		ser.write(b'ascload1\n')
 	print(ser.readline())
-	
+
 	# Read back scan chain contents
 	print("Reading...")
 	if channel == 0:

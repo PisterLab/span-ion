@@ -56,7 +56,8 @@ def run_main():
 		asc = scan.construct_ASC(**asc_params)
 		# asc = [1, 1] * 22
 		print(f"Programming scan...{asc}")
-		testing.test_program_scan(com_port=uC_port, ASC=asc, baudrate=19200)
+		testing.test_program_scan(com_port=uC_port, ASC=asc, baudrate=19200,
+			num_filler=1)
 
 	############
 	### DACs ###

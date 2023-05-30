@@ -1082,11 +1082,14 @@ def get_dac_code(com_port, num_iterations, vdac_target, dac_name, vfsr=3.3,
 	idx_closest = np.argmin(diff_vec)
 	return code_vec[idx_closest]
 
-def test_program_scan(com_port, ASC, baudrate=115200) -> None:
+def test_program_scan(com_port, ASC, baudrate=19200, num_filler=0) -> None:
 	'''
 	Inputs:
 		com_port: String. Name of the COM port to connect to.
 		ASC: List of integers. Analog scan chain bits.
+		baudrate: Integer. Baud rate of the serial connection.
+		num_filler: Nonnegative integer. Number of extra filler 
+			read/writes to feed through the serial.
 	Returns:
 		None.
 	Raises:
@@ -1101,7 +1104,7 @@ def test_program_scan(com_port, ASC, baudrate=115200) -> None:
 		timeout=1)
 	
 	# Program uC, close if incorrect
-	scan.program_scan(ser=ser, ASC=ASC)
+	scan.program_scan(ser=ser, ASC=ASC, num_filler=num_filler)
 	
 	# Otherwise just close normally
 	ser.close()
