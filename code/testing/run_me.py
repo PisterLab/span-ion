@@ -15,16 +15,16 @@ def run_main():
 	#########################
 	### Serial Connection ###
 	#########################
-	if True:
+	if False:
 		uC_port = 'COM5'
-		testing.sanity_serial(uC_port)
+		testing.sanity_serial(uC_port, baudrate=115200)
 
 
 	####################
 	### Program Scan ###
 	####################
-	if False:
-		uC = 'COM5'
+	if True:
+		uC_port = 'COM10'
 		asc_params = dict(
 			# MSB -> LSB
 			preamp_res 			=[0]*2,
@@ -56,7 +56,7 @@ def run_main():
 		asc = scan.construct_ASC(**asc_params)
 		# asc = [1, 1] * 22
 		print(f"Programming scan...{asc}")
-		testing.test_program_scan(com_port=uC_port, ASC=asc)
+		testing.test_program_scan(com_port=uC_port, ASC=asc, baudrate=19200)
 
 	############
 	### DACs ###

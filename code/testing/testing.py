@@ -13,7 +13,7 @@ def sanity_serial(uC_port, baudrate=115200, num_iterations=5):
 		parity=serial.PARITY_NONE,
 		stopbits=serial.STOPBITS_ONE,
 		bytesize=serial.EIGHTBITS,
-		timeout=2)
+		timeout=1)
 	for _ in range(num_iterations):
 		print(uC_ser.readline())
 	uC_ser.close()
@@ -1082,7 +1082,7 @@ def get_dac_code(com_port, num_iterations, vdac_target, dac_name, vfsr=3.3,
 	idx_closest = np.argmin(diff_vec)
 	return code_vec[idx_closest]
 
-def test_program_scan(com_port, ASC) -> None:
+def test_program_scan(com_port, ASC, baudrate=115200) -> None:
 	'''
 	Inputs:
 		com_port: String. Name of the COM port to connect to.
@@ -1092,15 +1092,15 @@ def test_program_scan(com_port, ASC) -> None:
 	Raises:
 		ValueError if scan in doesn't match scan out.
 	'''
-	# Open COM port to Teensy to bit-bang scan chain
+	# Open COM port to uC to bit-bang scan chain
 	ser = serial.Serial(port=com_port,
-		baudrate=19200,
+		baudrate=baudrate,
 		parity=serial.PARITY_NONE,
 		stopbits=serial.STOPBITS_ONE,
 		bytesize=serial.EIGHTBITS,
-		timeout=5)
+		timeout=1)
 	
-	# Program Teensy, close if incorrect
+	# Program uC, close if incorrect
 	scan.program_scan(ser=ser, ASC=ASC)
 	
 	# Otherwise just close normally

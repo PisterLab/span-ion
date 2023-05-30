@@ -97,6 +97,12 @@ String inputString = "";
 boolean stringComplete = false;
 
 void setup() {
+	// Open USB serial port
+	Serial.begin(19200);
+
+	// Reserve 200 bytes for the inputString
+	inputString.reserve(200);
+
   analogReadResolution(B_ADC); 
   analogWriteResolution(B_ADC);
 
@@ -263,8 +269,12 @@ void loop() {
     else if (inputString == "dacreadpreamp1\n") {
       dac_read(pin_preamp_vref1);
     }
+
+    // Reset to listen for a new '\n' terminated string over serial
+		inputString = "";
+		stringComplete = false;
   }
-}
+} // end loop()
 
 /* ------------- */
 /* --- Other --- */

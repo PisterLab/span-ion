@@ -203,12 +203,12 @@ void setup() {
 
 void loop() {
   // --- Serial port connection ---
-  if (false) {
+  if (true) {
     Serial.println("blep");
   }
 
   // --- Reading internal temperature ---
-  if (true) {
+  if (false) {
     check_internalTemp();
   }
 /*
