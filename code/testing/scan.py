@@ -12,6 +12,9 @@ def program_scan(ser, ASC, channel=0, num_filler=0) -> None:
 	Inputs:
 		ser: serial.Serial. Open COM port to the microcontroller.
 		ASC: List of integers. Analog scan chain bits.
+		channel: The designation of the channel to program.
+		num_filler: Nonnegative integer. Number of extra filler 
+			read/writes to feed through the serial.
 	Returns:
 		None.
 	Raises:

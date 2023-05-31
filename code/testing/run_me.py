@@ -56,8 +56,11 @@ def run_main():
 		asc = scan.construct_ASC(**asc_params)
 		# asc = [1, 1] * 22
 		print(f"Programming scan...{asc}")
-		testing.test_program_scan(com_port=uC_port, ASC=asc, baudrate=19200,
-			num_filler=1)
+		testing.test_program_scan(com_port=uC_port,
+			ASC=asc,
+			baudrate=19200,
+			num_filler=1,
+			channel=1)
 
 	############
 	### DACs ###
@@ -89,7 +92,7 @@ def run_main():
 	###############################
 	if False:
 		bandgap_meas_params = dict(
-			teensy_port 		= 'COM3', 
+			uC_port 			= 'COM3', 
 			temp_port 			= '',
 			chamber_port 		= 'COM4',
 			teensy_precision 	= 16,
