@@ -60,7 +60,7 @@ def run_main():
 			ASC=asc,
 			baudrate=19200,
 			num_filler=1,
-			channel=1)
+			channel=0)
 
 	############
 	### DACs ###
