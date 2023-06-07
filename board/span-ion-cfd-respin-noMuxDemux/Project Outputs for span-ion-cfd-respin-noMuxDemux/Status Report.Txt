@@ -1,22 +1,11 @@
-Output: Gerber X2 Files
-Type  : GerberX2
+Output: Generates pick and place files
+Type  : Pick Place
 From  : Variant [[No Variations]] of Project [span-ion-cfd-respin-noMuxDemux.PrjPcb]
-   Generated File[CFD_2Channel_Copper_Signal_Top.gbr]
-   Generated File[CFD_2Channel_Copper_Plane_1.gbr]
-   Generated File[CFD_2Channel_Copper_Plane_2.gbr]
-   Generated File[CFD_2Channel_Copper_Signal_Bot.gbr]
-   Generated File[CFD_2Channel_Legend_Top.gbr]
-   Generated File[CFD_2Channel_Legend_Bot.gbr]
-   Generated File[CFD_2Channel_Soldermask_Top.gbr]
-   Generated File[CFD_2Channel_Soldermask_Bot.gbr]
-   Generated File[CFD_2Channel_Profile.gbr]
-   Generated File[CFD_2Channel_NPTH_Drill.gbr]
-   Generated File[CFD_2Channel_PTH_Drill.gbr]
-   Generated File[CFD_2Channel.EXTREP]
-   Generated File[CFD_2Channel.REP]
+   Generated File[Pick Place for CFD_2Channel.txt]
+   Generated File[Pick Place for CFD_2Channel.csv]
 
 
-Files Generated   : 13
+Files Generated   : 2
 Documents Printed : 0
 
-Finished Output Generation At 13:38:04 On 2023-03-13
+Finished Output Generation At 18:02:54 On 2023-04-26
