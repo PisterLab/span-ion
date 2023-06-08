@@ -61,6 +61,8 @@ const int pin_tdc_small_dual_intrptb = 23; // Interrupt
 const int pin_tdc_small_dual_en      = 33; // Active high enable
 const int pin_tdc_small_dual_trig    = 31; // Raises when TDC is ready
 
+const int pin_tdc_start              = 52; // For triggering the TDC's start pulse
+
 // Analog I/O signal voltages
 const int pin_dac_small0 	= 61;	// Resistive DAC for small chain
 const int pin_dac_main0 	= 62;	// Resistive DAC for main chain
@@ -212,6 +214,8 @@ void setup() {
 
 void loop() {
   if (stringComplete) {
+
+    // ASC
     if (inputString == "ascwrite0\n") {
       asc_write(pin_scan0_clk, pin_scan_inb);
     }
@@ -230,6 +234,8 @@ void loop() {
     else if (inputString == "ascread1\n") {
       asc_read(pin_scan1_clk, pin_scan1_outb);
     }
+
+    // Test Structures
     else if (inputString == "peakreset\n") {
 			peak_reset(pin_pk_rst);
 		}
@@ -245,6 +251,8 @@ void loop() {
     else if (inputString == "bandgaptest1\n") {
 		  bandgap_test(pin_bandgap1);
 		}
+
+    // DAC and VDD readouts
     else if (inputString == "dacreadvddmeas0\n") {
       dac_read(pin_vddmeas0);
     }
@@ -268,6 +276,59 @@ void loop() {
     }
     else if (inputString == "dacreadpreamp1\n") {
       dac_read(pin_preamp_vref1);
+    }
+
+    // TDC reads
+    else if (inputString == "tdcmainsingleread0\n") {
+      tdc_read_print(pin_spi_main_single0_csb,
+        pin_tdc_main_single0_en,
+        pin_spi_din,
+        pin_spi_main_single0_dout,
+        pin_spi_main_single0_clk);
+    }
+    else if (inputString == "tdcmainsingleread1\n") {
+      tdc_read_print(pin_spi_main_single1_csb,
+        pin_tdc_main_single1_en,
+        pin_spi_din,
+        pin_spi_main_single1_dout,
+        pin_spi_main_single1_clk);
+    }
+    else if (inputString == "tdcsmallsingleread0\n") {
+      tdc_read_print(pin_spi_small_single0_csb,
+        pin_tdc_small_single0_en,
+        pin_spi_din,
+        pin_spi_small_single0_dout,
+        pin_spi_small_single0_clk);
+    }
+    else if (inputString == "tdcsmallsingleread1\n") {
+      tdc_read_print(pin_spi_small_single1_csb,
+        pin_tdc_small_single1_en,
+        pin_spi_din,
+        pin_spi_small_single1_dout,
+        pin_spi_small_single1_clk);
+    }
+    else if (inputString == "tdcmaindualread\n") {
+      tdc_read_print(pin_spi_main_dual_csb,
+        pin_tdc_main_dual_en,
+        pin_spi_din,
+        pin_spi_main_dual_dout,
+        pin_spi_main_dual_clk);
+    }
+    else if (inputString == "tdcsmalldualread\n") {
+      tdc_read_print(pin_spi_small_dual_csb,
+        pin_tdc_small_dual_en,
+        pin_spi_din,
+        pin_spi_small_dual_dout,
+        pin_spi_small_dual_clk);
+    }
+
+    // TDC configs
+    else if (inputString == "tdcmainsingleconfig0\n") {
+      tdc_config(pin_spi_main_single0_csb,
+        pin_tdc_main_single0_en,
+        pin_spi_din,
+        pin_spi_main_single0_clk,
+        pin_tdc_main_single0_trig);
     }
 
     // Reset to listen for a new '\n' terminated string over serial

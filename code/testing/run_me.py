@@ -47,8 +47,8 @@ def run_main():
 			ctrl_pulldown_led 	=[0]*28,
 			ctrl_pullup_cfd		=[0]*28,
 			ctrl_pulldown_cfd 	=[0]*28,
-			vdd_aon 			=[1]*5,
-			vdd_signal 			=[1]*5,
+			vdd_aon 			=[0]*5,
+			vdd_signal 			=[0]*5,
 			en_main 			=[1],
 			en_small			=[1])
 
@@ -60,7 +60,7 @@ def run_main():
 			ASC=asc,
 			baudrate=19200,
 			num_filler=1,
-			channel=0)
+			channel=1)
 
 	############
 	### DACs ###
