@@ -95,17 +95,17 @@ def run_main():
 			uC_port 			= 'COM3', 
 			temp_port 			= '',
 			chamber_port 		= 'COM4',
-			teensy_precision 	= 16,
+			uC_precision 		= 12,
 			vfsr 				= 3.3,
-			iterations 			= 10800,
-			delay 				= 1)
+			iterations 			= 1000,
+			delay 				= .5)
 		file_out = f'../../data/testing/{timestamp_str}_bandgap_{bandgap_meas_params["iterations"]}x.csv'
 		teensy_vec, temp_vec, chamber_vec, vbg_vec = bandgap.get_data(**bandgap_meas_params)
 
 		with open(file_out, 'w', newline='') as csvfile:
 			fwriter = csv.writer(csvfile, delimiter=",", 
 				quotechar="|", quoting=csv.QUOTE_MINIMAL)
-			fwriter.writerow(['Teensy Internal Temp'] + teensy_vec)
+			fwriter.writerow(['uC Internal Temp'] + teensy_vec)
 			fwriter.writerow(['TMP102'] + temp_vec)
 			fwriter.writerow(['Chamber'] + chamber_vec)
 			fwriter.writerow(['Bandgap (V)'] + vbg_vec)

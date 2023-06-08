@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 def get_data(uC_port, temp_port="", chamber_port="", uC_precision=16, 
-    vfsr=3.3, iterations=100, delay=1):
+    vfsr=3.3, iterations=100, delay=1, channel=0):
     '''
     Inputs:
         uC_port: String. Microcontroller COM port.
@@ -18,6 +18,7 @@ def get_data(uC_port, temp_port="", chamber_port="", uC_precision=16,
         iterations: Integer. Number of measurements to take. Note that
             the temperature will be sweeping over this time.
         delay: Float. Number of seconds to pause between readings.
+        channel: 0 or 1. Which channel on the board to read from.
     Returns:
         uC_vec: List of floats. Internal temperature readings (C) from
             the microcontroller. Contains "iterations" elements.
@@ -74,7 +75,8 @@ def get_data(uC_port, temp_port="", chamber_port="", uC_precision=16,
     # Take 'iterations' number of readings
     for i in range(iterations):
         # Trigger uC bandgap voltage reading
-        uC_ser.write(b'bandgaptest\n')
+        cmd = f'bandgaptest{channel}\n'
+        uC_ser.write(cmd.encode())
 
         # Trigger TMP102 temp reading if necessary
         if use_TMP102:
