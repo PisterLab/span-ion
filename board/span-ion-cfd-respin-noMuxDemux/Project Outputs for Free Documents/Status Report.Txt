@@ -1,0 +1,14 @@
+Project Outputs Generation Report
+---------------------------------
+Start Output Generation At 18:49:46 On 2023-06-07
+
+Output: Generates pick and place files
+Type  : Pick Place
+From  : Variant [[No Variations]] of PCB Document [CFD_2Channel.PcbDoc]
+   Generated File[Pick Place for CFD_2Channel.csv]
+
+
+Files Generated   : 1
+Documents Printed : 0
+
+Finished Output Generation At 18:49:48 On 2023-06-07

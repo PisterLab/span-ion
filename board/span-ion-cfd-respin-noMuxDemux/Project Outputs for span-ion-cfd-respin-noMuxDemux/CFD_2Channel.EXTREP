@@ -1,20 +1,25 @@
 ------------------------------------------------------------------------------------------
-Gerber File Extension Report For: CFD_2Channel.GBR   2023-03-13  13:38:00
+Gerber File Extension Report For: CFD_2Channel.GBR   2023-06-07  18:11:06
 ------------------------------------------------------------------------------------------
 
 
 ------------------------------------------------------------------------------------------
 Layer Extension     Layer Description                      
 ------------------------------------------------------------------------------------------
+.gbr                Top Overlay                             
+.gbr                Top Paste                               
+.gbr                Top Solder                              
 .gbr                Top Layer                               
 .gbr                Top Plane                               
 .gbr                Bottom Plane                            
 .gbr                Bottom Layer                            
-.gbr                Top Overlay                             
-.gbr                Bottom Overlay                          
-.gbr                Top Solder                              
 .gbr                Bottom Solder                           
+.gbr                Bottom Paste                            
+.gbr                Bottom Overlay                          
+.gbr                Keep-Out Layer                          
+.gbr                Top Pad Master                          
+.gbr                Bottom Pad Master                       
+.gbr                Drill Drawing                           
+.gbr                Drill Guide                             
 .gbr                Profile                                 
-.gbr                Non-plated through-hole drill file      
-.gbr                Plated through-hole drill file          
 ------------------------------------------------------------------------------------------

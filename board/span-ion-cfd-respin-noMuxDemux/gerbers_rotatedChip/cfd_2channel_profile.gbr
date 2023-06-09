@@ -1,0 +1,15 @@
+%FSTAX23Y23*%
+%MOIN*%
+%SFA1B1*%
+
+%IPPOS*%
+%ADD78C,0.001000*%
+%LNcfd_2channel_profile-1*%
+%LPD*%
+G54D78*
+X0Y0D02*
+X0556D01*
+Y0875*
+X0*
+Y0*
+M02*
