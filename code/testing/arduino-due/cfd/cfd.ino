@@ -72,7 +72,7 @@ const int pin_preamp_vref0  = 63;	// Preamp reference voltage
 
 const int pin_dac_small1 	= 56;	// Resistive DAC for small chain
 const int pin_dac_main1 	= 57;	// Resistive DAC for main chain
-const int pin_bandgap1		= 55;	// Test structure bandgap voltage source
+const int pin_bandgap1		= A1;	// Test structure bandgap voltage source
 const int pin_pk_out1 		= 54;	// Peak detector output voltage
 const int pin_preamp_vref1  = 58;	// Preamp reference voltage
 

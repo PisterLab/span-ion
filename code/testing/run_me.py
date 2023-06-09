@@ -23,7 +23,7 @@ def run_main():
 	####################
 	### Program Scan ###
 	####################
-	if True:
+	if False:
 		uC_port = 'COM10'
 		asc_params = dict(
 			# MSB -> LSB
@@ -90,15 +90,16 @@ def run_main():
 	###############################
 	### Bandgap in Temp Chamber ###
 	###############################
-	if False:
+	if True:
 		bandgap_meas_params = dict(
-			uC_port 			= 'COM3', 
+			uC_port 			= 'COM5', 
 			temp_port 			= '',
-			chamber_port 		= 'COM4',
-			uC_precision 		= 12,
+			chamber_port 		= 'COM11',
+			uC_precision 		= 12, # 16 for Teensy, max 12 for Arduino Due
 			vfsr 				= 3.3,
-			iterations 			= 1000,
-			delay 				= .5)
+			iterations 			= 3,
+			delay 				= .5,
+			channel				= 1)
 		file_out = f'../../data/testing/{timestamp_str}_bandgap_{bandgap_meas_params["iterations"]}x.csv'
 		teensy_vec, temp_vec, chamber_vec, vbg_vec = bandgap.get_data(**bandgap_meas_params)
 

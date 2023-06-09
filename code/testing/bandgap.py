@@ -36,7 +36,7 @@ def get_data(uC_port, temp_port="", chamber_port="", uC_precision=16,
     use_TMP102 = (temp_port != "")
     use_chamber = (chamber_port != "")
 
-    assert use_TMP102 or use_chamber, "Must use either TMP102 or chamber"
+    # assert use_TMP102 or use_chamber, "Must use either TMP102 or chamber"
 
     uC_vec = []
     temp_vec = []
@@ -75,6 +75,8 @@ def get_data(uC_port, temp_port="", chamber_port="", uC_precision=16,
     # Take 'iterations' number of readings
     for i in range(iterations):
         # Trigger uC bandgap voltage reading
+        uC_ser.write(b'scratch\n') # filler
+        uC_ser.readline()
         cmd = f'bandgaptest{channel}\n'
         uC_ser.write(cmd.encode())
 
@@ -84,7 +86,7 @@ def get_data(uC_port, temp_port="", chamber_port="", uC_precision=16,
             # print(temp_ser.readline())
 
         # Read internal temp from uC
-        uC_val = float(uC_ser.readline())
+        uC_val = 0 # float(uC_ser.readline())
         uC_vec.append(uC_val)
 
         # Read bandgap voltage from uC
