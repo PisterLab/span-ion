@@ -1,0 +1,17 @@
+CAMtasticDXP Drill Report
+Serial Number:0000-00-00000
+Drill File: C:\Users\lydialee\Box Sync\Research\SSL\span-ion\board\span-ion-cfd-respin-noMuxDemux\gerbers_rotatedChipDrillFill\cam.drl
+Format: 2.4
+Units: English (Inch)
+Step & Repeat Codes Used: NO
+
+
+TOOL		SIZE		COUNT
+====		======		=====
+
+ 1 		0.0150		291
+ 2 		0.0280		105
+ 3 		0.0354		164
+ 4 		0.0591		16
+ 5 		0.0630		64
+ 6 		0.1000		12

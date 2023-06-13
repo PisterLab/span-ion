@@ -1,5 +1,5 @@
 ------------------------------------------------------------------------------------------
-Gerber File Extension Report For: CFD_2Channel.GBR   2023-06-12  10:12:55
+Gerber File Extension Report For: CFD_2Channel.GBR   2023-06-13  09:37:29
 ------------------------------------------------------------------------------------------
 
 
@@ -7,14 +7,12 @@ Gerber File Extension Report For: CFD_2Channel.GBR   2023-06-12  10:12:55
 Layer Extension     Layer Description                      
 ------------------------------------------------------------------------------------------
 .gbr                Top Overlay                             
-.gbr                Top Paste                               
 .gbr                Top Solder                              
 .gbr                Top Layer                               
 .gbr                Top Plane                               
 .gbr                Bottom Plane                            
 .gbr                Bottom Layer                            
 .gbr                Bottom Solder                           
-.gbr                Bottom Paste                            
 .gbr                Bottom Overlay                          
 .gbr                Keep-Out Layer                          
 .gbr                Top Pad Master                          
