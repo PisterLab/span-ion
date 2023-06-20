@@ -24,7 +24,7 @@ def run_main():
 	### Program Scan ###
 	####################
 	if False:
-		uC_port = 'COM10'
+		uC_port = 'COM12'
 		asc_params = dict(
 			# MSB -> LSB
 			preamp_res 			=[0]*2,
@@ -47,7 +47,7 @@ def run_main():
 			ctrl_pulldown_led 	=[0]*28,
 			ctrl_pullup_cfd		=[0]*28,
 			ctrl_pulldown_cfd 	=[0]*28,
-			vdd_aon 			=[0]*5,
+			vdd_aon 			=[1]*5,
 			vdd_signal 			=[0]*5,
 			en_main 			=[1],
 			en_small			=[1])
@@ -65,16 +65,17 @@ def run_main():
 	############
 	### DACs ###
 	############
-	if False:
+	if True:
 		which_dac = spani_globals.OUT_REF_PREAMP
 		test_dac_params = dict(
-			com_port='COM5',
+			com_port='COM12',
 			num_iterations=100,
 			code_vec=range(0, int(2**spani_globals.N_BITS_MAP[which_dac]), 10),
 			dac_name=which_dac,
 			vfsr=3.3,
-			precision=16,
-			t_wait=.001)
+			precision=12,
+			# t_wait=.001,
+			channel=1)
 
 		dac_data = testing.test_dac(**test_dac_params)
 
@@ -90,7 +91,7 @@ def run_main():
 	###############################
 	### Bandgap in Temp Chamber ###
 	###############################
-	if True:
+	if False:
 		bandgap_meas_params = dict(
 			uC_port 			= 'COM5', 
 			temp_port 			= '',
