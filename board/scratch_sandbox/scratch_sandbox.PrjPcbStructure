@@ -1,3 +1,0 @@
-Record=TopLevelDocument|FileName=MultiChannel.SchDoc|SheetNumber=1
-Record=SheetSymbol|SourceDocument=MultiChannel.SchDoc|Designator=CHANNEL_A|SchDesignator=CHANNEL_A|FileName=Channel.SchDoc|SheetNumber=2|SymbolType=Normal|RawFileName=Channel.SchDoc|DesignItemId= |SourceLibraryName= |ObjectKind=Sheet Symbol|RevisionGUID= |ItemGUID= |VaultGUID= 
-Record=SheetSymbol|SourceDocument=MultiChannel.SchDoc|Designator=CHANNEL_B|SchDesignator=CHANNEL_B|FileName=Channel.SchDoc|SheetNumber=2|SymbolType=Normal|RawFileName=Channel.SchDoc|DesignItemId= |SourceLibraryName= |ObjectKind=Sheet Symbol|RevisionGUID= |ItemGUID= |VaultGUID= 

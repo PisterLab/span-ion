@@ -1,3 +1,0 @@
-Record=TopLevelDocument|FileName=Shared.SchDoc|SheetNumber=1
-Record=SheetSymbol|SourceDocument=Shared.SchDoc|Designator=x0|SchDesignator=Repeat(x,0,1)|FileName=Channel.SchDoc|SheetNumber=2|SymbolType=Normal|RawFileName=Channel.SchDoc|DesignItemId= |SourceLibraryName= |ObjectKind=Sheet Symbol|RevisionGUID= |ItemGUID= |VaultGUID= 
-Record=SheetSymbol|SourceDocument=Shared.SchDoc|Designator=x1|SchDesignator=Repeat(x,0,1)|FileName=Channel.SchDoc|SheetNumber=2|SymbolType=Normal|RawFileName=Channel.SchDoc|DesignItemId= |SourceLibraryName= |ObjectKind=Sheet Symbol|RevisionGUID= |ItemGUID= |VaultGUID= 
