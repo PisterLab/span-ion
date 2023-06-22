@@ -32,7 +32,7 @@ def run_main():
 			watchdog_res		=[0],
 			en_stuck 			=[0],
 			attenuator_sel 		=[0]*3,
-			dac_sel 			=[0]*8,
+			dac_sel 			=[1]*8,
 			oneshot_res 		=[0]*2,
 			vref_preamp 		=[0]*8,
 			en_pullup_p_led 	=[0]*7,
@@ -66,7 +66,7 @@ def run_main():
 	### DACs ###
 	############
 	if True:
-		which_dac = spani_globals.OUT_REF_PREAMP
+		which_dac = spani_globals.OUT_DAC_MAIN
 		test_dac_params = dict(
 			com_port='COM12',
 			num_iterations=100,
