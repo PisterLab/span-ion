@@ -12,46 +12,70 @@ def run_main():
 	timestamp = datetime.now()
 	timestamp_str = timestamp.strftime("%Y%m%d_%H%M%S")
 
+	#########################
+	### Serial Connection ###
+	#########################
+	if False:
+		uC_port = 'COM5'
+		testing.sanity_serial(uC_port, baudrate=115200)
+
+
 	####################
 	### Program Scan ###
 	####################
 	if False:
-		teensy_port = 'COM5'
+		uC_port = 'COM12'
 		asc_params = dict(
 			# MSB -> LSB
-			preamp_res 		= [0, 0],
-			delay_res 		= [0, 0],
-			watchdog_res 	= [0, 0, 0, 0],
-			attenuator_sel	= [0, 0, 0],
-			dac_sel 		= [0, 0, 0, 0, 0, 0, 0, 0],
-			az_main_gain 	= [0, 0, 0],
-			az_aux_gain 	= [0, 0, 0],
-			oneshot_res 	= [0, 0],
-			vref_preamp 	= [0, 0, 0, 0, 0, 0, 0, 0],
-			vdd_aon			= [1, 1, 1, 1, 1],
-			vdd_signal		= [1, 1, 1, 1, 1],
-			en_main			= [1],
-			en_small		= [1])
+			preamp_res 			=[0]*2,
+			delay_res 			=[0]*2,
+			watchdog_res		=[0],
+			en_stuck 			=[0],
+			attenuator_sel 		=[0]*3,
+			dac_sel 			=[1]*8,
+			oneshot_res 		=[0]*2,
+			vref_preamp 		=[0]*8,
+			en_pullup_p_led 	=[0]*7,
+			en_pullup_n_led 	=[0]*7,
+			en_pullup_p_cfd 	=[0]*7,
+			en_pullup_n_cfd 	=[0]*7,
+			en_pulldown_p_led 	=[0]*7,
+			en_pulldown_n_led 	=[0]*7,
+			en_pulldown_p_cfd 	=[0]*7,
+			en_pulldown_n_cfd	=[0]*7,
+			ctrl_pullup_led 	=[0]*28,
+			ctrl_pulldown_led 	=[0]*28,
+			ctrl_pullup_cfd		=[0]*28,
+			ctrl_pulldown_cfd 	=[0]*28,
+			vdd_aon 			=[1]*5,
+			vdd_signal 			=[0]*5,
+			en_main 			=[1],
+			en_small			=[1])
 
 		print("Constructing scan chain...")
 		asc = scan.construct_ASC(**asc_params)
 		# asc = [1, 1] * 22
 		print(f"Programming scan...{asc}")
-		testing.test_program_scan(com_port=teensy_port, ASC=asc)
+		testing.test_program_scan(com_port=uC_port,
+			ASC=asc,
+			baudrate=19200,
+			num_filler=1,
+			channel=1)
 
 	############
 	### DACs ###
 	############
-	if False:
-		which_dac = spani_globals.OUT_REF_PREAMP
+	if True:
+		which_dac = spani_globals.OUT_DAC_MAIN
 		test_dac_params = dict(
-			com_port='COM5',
+			com_port='COM12',
 			num_iterations=100,
 			code_vec=range(0, int(2**spani_globals.N_BITS_MAP[which_dac]), 10),
 			dac_name=which_dac,
 			vfsr=3.3,
-			precision=16,
-			t_wait=.001)
+			precision=12,
+			# t_wait=.001,
+			channel=1)
 
 		dac_data = testing.test_dac(**test_dac_params)
 
@@ -69,20 +93,21 @@ def run_main():
 	###############################
 	if False:
 		bandgap_meas_params = dict(
-			teensy_port 		= 'COM3', 
+			uC_port 			= 'COM5', 
 			temp_port 			= '',
-			chamber_port 		= 'COM4',
-			teensy_precision 	= 16,
+			chamber_port 		= 'COM11',
+			uC_precision 		= 12, # 16 for Teensy, max 12 for Arduino Due
 			vfsr 				= 3.3,
-			iterations 			= 10800,
-			delay 				= 1)
+			iterations 			= 3,
+			delay 				= .5,
+			channel				= 1)
 		file_out = f'../../data/testing/{timestamp_str}_bandgap_{bandgap_meas_params["iterations"]}x.csv'
 		teensy_vec, temp_vec, chamber_vec, vbg_vec = bandgap.get_data(**bandgap_meas_params)
 
 		with open(file_out, 'w', newline='') as csvfile:
 			fwriter = csv.writer(csvfile, delimiter=",", 
 				quotechar="|", quoting=csv.QUOTE_MINIMAL)
-			fwriter.writerow(['Teensy Internal Temp'] + teensy_vec)
+			fwriter.writerow(['uC Internal Temp'] + teensy_vec)
 			fwriter.writerow(['TMP102'] + temp_vec)
 			fwriter.writerow(['Chamber'] + chamber_vec)
 			fwriter.writerow(['Bandgap (V)'] + vbg_vec)
@@ -292,10 +317,10 @@ def run_main():
 		# 	teensy_ser.write(code_str.encode())
 		# print(teensy_ser.readline())
 
-	###############################
-	### Main Chain Fast Testing ###
-	###############################
-	if True:
+	#######################################
+	### One-Shot Pulse Detector Outputs ###
+	#######################################
+	if False:
 		asc_params = dict(
 			# MSB -> LSB
 			preamp_res 		= [0, 0],
@@ -303,8 +328,50 @@ def run_main():
 			watchdog_res 	= [1]*4, # [0, 0, 0, 0],
 			attenuator_sel	= [1, 0, 0],
 			dac_sel 		= [1, 0, 0, 0, 0, 0, 1, 1], # [1] + [0]*7,
-			az_main_gain 	= [0]*3,
-			az_aux_gain 	= [0]*3,
+			az_main_gain 	= [1]*3,
+			az_aux_gain 	= [1]*3,
+			# oneshot_res 	= [0, 0],
+			vref_preamp 	= [0, 1, 1, 1, 1, 1, 1, 1],
+			vdd_aon			= [0, 0, 0, 0, 0],
+			vdd_signal		= [0, 0, 0, 0, 0],
+			en_main			= [0],
+			en_small		= [0])
+
+		scratch_oneshot_params = dict(
+			teensy_port='COM5',
+			num_iterations=10000,
+			# asc_params=asc_params,
+			ip_addr='192.168.1.108',
+			gpib_addr=15,
+			vin_bias=0.23,
+			tref_clk=1/3.75e6,
+			vin_amp=1.1)
+
+		oneshot_res_vec = [[1,1]]
+		# oneshot_res_vec = [[a,b] for a in range(2) for b in range(2)]
+		for oneshot_res in oneshot_res_vec:
+			asc_params['oneshot_res'] = oneshot_res
+			scratch_oneshot_params['asc_params'] = asc_params
+
+			misc = input(f'Oneshot Setting: {oneshot_res}. Run? (y/n)').lower()
+			if misc == 'y':
+				tdiff_vec = testing.test_tdiff_small(**scratch_oneshot_params)
+				# tdiff_vec = [float(tdiff) for tdiff in tdiff_vec]
+
+
+	###############################
+	### Main Chain Fast Testing ###
+	###############################
+	if False:
+		asc_params = dict(
+			# MSB -> LSB
+			preamp_res 		= [0, 0],
+			delay_res 		= [0]*2, # [0, 0],
+			watchdog_res 	= [0]*4, # [0, 0, 0, 0],
+			attenuator_sel	= [1, 0, 0],
+			dac_sel 		= [0, 1, 1, 1, 1, 1, 1, 0], # [1] + [0]*7,
+			az_main_gain 	= [1]*3,
+			az_aux_gain 	= [1]*3,
 			oneshot_res 	= [0, 0],
 			vref_preamp 	= [0, 1, 1, 1, 1, 1, 1, 1],
 			vdd_aon			= [0, 0, 0, 0, 0],
@@ -314,36 +381,42 @@ def run_main():
 
 		test_tdiff_main_params = dict(
 			teensy_port='COM5',
-			num_iterations=500,
+			num_iterations=10000,
 			asc_params=asc_params,
-			ip_addr='192.168.1.4',
+			ip_addr='192.168.1.108',
 			gpib_addr=15,
-			vin_bias=0.9,
 			tref_clk=1/3.75e6)
 
-		# vin_amp_vec = np.arange(0.1, 1.0, 100e-3)
-		vin_amp_vec = [2.0]
+		vin_bias_vec = [0]
 
-		for vin_amp in vin_amp_vec:
-			timestamp = datetime.now()
-			timestamp_str = timestamp.strftime("%Y%m%d_%H%M%S")
+		# vin_amp_vec = np.arange(1.0, 2.0, 100e-3)
+		# vin_amp_vec = np.arange(0.5, 0.8, 100e-3)
+		# vin_amp_vec = np.arange(0.8, 0.1, -0.1)
+		vin_amp_vec = [0.8]
 
-			file_constr_lst = [timestamp_str,
-				f'vin{round(vin_amp, 2)}V',
-				f'{test_tdiff_main_params["num_iterations"]}x',
-				f'vb{test_tdiff_main_params["vin_bias"]}V',
-				'main']
-			
-			file_out = f'../../data/testing/{"_".join(file_constr_lst)}.yaml'
-			test_tdiff_main_params['vin_amp'] = float(vin_amp)
-			tdiff_vec = testing.test_tdiff_main(**test_tdiff_main_params)
-			tdiff_vec = [float(tdiff) for tdiff in tdiff_vec]
+		for vin_bias in vin_bias_vec:
+			for vin_amp in vin_amp_vec:
+				test_tdiff_main_params['vin_amp'] = float(vin_amp)
+				test_tdiff_main_params['vin_bias'] = float(vin_bias)
 
-			dump_data = dict(config=test_tdiff_main_params,
-				data=tdiff_vec,
-				notes="Changed measurement mode to 2")
-			with open(file_out, 'w') as outfile:
-				yaml.dump(dump_data, outfile, default_flow_style=False)
+				timestamp = datetime.now()
+				timestamp_str = timestamp.strftime("%Y%m%d_%H%M%S")
+
+				file_constr_lst = [timestamp_str,
+					f'vin{round(vin_amp, 2)}V',
+					f'{test_tdiff_main_params["num_iterations"]}x',
+					f'vb{test_tdiff_main_params["vin_bias"]}V',
+					'main']
+				
+				file_out = f'../../data/testing/{"_".join(file_constr_lst)}.yaml'
+				tdiff_vec = testing.test_tdiff_main(**test_tdiff_main_params)
+				tdiff_vec = [float(tdiff) for tdiff in tdiff_vec]
+
+				dump_data = dict(config=test_tdiff_main_params,
+					data=tdiff_vec,
+					notes="")
+				with open(file_out, 'w') as outfile:
+					yaml.dump(dump_data, outfile, default_flow_style=False)
 
 	###########################################
 	### Board-Level Jitter from Small Chain ###
@@ -365,6 +438,114 @@ def run_main():
 			data=tdiff_vec)
 		with open(file_out, 'w') as outfile:
 			yaml.dump(dump_data, outfile, default_flow_style=False)
+
+	##############################################
+	### Scratch: Check Biasing of On-Board OTA ###
+	##############################################
+	if False:
+		rm = pyvisa.ResourceManager()
+		dg535 = DG535(rm)
+		dg535.open_prologix(ip_addr='192.168.1.108', gpib_addr=15)
+
+		# Sanity checking DG535 status
+		dg535.write("CL")
+		print(f"Error Status: {dg535.query('ES')}")
+		print(f"Instrument Status: {dg535.query('IS')}")
+
+		cmd_lst = [
+			"TM 1",						# External trigger
+			"TS 1",						# Rising edge trigger
+			"TL 1.00",					# Edge trigger level
+			"TZ 0,1",					# Trigger is high impedance
+			"TZ 1,0",					# T0 termination 50Ohm
+			"OM 1,3",					# T0 output VARiable
+			# f"OO 1,0.8",				# T0 channel offset
+		]
+
+		for cmd in cmd_lst:
+			dg535.write(cmd)
+
+		cont = True
+		while cont:
+			vin_bias_str = input('Bias voltage: ')
+			try:
+				vin_bias = float(vin_bias_str)
+				dg535.write(f'OO 1,{vin_bias}') # T0 channel offset
+			except:
+				print(f'{vin_bias_str} not a float')
+
+			cont_prompt = input('Continue? y/n').lower()
+			cont = cont_prompt == 'y'
+
+	################################################
+	### Main Chain: Detect Realistic MCP Pulses? ###
+	################################################
+	if False:
+		asc_params = dict(
+			# MSB -> LSB
+			preamp_res 		= [0, 0],
+			delay_res 		= [0]*2, # [0, 0],
+			watchdog_res 	= [0]*4, # [0, 0, 0, 0],
+			attenuator_sel	= [1, 1, 1],
+			dac_sel 		= [0, 1, 1, 1, 1, 1, 1, 0],
+			az_main_gain 	= [1]*3,
+			az_aux_gain 	= [1]*3,
+			oneshot_res 	= [0, 0],
+			vref_preamp 	= [0, 1, 1, 1, 1, 1, 1, 1],
+			vdd_aon			= [0, 0, 0, 0, 0],
+			vdd_signal		= [0, 0, 0, 0, 0],
+			en_main			= [0],
+			en_small		= [0])
+ 
+		mcp_detect_params = dict(teensy_port='COM5',
+			num_iterations=10000,
+			asc_params=asc_params)
+
+		cont = True
+		while cont:
+			testing.sanity_mcp_pulse(**mcp_detect_params)
+			cont_raw = input('Continue? y/n').lower()
+			cont = cont_raw=='y'
+
+	#########################################
+	### Get the Keysight33500B to Respond ###
+	#########################################
+	if False:
+		teensy_ser = serial.Serial(port='COM5',
+            baudrate=19200,
+            parity=serial.PARITY_NONE,
+            stopbits=serial.STOPBITS_ONE,
+            bytesize=serial.EIGHTBITS,
+            timeout=5)
+
+		rm = pyvisa.ResourceManager()
+		arb = Keysight33500B(rm)
+		arb.open_gpib()
+
+		cmd_lst = [
+			"*RST; *CLS",			# Reset device
+			"OUTP1:LOAD 50",		# CH1 driving 50Ohm load
+			"TRIG1:SOUR EXT",		# External trigger source
+			"TRIG1:SLOP POS",		# Input trigger rising edge
+			# "TRIG:LEV 1.8",		# Input and output trigger level - only 33600 can do this
+			"TRIG1:DEL 1E-5",		# 1us delay between trigger and output pulse
+			"OUTP:TRIG:SOUR CH1",	# Set the trigger output to channel 1
+			"OUTP:TRIG:SLOP POS"	# Output pulse rising edge
+			"OUTP:TRIG ON",			# Turn on rear panel external trigger
+		]
+
+		for cmd in cmd_lst:
+			arb.write(cmd)
+
+		cont = input('Continue? (y/n)').lower()
+		if cont == 'y':
+			while True:
+				# Repeatedly send the START pulse
+				print('--- Feeding START')
+				teensy_ser.write(b'tdcmainstart\n')
+				print(teensy_ser.readline())
+
+				# See the oscilloscope while probing the output CH1
 
 	################################
 	### Get the DG535 to Respond ###

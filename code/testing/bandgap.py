@@ -4,23 +4,24 @@ import temp_chamber
 import numpy as np
 import matplotlib.pyplot as plt
 
-def get_data(teensy_port, temp_port="", chamber_port="", teensy_precision=16, 
-    vfsr=3.3, iterations=100, delay=1):
+def get_data(uC_port, temp_port="", chamber_port="", uC_precision=16, 
+    vfsr=3.3, iterations=100, delay=1, channel=0):
     '''
     Inputs:
-        teensy_port: String. Teensy COM port.
-        temp_port: String. TMP102 Teensy COM port. Empty string if not used.
+        uC_port: String. Microcontroller COM port.
+        temp_port: String. TMP102 uC COM port. Empty string if not used.
         chamber_port: String. Temperature chamber COM port. Empty string if not 
             used.
-        teensy_precision: Integer. Number of bits for the Teensy's output.
-        vfsr: Float. Full scale range voltage of the Teensy ADC used to 
+        uC_precision: Integer. Number of bits for the microcontroller's analog read output.
+        vfsr: Float. Full scale range voltage of the uC ADC used to 
             measure the bandgap voltage.
         iterations: Integer. Number of measurements to take. Note that
             the temperature will be sweeping over this time.
         delay: Float. Number of seconds to pause between readings.
+        channel: 0 or 1. Which channel on the board to read from.
     Returns:
-        teensy_vec: List of floats. Internal temperature readings (C) from
-            the Teensy. Contains "iterations" elements.
+        uC_vec: List of floats. Internal temperature readings (C) from
+            the microcontroller. Contains "iterations" elements.
         temp_vec: List of floats. Temperature readings (C) from the 
             ground truth TMP102 temperature sensor. Contains "iterations"
             elements if used, 0 otherwise.
@@ -35,15 +36,15 @@ def get_data(teensy_port, temp_port="", chamber_port="", teensy_precision=16,
     use_TMP102 = (temp_port != "")
     use_chamber = (chamber_port != "")
 
-    assert use_TMP102 or use_chamber, "Must use either TMP102 or chamber"
+    # assert use_TMP102 or use_chamber, "Must use either TMP102 or chamber"
 
-    teensy_vec = []
+    uC_vec = []
     temp_vec = []
     chamber_vec = []
     vbg_vec = []
 
     # Open serial connections
-    teensy_ser = serial.Serial(port=teensy_port,
+    uC_ser = serial.Serial(port=uC_port,
                         baudrate=19200,
                         parity=serial.PARITY_NONE,
                         stopbits=serial.STOPBITS_ONE,
@@ -63,7 +64,7 @@ def get_data(teensy_port, temp_port="", chamber_port="", teensy_precision=16,
 
 
     # Sanity checking print statements
-    disp_lst = ['Teensy Internal']
+    disp_lst = ['uC Internal']
     if use_TMP102:
         disp_lst.append('TMP102')
     if use_chamber:
@@ -73,21 +74,24 @@ def get_data(teensy_port, temp_port="", chamber_port="", teensy_precision=16,
 
     # Take 'iterations' number of readings
     for i in range(iterations):
-        # Trigger Teensy bandgap voltage reading
-        teensy_ser.write(b'bandgaptest\n')
+        # Trigger uC bandgap voltage reading
+        uC_ser.write(b'scratch\n') # filler
+        uC_ser.readline()
+        cmd = f'bandgaptest{channel}\n'
+        uC_ser.write(cmd.encode())
 
         # Trigger TMP102 temp reading if necessary
         if use_TMP102:
             temp_ser.write(b'temp\n')
             # print(temp_ser.readline())
 
-        # Read internal temp from Teensy
-        teensy_val = float(teensy_ser.readline())
-        teensy_vec.append(teensy_val)
+        # Read internal temp from uC
+        uC_val = 0 # float(uC_ser.readline())
+        uC_vec.append(uC_val)
 
-        # Read bandgap voltage from Teensy
-        vbg_val = teensy_ser.readline()
-        vbg_val = int(vbg_val)/(2**teensy_precision) * vfsr
+        # Read bandgap voltage from uC
+        vbg_val = uC_ser.readline()
+        vbg_val = int(vbg_val)/(2**uC_precision) * vfsr
         vbg_vec.append(vbg_val)
 
         # Read data from ground truth source(s)
@@ -100,7 +104,7 @@ def get_data(teensy_port, temp_port="", chamber_port="", teensy_precision=16,
             chamber_vec.append(chamber_val)
 
         # Printing relevant values with each reading for sanity check
-        disp_lst = [str(teensy_val)]
+        disp_lst = [str(uC_val)]
         if use_TMP102:
             disp_lst.append(str(temp_val))
         if use_chamber:
@@ -111,7 +115,7 @@ def get_data(teensy_port, temp_port="", chamber_port="", teensy_precision=16,
         # Pause between readings
         time.sleep(delay)
 
-    teensy_ser.close()
+    uC_ser.close()
     
     if use_TMP102:
         temp_ser.close()
@@ -119,4 +123,4 @@ def get_data(teensy_port, temp_port="", chamber_port="", teensy_precision=16,
     if use_chamber:
         chamber_ser.serial.close()
 
-    return teensy_vec, temp_vec, chamber_vec, vbg_vec
+    return uC_vec, temp_vec, chamber_vec, vbg_vec

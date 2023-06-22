@@ -5,6 +5,47 @@ from gpib import *
 import spani_globals, scan, temp_chamber, tdc
 from pprint import pprint
 
+def sanity_serial(uC_port, baudrate=115200, num_iterations=5):
+	''''''
+	# Open connection to microcontroller
+	uC_ser = serial.Serial(port=uC_port,
+		baudrate=baudrate,
+		parity=serial.PARITY_NONE,
+		stopbits=serial.STOPBITS_ONE,
+		bytesize=serial.EIGHTBITS,
+		timeout=1)
+	for _ in range(num_iterations):
+		print(uC_ser.readline())
+	uC_ser.close()
+
+def sanity_mcp_pulse(teensy_port, num_iterations, asc_params):
+	''''''
+	# Open connections to Teensy and DG535
+	uC_ser = serial.Serial(port=teensy_port,
+                    baudrate=19200,
+                    parity=serial.PARITY_NONE,
+                    stopbits=serial.STOPBITS_ONE,
+                    bytesize=serial.EIGHTBITS,
+                    timeout=5)
+
+	# Program the chip
+	asc = scan.construct_ASC(**asc_params)
+	scan.program_scan(ser=uC_ser, ASC=asc)
+
+	for _ in range(num_iterations):
+		# Reset the latched output
+		uC_ser.write(b'tdcmainreset\n')
+		# print(uC_ser.readline())
+		uC_ser.readline()
+
+		# Feed in the start pulse to get things going
+		# print('--- Feeding START')
+		uC_ser.write(b'tdcmainstart\n')
+		# print(uC_ser.readline())
+		uC_ser.readline()
+
+	return
+
 
 def test_tdiff_main(teensy_port, num_iterations, asc_params,
 	 	ip_addr='192.168.4.1', gpib_addr=15, 
@@ -39,7 +80,7 @@ def test_tdiff_main(teensy_port, num_iterations, asc_params,
 		See <overleaf link> to figure out how things are meant to be wired up.
 	'''
 	# Open connections to Teensy and DG535
-	teensy_ser = serial.Serial(port=teensy_port,
+	uC_ser = serial.Serial(port=teensy_port,
                     baudrate=19200,
                     parity=serial.PARITY_NONE,
                     stopbits=serial.STOPBITS_ONE,
@@ -62,7 +103,7 @@ def test_tdiff_main(teensy_port, num_iterations, asc_params,
 		trigg_edge=0, 	# Rising edge
 		stop_edge=0, 	# Rising edge
 		start_edge=0,	# Rising edge
-		meas_mode=1,	# 0/1 somewhat deceptively assigned to Mode 1/2...
+		meas_mode=0,	# 0/1 somewhat deceptively assigned to Mode 1/2...
 		start_meas=1)	# Arm TDC for measurement
 	wdata1 = tdc.construct_wdata1(**wdata1_dict)
 
@@ -96,7 +137,7 @@ def test_tdiff_main(teensy_port, num_iterations, asc_params,
 
 	# Program the chip
 	asc = scan.construct_ASC(**asc_params)
-	scan.program_scan(ser=teensy_ser, ASC=asc)
+	scan.program_scan(ser=uC_ser, ASC=asc)
 
 	# Control the DG535
 	for cmd in cmd_lst:
@@ -107,11 +148,11 @@ def test_tdiff_main(teensy_port, num_iterations, asc_params,
 	for _ in range(num_iterations):
 		# Reset the TDC
 		# print('Resetting TDC')
-		teensy_ser.write(b'tdcmainreset\n')
-		# print(teensy_ser.readline())
-		teensy_ser.readline()
+		uC_ser.write(b'tdcmainreset\n')
+		# print(uC_ser.readline())
+		uC_ser.readline()
 
-		val_int_status = tdc.tdc_read(teensy_ser=teensy_ser,
+		val_int_status = tdc.tdc_read(uC_ser=uC_ser,
 			reg="INT_STATUS", chain="main")
 		has_started = tdc.is_started(val_int_status)
 		has_finished = tdc.is_done(val_int_status)
@@ -129,31 +170,31 @@ def test_tdiff_main(teensy_port, num_iterations, asc_params,
 
 		# Configure the TDC
 		# print('--- Configuring CONFIG1')
-		teensy_ser.write(b'tdcmainconfig\n')
-		teensy_ser.write(cmd_cfg1.to_bytes(1, 'big'))
-		teensy_ser.write(wdata1.to_bytes(1, 'big'))
+		uC_ser.write(b'tdcmainconfig\n')
+		uC_ser.write(cmd_cfg1.to_bytes(1, 'big'))
+		uC_ser.write(wdata1.to_bytes(1, 'big'))
 		for _ in range(5):
-			# print(teensy_ser.readline())
-			teensy_ser.readline()
+			# print(uC_ser.readline())
+			uC_ser.readline()
 
 		# print('--- Configuring CONFIG2')
-		teensy_ser.write(b'tdcmainconfig\n')
-		teensy_ser.write(cmd_cfg2.to_bytes(1, 'big'))
-		teensy_ser.write(wdata2.to_bytes(1, 'big'))
+		uC_ser.write(b'tdcmainconfig\n')
+		uC_ser.write(cmd_cfg2.to_bytes(1, 'big'))
+		uC_ser.write(wdata2.to_bytes(1, 'big'))
 		for _ in range(5):
-			teensy_ser.readline()
-			# print(teensy_ser.readline())
+			uC_ser.readline()
+			# print(uC_ser.readline())
 
 		# Feed in the start pulse to get things going
 		# print('--- Feeding START')
-		teensy_ser.write(b'tdcmainstart\n')
-		# print(teensy_ser.readline())
-		teensy_ser.readline()
+		uC_ser.write(b'tdcmainstart\n')
+		# print(uC_ser.readline())
+		uC_ser.readline()
 
 		# Wait until measurement done
 		has_finished = False
 		while not has_finished:
-			val_int_status = tdc.tdc_read(teensy_ser=teensy_ser,
+			val_int_status = tdc.tdc_read(uC_ser=uC_ser,
 				reg="INT_STATUS", chain="main")
 			has_started = tdc.is_started(val_int_status)
 			has_finished = tdc.is_done(val_int_status)
@@ -177,7 +218,7 @@ def test_tdiff_main(teensy_port, num_iterations, asc_params,
 
 		reg_data_dict = dict()
 		for reg in reg_lst:
-			reg_data_dict[reg] = tdc.tdc_read(teensy_ser=teensy_ser,
+			reg_data_dict[reg] = tdc.tdc_read(uC_ser=uC_ser,
 				reg=reg, chain="main")
 			# print(f'-> {reg_data_dict[reg]}')
 
@@ -198,7 +239,7 @@ def test_tdiff_main(teensy_port, num_iterations, asc_params,
 		tdiff_vec.append(tdiff)
 
 	# Close connections
-	teensy_ser.close()
+	uC_ser.close()
 	dg535.close_prologix()
 
 	return tdiff_vec
@@ -233,7 +274,7 @@ def test_fflvl_jitter(teensy_port, num_iterations, twait=250e-9,
 
 	'''
 	# Open connections to Teensy and DG535
-	teensy_ser = serial.Serial(port=teensy_port,
+	uC_ser = serial.Serial(port=teensy_port,
                     baudrate=19200,
                     parity=serial.PARITY_NONE,
                     stopbits=serial.STOPBITS_ONE,
@@ -304,10 +345,10 @@ def test_fflvl_jitter(teensy_port, num_iterations, twait=250e-9,
 		count = 0
 		while has_started and count < 10:
 			print('Resetting TDC')
-			teensy_ser.write(b'tdcsmallreset\n')
-			print(teensy_ser.readline())
+			uC_ser.write(b'tdcsmallreset\n')
+			print(uC_ser.readline())
 
-			val_int_status = tdc.tdc_read(teensy_ser=teensy_ser,
+			val_int_status = tdc.tdc_read(uC_ser=uC_ser,
 				reg="INT_STATUS", chain="small")
 			has_started = tdc.is_started(val_int_status)
 			has_finished = tdc.is_done(val_int_status)
@@ -328,27 +369,27 @@ def test_fflvl_jitter(teensy_port, num_iterations, twait=250e-9,
 
 		# Configure the TDC
 		print('--- Configuring CONFIG1')
-		teensy_ser.write(b'tdcsmallconfig\n')
-		teensy_ser.write(cmd_cfg1.to_bytes(1, 'big'))
-		teensy_ser.write(wdata1.to_bytes(1, 'big'))
+		uC_ser.write(b'tdcsmallconfig\n')
+		uC_ser.write(cmd_cfg1.to_bytes(1, 'big'))
+		uC_ser.write(wdata1.to_bytes(1, 'big'))
 		for _ in range(5):
-			print(teensy_ser.readline())
+			print(uC_ser.readline())
 
 		print('--- Configuring CONFIG2')
-		teensy_ser.write(b'tdcsmallconfig\n')
-		teensy_ser.write(cmd_cfg2.to_bytes(1, 'big'))
-		teensy_ser.write(wdata2.to_bytes(1, 'big'))
+		uC_ser.write(b'tdcsmallconfig\n')
+		uC_ser.write(cmd_cfg2.to_bytes(1, 'big'))
+		uC_ser.write(wdata2.to_bytes(1, 'big'))
 		for _ in range(5):
-			print(teensy_ser.readline())
+			print(uC_ser.readline())
 
 		# Feed in the start pulse to get things going - may need more than once
 		count = 0
 		while not has_started and count < 10:
 			print('--- Feeding START')
-			teensy_ser.write(b'tdcsmallstart\n')
-			print(teensy_ser.readline())
+			uC_ser.write(b'tdcsmallstart\n')
+			print(uC_ser.readline())
 
-			val_int_status = tdc.tdc_read(teensy_ser=teensy_ser,
+			val_int_status = tdc.tdc_read(uC_ser=uC_ser,
 				reg="INT_STATUS", chain="small")
 			has_started = tdc.is_started(val_int_status)
 			count = count + 1
@@ -356,7 +397,7 @@ def test_fflvl_jitter(teensy_port, num_iterations, twait=250e-9,
 		# Wait until measurement done
 		has_finished = False
 		while not has_finished:
-			val_int_status = tdc.tdc_read(teensy_ser=teensy_ser,
+			val_int_status = tdc.tdc_read(uC_ser=uC_ser,
 				reg="INT_STATUS", chain="small")
 			has_started = tdc.is_started(val_int_status)
 			has_finished = tdc.is_done(val_int_status)
@@ -380,7 +421,7 @@ def test_fflvl_jitter(teensy_port, num_iterations, twait=250e-9,
 
 		reg_data_dict = dict()
 		for reg in reg_lst:
-			reg_data_dict[reg] = tdc.tdc_read(teensy_ser=teensy_ser,
+			reg_data_dict[reg] = tdc.tdc_read(uC_ser=uC_ser,
 				reg=reg, chain="small")
 			print(f'-> {reg_data_dict[reg]}')
 
@@ -399,7 +440,7 @@ def test_fflvl_jitter(teensy_port, num_iterations, twait=250e-9,
 		tdiff_vec.append(tdiff)
 
 	# Close connections
-	teensy_ser.close()
+	uC_ser.close()
 	dg535.close_prologix()
 
 	return tdiff_vec
@@ -434,7 +475,7 @@ def test_tdiff_small(teensy_port, num_iterations, asc_params,
 		See <overleaf link> to figure out how things are meant to be wired up.
 	'''
 	# Open connections to Teensy and DG535
-	teensy_ser = serial.Serial(port=teensy_port,
+	uC_ser = serial.Serial(port=teensy_port,
                     baudrate=19200,
                     parity=serial.PARITY_NONE,
                     stopbits=serial.STOPBITS_ONE,
@@ -492,7 +533,7 @@ def test_tdiff_small(teensy_port, num_iterations, asc_params,
 
 	# Program the chip
 	asc = scan.construct_ASC(**asc_params)
-	scan.program_scan(ser=teensy_ser, ASC=asc)
+	scan.program_scan(ser=uC_ser, ASC=asc)
 
 	# Control the DG535
 	for cmd in cmd_lst:
@@ -503,11 +544,11 @@ def test_tdiff_small(teensy_port, num_iterations, asc_params,
 	for _ in range(num_iterations):
 		# Reset the TDC
 		# print('Resetting TDC')
-		teensy_ser.write(b'tdcsmallreset\n')
-		# print(teensy_ser.readline())
-		teensy_ser.readline()
+		uC_ser.write(b'tdcsmallreset\n')
+		# print(uC_ser.readline())
+		uC_ser.readline()
 
-		val_int_status = tdc.tdc_read(teensy_ser=teensy_ser,
+		val_int_status = tdc.tdc_read(uC_ser=uC_ser,
 			reg="INT_STATUS", chain="small")
 		has_started = tdc.is_started(val_int_status)
 		has_finished = tdc.is_done(val_int_status)
@@ -525,31 +566,31 @@ def test_tdiff_small(teensy_port, num_iterations, asc_params,
 
 		# Configure the TDC
 		# print('--- Configuring CONFIG1')
-		teensy_ser.write(b'tdcsmallconfig\n')
-		teensy_ser.write(cmd_cfg1.to_bytes(1, 'big'))
-		teensy_ser.write(wdata1.to_bytes(1, 'big'))
+		uC_ser.write(b'tdcsmallconfig\n')
+		uC_ser.write(cmd_cfg1.to_bytes(1, 'big'))
+		uC_ser.write(wdata1.to_bytes(1, 'big'))
 		for _ in range(5):
-			# print(teensy_ser.readline())
-			teensy_ser.readline()
+			# print(uC_ser.readline())
+			uC_ser.readline()
 
 		# print('--- Configuring CONFIG2')
-		teensy_ser.write(b'tdcsmallconfig\n')
-		teensy_ser.write(cmd_cfg2.to_bytes(1, 'big'))
-		teensy_ser.write(wdata2.to_bytes(1, 'big'))
+		uC_ser.write(b'tdcsmallconfig\n')
+		uC_ser.write(cmd_cfg2.to_bytes(1, 'big'))
+		uC_ser.write(wdata2.to_bytes(1, 'big'))
 		for _ in range(5):
-			teensy_ser.readline()
-			# print(teensy_ser.readline())
+			uC_ser.readline()
+			# print(uC_ser.readline())
 
 		# Feed in the start pulse to get things going
 		# print('--- Feeding START')
-		teensy_ser.write(b'tdcsmallstart\n')
-		# print(teensy_ser.readline())
-		teensy_ser.readline()
+		uC_ser.write(b'tdcsmallstart\n')
+		# print(uC_ser.readline())
+		uC_ser.readline()
 
 		# Wait until measurement done
 		has_finished = False
 		while not has_finished:
-			val_int_status = tdc.tdc_read(teensy_ser=teensy_ser,
+			val_int_status = tdc.tdc_read(uC_ser=uC_ser,
 				reg="INT_STATUS", chain="small")
 			has_started = tdc.is_started(val_int_status)
 			has_finished = tdc.is_done(val_int_status)
@@ -573,7 +614,7 @@ def test_tdiff_small(teensy_port, num_iterations, asc_params,
 
 		reg_data_dict = dict()
 		for reg in reg_lst:
-			reg_data_dict[reg] = tdc.tdc_read(teensy_ser=teensy_ser,
+			reg_data_dict[reg] = tdc.tdc_read(uC_ser=uC_ser,
 				reg=reg, chain="small")
 			# print(f'-> {reg_data_dict[reg]}')
 
@@ -594,7 +635,7 @@ def test_tdiff_small(teensy_port, num_iterations, asc_params,
 		tdiff_vec.append(tdiff)
 
 	# Close connections
-	teensy_ser.close()
+	uC_ser.close()
 	dg535.close_prologix()
 
 	return tdiff_vec
@@ -630,7 +671,7 @@ def test_offset_small(teensy_port, aux_port, num_iterations, vtest_dict, vdd=1.8
 		for vincm in vtest_dict.keys()}
 
 	# Open serial connections
-	teensy_ser = serial.Serial(port=teensy_port,
+	uC_ser = serial.Serial(port=teensy_port,
                     baudrate=19200,
                     parity=serial.PARITY_NONE,
                     stopbits=serial.STOPBITS_ONE,
@@ -688,23 +729,23 @@ def test_offset_small(teensy_port, aux_port, num_iterations, vtest_dict, vdd=1.8
 				aux_ser.write(b'zcdcompnsmall\n')
 				aux_ser.write(int(round(vfsr / vlsb)-1).to_bytes(2, 'big'))
 				aux_ser.readline()
-				teensy_ser.write(b'tdcsmallreset\n')
+				uC_ser.write(b'tdcsmallreset\n')
 				print(aux_ser.readline())
 				
 				# Configure the TDC
 				print('--- Configuring CONFIG1')
-				teensy_ser.write(b'tdcsmallconfig\n')
-				teensy_ser.write(int_command1.to_bytes(1, 'big'))
-				teensy_ser.write(int_wdata1.to_bytes(1, 'big'))
+				uC_ser.write(b'tdcsmallconfig\n')
+				uC_ser.write(int_command1.to_bytes(1, 'big'))
+				uC_ser.write(int_wdata1.to_bytes(1, 'big'))
 				for _ in range(5):
-					print(teensy_ser.readline())
+					print(uC_ser.readline())
 
 				print('--- Configuring CONFIG2')
-				teensy_ser.write(b'tdcsmallconfig\n')
-				teensy_ser.write(int_command2.to_bytes(1, 'big'))
-				teensy_ser.write(int_wdata2.to_bytes(1, 'big'))
+				uC_ser.write(b'tdcsmallconfig\n')
+				uC_ser.write(int_command2.to_bytes(1, 'big'))
+				uC_ser.write(int_wdata2.to_bytes(1, 'big'))
 				for _ in range(5):
-					print(teensy_ser.readline())
+					print(uC_ser.readline())
 
 				# Set ZCD input voltages
 				aux_ser.write(b'zcdcomppsmall\n')
@@ -715,7 +756,7 @@ def test_offset_small(teensy_port, aux_port, num_iterations, vtest_dict, vdd=1.8
 				print(f'N: {aux_ser.readline()}')
 
 				# Feed the start pulse
-				teensy_ser.write(b'tdcsmallstart\n')
+				uC_ser.write(b'tdcsmallstart\n')
 				print(aux_ser.readline())
 
 				# Read data from interrupt status register
@@ -725,14 +766,14 @@ def test_offset_small(teensy_port, aux_port, num_iterations, vtest_dict, vdd=1.8
 					int_cmd, _ = tdc.construct_config(is_read=True,
 						addr=int(tdc.reg_addr_map['INT_STATUS'], 16))
 					print(f'--- Reading INT_STATUS')
-					teensy_ser.write(b'tdcsmallread\n')
-					teensy_ser.write(int_cmd.to_bytes(1, 'big'))
+					uC_ser.write(b'tdcsmallread\n')
+					uC_ser.write(int_cmd.to_bytes(1, 'big'))
 					for _ in range(4):
-						print(teensy_ser.readline())
+						print(uC_ser.readline())
 
 					num_bytes = tdc.reg_size_map['INT_STATUS']//8
 					for i in range(num_bytes):
-						val_bytes = teensy_ser.readline().strip()
+						val_bytes = uC_ser.readline().strip()
 						val_int = int.from_bytes(val_bytes, byteorder='big',
 							signed='False')
 						val_reg = (val_reg << 8) + val_int
@@ -787,7 +828,7 @@ def test_pk_static(teensy_port, aux_port, num_iterations, vtest_vec, vfsr=3.3,
 		The argument for precision should match whatever's in the Teensy code!
 	'''
 	# Open serial connections
-	teensy_ser = serial.Serial(port=teensy_port,
+	uC_ser = serial.Serial(port=teensy_port,
                     baudrate=19200,
                     parity=serial.PARITY_NONE,
                     stopbits=serial.STOPBITS_ONE,
@@ -822,12 +863,12 @@ def test_pk_static(teensy_port, aux_port, num_iterations, vtest_vec, vfsr=3.3,
 		# aux_ser.write(b'peakslow\n')
 		# aux_ser.write(str(0).encode())
 		# aux_ser.readline()
-		teensy_ser.write(b'peakreset\n')
+		uC_ser.write(b'peakreset\n')
 
 		# Take num_iterations readings at the same voltage
 		for i in range(num_iterations):
-			teensy_ser.write(b'peakread\n')
-			vout_code = int(teensy_ser.readline())
+			uC_ser.write(b'peakread\n')
+			vout_code = int(uC_ser.readline())
 			vout = vout_code / 2**precision * vfsr
 			vout_vec.append(vout)
 			time.sleep(t_wait)
@@ -839,7 +880,7 @@ def test_pk_static(teensy_port, aux_port, num_iterations, vtest_vec, vfsr=3.3,
 	return vtest_real_dict, vtest_vout_dict
 
 def test_dac(com_port, num_iterations, code_vec, dac_name, vfsr=3.3, 
-	precision=16):
+	precision=12, channel=0):
 	'''
 	Inputs:
 		com_port: String. Name of the COM port to connect to.
@@ -875,7 +916,7 @@ def test_dac(com_port, num_iterations, code_vec, dac_name, vfsr=3.3,
 		+ f'max {code_max}'
 
 	# Open Teensy serial connection
-	teensy_ser = serial.Serial(port=com_port,
+	uC_ser = serial.Serial(port=com_port,
                     baudrate=19200,
                     parity=serial.PARITY_NONE,
                     stopbits=serial.STOPBITS_ONE,
@@ -890,13 +931,13 @@ def test_dac(com_port, num_iterations, code_vec, dac_name, vfsr=3.3,
 		spani_globals.OUT_VDD_SMALL 	: 'vdd_signal',
 		spani_globals.OUT_VDD_AON 		: 'vdd_aon'}
 
-	teensy_arg_map = {
-		spani_globals.OUT_DAC_MAIN		: b'dacreadmain\n',
-		spani_globals.OUT_DAC_SMALL		: b'dacreadsmall\n',
-		spani_globals.OUT_REF_PREAMP	: b'dacreadpreamp\n',
-		spani_globals.OUT_VDD_MAIN		: b'dacreadvddmain\n',
-		spani_globals.OUT_VDD_SMALL		: b'dacreadvddsmall\n',
-		spani_globals.OUT_VDD_AON		: b'dacreadvddaon\n'}
+	uC_arg_map = {
+		spani_globals.OUT_DAC_MAIN		: f'dacreadmain{channel}\n',
+		spani_globals.OUT_DAC_SMALL		: f'dacreadsmall{channel}\n',
+		spani_globals.OUT_REF_PREAMP	: f'dacreadpreamp{channel}\n',
+		spani_globals.OUT_VDD_MAIN		: f'dacreadvddmeas{channel}\n',
+		spani_globals.OUT_VDD_SMALL		: f'dacreadvddmeas{channel}\n',
+		spani_globals.OUT_VDD_AON		: f'dacreadvddmeas{channel}\n'}
 
 	# Take measurements, one step at a time
 	for code in code_vec:
@@ -923,7 +964,7 @@ def test_dac(com_port, num_iterations, code_vec, dac_name, vfsr=3.3,
 		try:
 			spani_globals.block_print()
 			scan_bits = scan.construct_ASC(**construct_scan_params)
-			scan.program_scan(ser=teensy_ser, ASC=scan_bits)
+			scan.program_scan(ser=uC_ser, ASC=scan_bits, num_filler=1, channel=channel)
 			spani_globals.enable_print()
 		except Exception as e:
 			spani_globals.enable_print()
@@ -931,13 +972,13 @@ def test_dac(com_port, num_iterations, code_vec, dac_name, vfsr=3.3,
 
 		# Random blank prints that show up--not sure why
 		for _ in range(2):
-			teensy_ser.readline()
+			uC_ser.readline()
 
 		# Take N=num_iterations measurements TODO
 		for i in range(num_iterations):
-			teensy_ser.write(teensy_arg_map[dac_name])
+			uC_ser.write(uC_arg_map[dac_name].encode())
 			try:
-				cout = int(teensy_ser.readline())
+				cout = int(uC_ser.readline())
 				vout = vfsr * cout / (2**precision)
 			except Exception as e:
 				print(e)
@@ -946,7 +987,7 @@ def test_dac(com_port, num_iterations, code_vec, dac_name, vfsr=3.3,
 			print(f'Code/No. {code}/{i} -> {vout}')
 
 	# Close connection
-	teensy_ser.close()
+	uC_ser.close()
 	return code_data_dict
 
 def get_vref_atten_target(com_port, num_iterations, vfsr=3.3, precision=16):
@@ -967,7 +1008,7 @@ def get_vref_atten_target(com_port, num_iterations, vfsr=3.3, precision=16):
 		This assumes that your scan chain has been set appropriately already.
 	'''
 	# Open serial connection to Teensy
-	teensy_ser = serial.Serial(port=com_port,
+	uC_ser = serial.Serial(port=com_port,
                     baudrate=19200,
                     parity=serial.PARITY_NONE,
                     stopbits=serial.STOPBITS_ONE,
@@ -979,9 +1020,9 @@ def get_vref_atten_target(com_port, num_iterations, vfsr=3.3, precision=16):
 	cout_vec = []
 	for _ in range(num_iterations):
 		# Read the voltage in LSB and convert to voltage
-		teensy_ser.write(b'attenread\n')
+		uC_ser.write(b'attenread\n')
 		try:
-			cout = int(teensy_ser.readline())
+			cout = int(uC_ser.readline())
 			vout = vfsr * cout / (2**precision)
 		except Exception as e:
 			print(e)
@@ -991,7 +1032,7 @@ def get_vref_atten_target(com_port, num_iterations, vfsr=3.3, precision=16):
 		vout_vec.append(vout)
 
 	# Close connections
-	teensy_ser.close()
+	uC_ser.close()
 
 	return np.mean(vout_vec), int(round(np.mean(cout_vec)))
 
@@ -1041,26 +1082,31 @@ def get_dac_code(com_port, num_iterations, vdac_target, dac_name, vfsr=3.3,
 	idx_closest = np.argmin(diff_vec)
 	return code_vec[idx_closest]
 
-def test_program_scan(com_port, ASC) -> None:
+def test_program_scan(com_port, ASC, baudrate=19200, num_filler=0, channel=0) -> None:
 	'''
 	Inputs:
 		com_port: String. Name of the COM port to connect to.
 		ASC: List of integers. Analog scan chain bits.
+		baudrate: Integer. Baud rate of the serial connection.
+		num_filler: Nonnegative integer. Number of extra filler 
+			read/writes to feed through the serial.
+		channel: Integer. The designation of the channel to program.
+
 	Returns:
 		None.
 	Raises:
 		ValueError if scan in doesn't match scan out.
 	'''
-	# Open COM port to Teensy to bit-bang scan chain
+	# Open COM port to uC to bit-bang scan chain
 	ser = serial.Serial(port=com_port,
-		baudrate=19200,
+		baudrate=baudrate,
 		parity=serial.PARITY_NONE,
 		stopbits=serial.STOPBITS_ONE,
 		bytesize=serial.EIGHTBITS,
-		timeout=5)
+		timeout=1)
 	
-	# Program Teensy, close if incorrect
-	scan.program_scan(ser=ser, ASC=ASC)
+	# Program uC, close if incorrect
+	scan.program_scan(ser=ser, ASC=ASC, num_filler=num_filler, channel=channel)
 	
 	# Otherwise just close normally
 	ser.close()

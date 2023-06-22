@@ -1,5 +1,6 @@
 import pyvisa, serial
 from warnings import warn
+import os, sys, time, pdb, traceback
 
 class LabInstrument(object):
 	'''
@@ -110,9 +111,8 @@ class KeysightE3631A(LabInstrument):
 
 class Keysight33500B(LabInstrument):
 	def close(self):
-		# Turn off outputs
-		self.rsrc.write("OUTPUT1 OFF")
-		self.rsrc.write("OUTPUT2 OFF")
+		# Clear before closing connection
+		self.rsrc.write("*RST")
 		super().close()
 
 
@@ -123,37 +123,63 @@ class DG535(LabInstrument):
 
 		super().close()
 
-if __name__ == "__main__":
+def run_main():
+	######################################################
+	### Scratch: Experimenting w/ Connection to E3631A ###
+	######################################################
+	if False:
+		rm = pyvisa.ResourceManager()
+		psu = KeysightE3631A(rm)
+		psu.open_prologix(ip_addr="192.168.1.14", gpib_addr=1)
+
+		print(f"ID String: {psu.query('*IDN?')}")
+		print(f"Self Test: {psu.query('*TST?')}")
+
+		cmd_lst = []
+
+		for cmd in cmd_lst:
+			psu.write(cmd)
+
+		psu.close()
 
 	#####################################################
 	### Scratch: Experimenting w/ Connection to DG535 ###
 	#####################################################
-	# Connect to DG535
-	rm = pyvisa.ResourceManager()
-	dg535 = DG535(rm)
-	dg535.open_prologix(ip_addr="192.168.1.4", gpib_addr=15)
+	if True:
+		# Connect to DG535
+		rm = pyvisa.ResourceManager()
+		dg535 = DG535(rm)
+		dg535.open_prologix(ip_addr="192.168.1.102", gpib_addr=15)
 
-	# Various statuses
-	dg535.write("CL")
-	print(f"Error Status: {dg535.query('ES')}")
-	print(f"Instrument Status: {dg535.query('IS')}")
+		# Various statuses
+		dg535.write("CL")
+		print(f"Error Status: {dg535.query('ES')}")
+		print(f"Instrument Status: {dg535.query('IS')}")
 
-	cmd_lst = [
-		"DT 2,1,1e-6", 	# Set the delay of channel A = T0 + 1us
-		"DT 3,2,1e-6", 	# Set the delay of channel B = A + 1us
-		"TZ 2,0",		# Set channel A termination impedance to 50ohm load
-		# "TZ 3,0",		# Set channel B termination impedance to 50ohm load
-		"OM 2,3",		# Channel A output VARiable
-		# "OM 3,3",		# Channel B output VARiable
-		"OA 2,1",		# Channel A amplitude +1V
-		# "OA 3,0.5",		# Channel B amplitude +0.5V
-		"OO 2,0.5",		# Channel A offset +0.5V
-		# "OO 3,0.25",	# Channel B offset +0.25V
-		"TM 0",			# Internal rate generator is trigger source
-		"TR 0,10000",	# Internal trigger mode 10kHz
-	]
+		cmd_lst = [
+			"DT 2,1,1e-6", 	# Set the delay of channel A = T0 + 1us
+			"DT 3,2,1e-6", 	# Set the delay of channel B = A + 1us
+			"TZ 2,0",		# Set channel A termination impedance to 50ohm load
+			# "TZ 3,0",		# Set channel B termination impedance to 50ohm load
+			"OM 2,3",		# Channel A output VARiable
+			# "OM 3,3",		# Channel B output VARiable
+			"OA 2,1",		# Channel A amplitude +1V
+			# "OA 3,0.5",		# Channel B amplitude +0.5V
+			"OO 2,0.5",		# Channel A offset +0.5V
+			# "OO 3,0.25",	# Channel B offset +0.25V
+			"TM 0",			# Internal rate generator is trigger source
+			"TR 0,10000",	# Internal trigger mode 10kHz
+		]
 
-	for cmd in cmd_lst:
-		dg535.write(cmd)
+		for cmd in cmd_lst:
+			dg535.write(cmd)
 
-	dg535.close()
+		dg535.close()
+
+if __name__ == "__main__":
+	try:
+		run_main()
+	except:
+		extype, value, tb = sys.exc_info()
+		traceback.print_exc()
+		pdb.post_mortem(tb)
