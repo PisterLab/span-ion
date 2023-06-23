@@ -1,3 +1,6 @@
 [submodule "board"]
 	path = board
 	url = git@github.com:PisterLab/span-ion-board.git
+[submodule "code"]
+	path = code
+	url = git@github.com:PisterLab/span-ion-code.git
